@@ -1,0 +1,18 @@
+machine:
+    network:
+        # Add extra host entries for staticly assigned IP of host box
+        hostname: motherbox.local
+        extraHostEntries:
+            - ip: 192.168.1.2
+              aliases:
+                - motherbox
+                - motherbox.local
+
+cluster:
+    apiServer:
+        certSANs:
+            - motherbox
+            - motherbox.local
+    # Allows running workload on control-plane nodes.
+    # Needed because of single node instance
+    allowSchedulingOnControlPlanes: true
