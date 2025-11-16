@@ -1,3 +1,4 @@
 controlplane.yaml
 talosconfig
 worker.yaml
+kubeconfig

@@ -29,7 +29,7 @@ $target = "motherbox.local"
 
 # Generate Talos configuration for a bare metal cluster
 # Creates the controlplane.yaml and worker.yaml files
-# in additoin to the talosconfig file in the current directory
+# in addition to the talosconfig file in the current directory
 talosctl gen config $target "https://${target}:6443"
 # This will create the controlplane.yaml, talosconfig, and worker.yaml
 
@@ -50,11 +50,10 @@ talosctl --nodes $target get disks --insecure
 
 # Apply the Talos configuration to the control plane node
 talosctl --nodes $target apply-config --file ./controlplane.yaml --insecure 
-# Reboot automatic
+# The system will reboot automatically
 
 # Once the node is back up, bootstrap the cluster to initialize etcd and the control plane
 talosctl --nodes $target --endpoints $target bootstrap
-# Reboot no
 
 # we can now check the status of the node and list the nodes in the cluster
 talosctl --nodes $target --endpoints $target services
@@ -63,7 +62,7 @@ talosctl --nodes $target --endpoints $target services
 talosctl --nodes $target --endpoints $target kubeconfig ./kubeconfig
 # this creates the kubeconfig file
 
-# Set the location of the saved confg file
+# Set the location of the saved config file
 # This will save us from having to add --talosconfig ./talosconfig to every command
 $env:KUBECONFIG = (Get-Item "kubeconfig").FullName
 ```
@@ -81,19 +80,15 @@ talosctl upgrade -n $target --image "ghcr.io/siderolabs/installer:${version}"
 talosctl -n $target -e $target  upgrade-k8s
 ```
 
-Try to keep the version of talosctl on the adminstrative machine in sync with the version of talos installed on the cluster machines
+Try to keep the version of talosctl on the administrative machine in sync with the version of talos installed on the cluster machines
 
 ## References
 
-https://sneekes.app/posts/upgrade-talos-and-kubernetes/
+- [Talos Storage Configuration Guide](https://www.talos.dev/v1.9/kubernetes-guides/configuration/storage/#nfs) - NFS and iSCSI storage options for Talos
 
+- [Kubernetes Monitoring: A Complete Solution - Part 1 (Architecture)](https://itnext.io/kubernetes-monitoring-a-complete-solution-part-1-architecture-eb5b998658d5) - Comprehensive monitoring setup
 
-https://itnext.io/kubernetes-monitoring-a-complete-solution-part-1-architecture-eb5b998658d5
+- [Talos Kubernetes Setup](https://www.youtube.com/watch?v=HzNszgkVuaA) - Visual walkthrough of Talos installation and configuration
 
-See if i can use iscsi https://www.talos.dev/v1.9/kubernetes-guides/configuration/storage/#nfs
-
-
-https://www.youtube.com/watch?v=HzNszgkVuaA
-
-https://github.com/gruberdev/homelab
+- [gruberdev/homelab](https://github.com/gruberdev/homelab) - Homelab setup reference
 
