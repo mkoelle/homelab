@@ -9,6 +9,7 @@ The homelab runs Kubernetes workloads and requires a reliable, automated way to 
 - Reduced manual intervention for updates and sync.
 
 Options considered:
+
 - **Manual `kubectl apply` workflows** – Directly applying manifests from local machine.
 - **Flux CD** – Another GitOps tool with similar capabilities.
 - **Helm-only approach** – Using Helm charts without GitOps automation.
@@ -19,6 +20,7 @@ Options considered:
 I chose **Argo CD** as the GitOps solution for managing Kubernetes deployments in the homelab.
 
 ## Rationale
+
 - **Automation & Consistency**
   - Eliminates manual `kubectl` commands by continuously reconciling cluster state with Git.
   - Ensures desired state is always applied, reducing configuration drift.

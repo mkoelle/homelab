@@ -4,7 +4,12 @@
 
 This repo contains the setup, configurations, and automation scripts I use to manage and experiment with my own homelab environment. It's a personal space for learning and testing self-hosted services, infrastructure-as-code, and network optimization. While tailored to my needs, it can serve as inspiration or reference for anyone interested in building a similar setup at home.
 
+## Important Folders
+
+- [docs/adrs](/docs/adrs/) - Architecture Decision Records
+- [setup](/setup/) - Instructions for getting started
+
 ## Getting started
 
-Inital setup of the environment is documented in [Setup](/setup/README.md)
+Initial setup of the environment is documented in [Setup](/setup/README.md)
 
