@@ -13,3 +13,4 @@ FOWNER
 SETGID
 SETUID
 Alpn
+kubeconform

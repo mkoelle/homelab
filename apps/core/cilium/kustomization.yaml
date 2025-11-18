@@ -1,8 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-helmChartInflationGenerator:
+helmCharts:
   - chartRepoUrl: https://helm.cilium.io/
     chartName: cilium
     releaseName: cilium
     releaseNamespace: kube-system
+    includeCRDs: true
     valuesFile: ./values.yaml
