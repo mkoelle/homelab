@@ -11,14 +11,18 @@ Cilium is used in this homelab for:
 - Observability and troubleshooting capabilities
 - Gateway API support for advanced routing
 
-## Installation
+## Install Cilium
 
-Helm install of cilium
+Installation is done through Helm so that it can later be managed by ArgoCD.
 
 ```pwsh
+# Add cilium to helm
 helm repo add cilium https://helm.cilium.io/
 helm repo update
 
+# Use helm to install cilium to our cluster
+# This contains the params to deploy without kube-proxy,
+# with GatewayAPI support, and only one operator replica.
 helm install `
     cilium `
     cilium/cilium `
@@ -52,6 +56,7 @@ kubectl exec -n kube-system ds/cilium -- cilium status
 
 ### Official Documentation
 
+- [Talos Cilium Install Guide](https://docs.siderolabs.com/kubernetes-guides/cni/deploying-cilium)
 - [Cilium Quickstart Guide](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/)
 - [Cilium Helm Chart Values](https://docs.cilium.io/en/stable/helm-reference/)
 

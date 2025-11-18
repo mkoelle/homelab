@@ -13,8 +13,6 @@ I use Argo CD as the continuous delivery engine for my homelab because it provid
 
 The following instructions and steps are for setting up or starting over with on a freshly provisioned talos cluster.
 
-<https://github.com/argoproj/argo-helm>
-
 ### Install Argo CD
 
 ```pwsh
@@ -23,6 +21,7 @@ kubectl create namespace core-argocd
 
 # Add argo to helm
 helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
 
 # use helm to install argo-cd to our cluster
 helm install argocd argo/argo-cd --namespace core-argocd
@@ -51,3 +50,4 @@ Update the admin user password:
 ## References
 
 - [YouTube video - Install Argo CD on Kubernetes cluster | Deploy Application to Kubernetes using Argo CD | Helm Charts](https://www.youtube.com/watch?v=HzNszgkVuaA)
+- [Github - Argo Helm](https://github.com/argoproj/argo-helm)
