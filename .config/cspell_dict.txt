@@ -9,3 +9,7 @@ talosconfig
 talosctl
 taskfile
 logfile
+FOWNER
+SETGID
+SETUID
+Alpn
