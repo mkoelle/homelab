@@ -1,0 +1,23 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  default:
+    cmds:
+      - task: lint
+      - task: spell
+
+  lint:
+    desc: Run linters
+    cmds:
+      - docker run --rm -v ${PWD}:/app -w /app davidanson/markdownlint-cli2 '**/*.md' --fix
+      - docker run --rm --user yamllint -v "$(pwd):/data" contane/yamllint -f colored .
+
+  spell:
+    desc: Run spell check
+    cmds:
+      - docker run --rm -v ${PWD}:/data -w /data ghcr.io/streetsidesoftware/cspell:latest --no-progress --color

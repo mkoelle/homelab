@@ -1,0 +1,20 @@
+name: Linters and utilities
+on:
+  push: {}
+jobs:
+  yaml-linter:
+    name: Yaml Linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: yaml-lint
+        uses: ibiqlik/action-yamllint@v3
+      - run: echo ${{ steps.yaml-lint.outputs.logfile }}
+  md-linter:
+    name: Markdown Linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DavidAnson/markdownlint-cli2-action@v21
+        with:
+          globs: '**/*.md'

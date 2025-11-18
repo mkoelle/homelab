@@ -1,0 +1,16 @@
+files:
+  - "**"
+  - ".*/**"
+useGitignore: true
+ignorePaths:
+  - .git
+dictionaryDefinitions:
+  - name: myWords
+    path: ./cSpell_dict.txt
+    addWords: true
+  - name: namesUsersAndProducts
+    path: ./cSpell_names_products.txt
+    addWords: true
+dictionaries:
+  - myWords
+  - namesUsersAndProducts
