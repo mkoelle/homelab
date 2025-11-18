@@ -9,6 +9,14 @@ machine:
                   - motherbox.local
 
 cluster:
+
+    # Disable default CNI to allow installing Cilium
+    network:
+        cni:
+            name: none
+    proxy:
+        disabled: true
+
     apiServer:
         certSANs:
             - motherbox
