@@ -21,3 +21,8 @@ tasks:
     desc: Run spell check
     cmds:
       - docker run --rm -v ${PWD}:/data -w /data ghcr.io/streetsidesoftware/cspell:latest --no-progress --color
+
+  validate:
+    desc: Validate configuration files
+    cmds:
+      - docker run --rm -v ${PWD}:/data -w /data ghcr.io/yannh/kubeconform:latest -summary -n 16 apps/core/cilium
