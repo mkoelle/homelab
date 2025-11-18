@@ -25,4 +25,4 @@ tasks:
   validate:
     desc: Validate configuration files
     cmds:
-      - docker run --rm -v ${PWD}:/data -w /data ghcr.io/yannh/kubeconform:latest -summary -n 16 apps/core/cilium
+      - docker run --rm -v ${PWD}:/data -w /data ghcr.io/yannh/kubeconform:latest -summary -output pretty -n 16 apps/core/cilium
