@@ -1,0 +1,11 @@
+adrs
+btrfs
+controlplane
+homelab
+kubeconfig
+motherbox
+nfsd
+talosconfig
+talosctl
+taskfile
+logfile

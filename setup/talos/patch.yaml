@@ -1,6 +1,6 @@
 machine:
     network:
-        # Add extra host entries for staticly assigned IP of host box
+        # Add extra host entries for statically assigned IP of host box
         hostname: motherbox.local
         extraHostEntries:
             - ip: 192.168.1.2
