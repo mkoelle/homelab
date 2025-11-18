@@ -13,7 +13,7 @@ jobs:
   md-linter:
     name: Markdown Linter
     runs-on: ubuntu-latest
-    steps:  
+    steps:
       - uses: actions/checkout@v5
       - uses: DavidAnson/markdownlint-cli2-action@v21
         with:

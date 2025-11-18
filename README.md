@@ -25,6 +25,7 @@ The following tools need to be installed
   - helm
 - **Development**
   - [task](https://taskfile.dev/)
+  - Docker
 
 ### Host machine install and config
 

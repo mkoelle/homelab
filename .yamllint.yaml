@@ -4,6 +4,6 @@ ignore-from-file: [.gitignore]
 
 rules:
   document-start: disable
+  new-lines: disable
   line-length:
     max: 120
-
