@@ -17,19 +17,19 @@ I chose **Talos OS** as the base operating system for the homelab Kubernetes clu
 ## Rationale
 
 - **Security as a Priority**
-    - Talos OS is designed with a security-first approach:
-        - No SSH access; all management is API-driven.
-        - Immutable filesystem reduces attack surface.
-        - No package manager, reducing vulnerabilities.
+  - Talos OS is designed with a security-first approach:
+    - No SSH access; all management is API-driven.
+    - Immutable filesystem reduces attack surface.
+    - No package manager, reducing vulnerabilities.
 - **Kubernetes-Native Design**
-    - Built specifically for Kubernetes, simplifying cluster lifecycle management.
-    - Declarative configuration aligns with GitOps principles.
+  - Built specifically for Kubernetes, simplifying cluster lifecycle management.
+  - Declarative configuration aligns with GitOps principles.
 - **Operational Simplicity**
-    - Automated upgrades and consistent state management.
-    - API-driven operations reduce manual intervention and configuration drift.
+  - Automated upgrades and consistent state management.
+  - API-driven operations reduce manual intervention and configuration drift.
 - **Community & Documentation**
-    - Active development and strong community support.
-    - Clear documentation for homelab and production use cases.
+  - Active development and strong community support.
+  - Clear documentation for homelab and production use cases.
 
 ## Alternatives Considered
 
@@ -41,10 +41,10 @@ I chose **Talos OS** as the base operating system for the homelab Kubernetes clu
 ## Consequences
 
 - **Pros**:
-    - Strong security posture out of the box.
-    - Simplified Kubernetes operations.
-    - Reduced attack surface and configuration drift.
+  - Strong security posture out of the box.
+  - Simplified Kubernetes operations.
+  - Reduced attack surface and configuration drift.
 - **Cons**:
-    - Limited flexibility for non-Kubernetes workloads.
-    - Learning curve for API-driven management.
-    - Smaller ecosystem compared to general-purpose Linux distributions.
+  - Limited flexibility for non-Kubernetes workloads.
+  - Learning curve for API-driven management.
+  - Smaller ecosystem compared to general-purpose Linux distributions.

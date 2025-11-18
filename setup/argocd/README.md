@@ -13,9 +13,9 @@ I use Argo CD as the continuous delivery engine for my homelab because it provid
 
 The following instructions and steps are for setting up or starting over with on a freshly provisioned talos cluster.
 
-https://github.com/argoproj/argo-helm
+<https://github.com/argoproj/argo-helm>
 
-### Install Argo CD:
+### Install Argo CD
 
 ```pwsh
 # Create the namespace in kubernetes that we will manage argocd under
@@ -37,16 +37,16 @@ kubectl -n core-argocd get secret argocd-initial-admin-secret `
 #    -o jsonpath="{.data.password}" | base64 -d
 ```
 
-### Configure Argo CD:
+### Configure Argo CD
 
 Expose Argo cd's UI by port forwarding the argocd server service,
 this is easiest to do using lens:
 
-![Expose argo cd via port forward](/docs/assets/kube-lens-port-forward.png)
+![Expose argo cd via port forward](/docs/assets/kube-lens-port-forward.png "Expose argo cd")
 
 Update the admin user password:
 
-![Update the admin password](/docs/assets/argocd-update-password.png)
+![Update the admin password](/docs/assets/argocd-update-password.png "update password")
 
 ## References
 

@@ -91,4 +91,3 @@ Try to keep the version of talosctl on the administrative machine in sync with t
 - [Talos Kubernetes Setup](https://www.youtube.com/watch?v=HzNszgkVuaA) - Visual walkthrough of Talos installation and configuration
 
 - [gruberdev/homelab](https://github.com/gruberdev/homelab) - Homelab setup reference
-
