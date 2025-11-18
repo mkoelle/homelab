@@ -2,30 +2,36 @@
 
 ![Last Commit](https://img.shields.io/github/last-commit/mkoelle/homelab?color=black&labelColor=black&label=last%20commit&logo=github&logoColor=cyan&style=flat-square)
 
-This repo contains the setup, configurations, and automation scripts I use to manage and experiment with my own homelab environment. It's a personal space for learning and testing self-hosted services, infrastructure-as-code, and network optimization. While tailored to my needs, it can serve as inspiration or reference for anyone interested in building a similar setup at home.
+This repository contains the setup, configurations, and automation scripts
+I use to run and experiment with my homelab.
+It's a personal workspace for learning and testing self-hosted services,
+infrastructure-as-code, and network optimizations.
+Although it's tailored to my needs,
+you may find it useful as a reference or inspiration for a similar home setup.
 
-## Important Folders
+## Important folders
 
 - [docs/adrs](/docs/adrs/) - Architecture Decision Records
 - [setup](/setup/) - Instructions for getting started
 
 ## Getting started
 
-I assume the use of at least two computers;
-The development machine that will be used to issue commands and execute this repository,
-and the host machine that will run kubernetes.
+This setup expects at least two machines:
+
+- A development machine used to issue commands and manage this repository
+- A host machine that will run Kubernetes
 
 ### Development machine config
 
 The following tools need to be installed
 
-- **Management**:
-  - kubectl
-  - talosctl
-  - helm
-- **Development**
-  - [task](https://taskfile.dev/)
-  - Docker
+- **Management tools**
+  - Kubectl — Kubernetes CLI ([install instructions](https://kubernetes.io/docs/tasks/tools/))
+  - Talosctl — Talos cluster management ([install instructions](https://www.talos.dev/latest/usage/talosctl/))
+  - Helm — Kubernetes package manager ([install instructions](https://helm.sh/docs/intro/install/))
+- **Development tools**
+  - Task — task runner ([install instructions](https://taskfile.dev/docs/installation))
+  - Docker — container runtime ([install instructions](https://docs.docker.com/engine/install/))
 
 ### Host machine install and config
 
