@@ -11,5 +11,22 @@ This repo contains the setup, configurations, and automation scripts I use to ma
 
 ## Getting started
 
-Initial setup of the environment is documented in [Setup](/setup/README.md)
+I assume the use of at least two computers; 
+The development machine that will be used to issue commands and execute this repository, 
+and the host machine that will run kubernetes.
 
+### Development machine config
+
+The following tools need to be installed
+
+- **Management**:
+    - kubectl
+    - talosctl
+    - helm
+- **Development**
+    - [task](https://taskfile.dev/)
+    
+
+### Host machine install and config
+
+Initial setup of the environment is documented in [Setup](/setup/README.md)

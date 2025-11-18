@@ -1,0 +1,12 @@
+name: Linters and utilities
+on:
+  push: {}
+jobs:
+  yaml-linter:
+    name: Yaml Linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: yaml-lint
+        uses: ibiqlik/action-yamllint@v3
+      - run: echo ${{ steps.yaml-lint.outputs.logfile }}
