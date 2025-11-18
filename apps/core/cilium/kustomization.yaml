@@ -5,5 +5,4 @@ helmChartInflationGenerator:
     chartName: cilium
     releaseName: cilium
     releaseNamespace: kube-system
-    includeCRDs: true
     valuesFile: ./values.yaml
