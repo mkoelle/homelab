@@ -54,6 +54,7 @@ talosctl --nodes $target apply-config --file ./controlplane.yaml --insecure
 
 # Once the node is back up, bootstrap the cluster to initialize etcd and the control plane
 talosctl --nodes $target --endpoints $target bootstrap
+# Dashboard will be angry for a few min as it configures
 
 # we can now check the status of the node and list the nodes in the cluster
 talosctl --nodes $target --endpoints $target services

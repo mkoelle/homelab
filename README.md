@@ -12,7 +12,7 @@ you may find it useful as a reference or inspiration for a similar home setup.
 ## Important folders
 
 - [docs/adrs](/docs/adrs/) - Architecture Decision Records
-- [setup](/setup/) - Instructions for getting started
+- [bootstrap](/bootstrap/) - Instructions for getting started
 
 ## Getting started
 
@@ -32,7 +32,8 @@ The following tools need to be installed
 - **Development tools**
   - Task — task runner ([install instructions](https://taskfile.dev/docs/installation))
   - Docker — container runtime ([install instructions](https://docs.docker.com/engine/install/))
+  - Lens — k8s IDE ([install instructions](https://docs.k8slens.dev/k8slens/getting-started/install-lens/))
 
 ### Host machine install and config
 
-Initial setup of the environment is documented in [Setup](/setup/README.md)
+Initial setup of the environment is documented in [bootstrap](/bootstrap/README.md)
