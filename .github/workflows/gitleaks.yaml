@@ -1,6 +1,9 @@
+---
 name: gitleaks
+
 on:
   push: {}
+
 jobs:
   scan:
     name: gitleaks

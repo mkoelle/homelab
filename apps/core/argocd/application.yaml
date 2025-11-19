@@ -1,20 +1,22 @@
+---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+
 metadata:
   name: argocd
-  namespace: core-argocd 
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  namespace: core-argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+
 spec:
   project: default
   source:
     repoURL: https://argoproj.github.io/argo-helm
     chart: argo-cd
-    targetRevision: 9.1.3 
+    targetRevision: 9.1.3
     helm:
       parameters:
         - name: server.config.kustomize\.buildOptions
-          value: "--enable-helm"
+          value: --enable-helm
       # Alternative: using values block
       values: |
         server:
@@ -28,9 +30,7 @@ spec:
       prune: true
       selfHeal: true
       allowEmpty: false
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
     retry:
       limit: 5
       backoff:
@@ -40,5 +40,4 @@ spec:
   ignoreDifferences:
     - group: argoproj.io
       kind: Application
-      jsonPointers:
-        - /status
+      jsonPointers: [/status]

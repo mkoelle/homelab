@@ -1,5 +1,5 @@
+---
 extends: default
-
 ignore-from-file: [.gitignore]
 
 rules:

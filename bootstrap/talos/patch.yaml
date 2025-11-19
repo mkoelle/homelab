@@ -1,26 +1,24 @@
+---
 machine:
-    network:
+  network:
         # Add extra host entries for statically assigned IP of host box
-        hostname: motherbox.local
-        extraHostEntries:
-            - ip: 192.168.1.2
-              aliases:
-                  - motherbox
-                  - motherbox.local
+    hostname: motherbox.local
+    extraHostEntries:
+      - ip: 192.168.1.2
+        aliases: [motherbox, motherbox.local]
 
 cluster:
 
     # Disable default CNI to allow installing Cilium
-    network:
-        cni:
-            name: none
-    proxy:
-        disabled: true
-
-    apiServer:
-        certSANs:
-            - motherbox
-            - motherbox.local
+  network:
+    cni:
+      name: none
+  proxy:
+    disabled: true
+  apiServer:
+    certSANs:
+      - motherbox
+      - motherbox.local
     # Allows running workload on control-plane nodes.
     # Needed because of single node instance
-    allowSchedulingOnControlPlanes: true
+  allowSchedulingOnControlPlanes: true

@@ -1,23 +1,34 @@
+---
 # https://taskfile.dev
-
 version: '3'
 
 vars:
-  GREETING: Hello, World!
+  APPS_DIR: apps
+  BUILD_DIR: .build
+  # Docker images
+  YAMLFIX_IMAGE: otherguy/yamlfix:latest
+  MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
+  YAMLLINT_IMAGE: cytopia/yamllint:latest
+
+includes:
+  lint: ./.tasks/lint.yaml
 
 tasks:
   default:
     cmds:
       - task: lint
       - task: spell
-
   lint:
     desc: Run linters
     cmds:
-      - docker run --rm -v ${PWD}:/app -w /app davidanson/markdownlint-cli2 '**/*.md' --fix
-      - docker run --rm --user yamllint -v "$(pwd):/data" contane/yamllint -f colored .
-
-  spell:
+      - docker run --rm -v "{{.ROOT_DIR}}:/workspace" -w /workspace -e YAMLFIX_LINE_LENGTH="90"
+        -e YAMLFIX_WHITELINES="0" -e YAMLFIX_COMMENTS_WHITELINES="1" -e YAMLFIX_SECTION_WHITELINES="1"
+        {{.YAMLFIX_IMAGE}} .
+      - docker run --rm -v "{{.ROOT_DIR}}:/app" -w /app {{.MARKDOWNLINT_IMAGE}} '**/*.md' --fix
+      - docker run --rm -v "{{.ROOT_DIR}}:/data" {{.YAMLLINT_IMAGE}} -f colored .
+  spell-check:
+    aliases: [spell]
     desc: Run spell check
     cmds:
-      - docker run --rm -v ${PWD}:/data -w /data ghcr.io/streetsidesoftware/cspell:latest --no-progress --color
+      - docker run --rm -v "{{.ROOT_DIR}}:/data" -w /data ghcr.io/streetsidesoftware/cspell:latest
+        --no-progress --color
