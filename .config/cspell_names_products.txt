@@ -6,3 +6,9 @@ ibiqlik
 Anson
 davidanson
 contane
+otherguy
+cytopia
+bitnami
+yannh
+stackrox
+fairwinds

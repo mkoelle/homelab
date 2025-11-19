@@ -13,3 +13,8 @@ FOWNER
 SETGID
 SETUID
 Alpn
+kubeconform
+kustomizations
+yamlfix
+WHITELINES
+finalizer
