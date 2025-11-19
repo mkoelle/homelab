@@ -10,7 +10,6 @@ spec:
   source:
     repoURL: https://argoproj.github.io/argo-helm
     chart: argo-cd
-    targetRevision: latest
     helm:
       parameters:
         - name: server.config.kustomize\.buildOptions
