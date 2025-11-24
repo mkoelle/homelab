@@ -19,6 +19,6 @@ cluster:
     certSANs:
       - motherbox
       - motherbox.local
-      # Allows running workload on control-plane nodes.
-      # Needed because of single node instance
+  # Allows running workload on control-plane nodes.
+  # Needed because of single node instance
   allowSchedulingOnControlPlanes: true

@@ -15,14 +15,16 @@ vars:
   MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
   YAMLLINT_IMAGE: cytopia/yamllint:latest
 
-includes:
-  lint: ./.tasks/lint.yaml
-
 tasks:
   default:
+    desc: Show available tasks
+    cmds: [task --list]
+  all:
     cmds:
       - task: spell-check
       - task: lint
+      - cmd: printf "\n{{.GREEN}}✨ All validations passed!{{.RESET}}"
+        silent: true
   lint:
     desc: Run linters
     silent: true
@@ -33,33 +35,47 @@ tasks:
   spell-check:
     aliases: [spell]
     silent: true
+    deps: [check-docker]
     desc: Run spell check
     cmds:
-      - printf "\n{{.GREEN}}Running spell check...{{.RESET}}\n"
+      - printf "\n{{.GREEN}}✅ Running spell check...{{.RESET}}\n"
       - docker run --rm -v "{{.ROOT_DIR}}:/data" -w /data ghcr.io/streetsidesoftware/cspell:latest
         --no-progress --color
 
   # Internal tasks
+  check-docker:
+    desc: Check if Docker is running
+    silent: true
+    run: once
+    cmds:
+      - |
+        docker info > /dev/null 2>&1 || {
+          printf "\n{{.RED}}❌ Docker is not running. Please start Docker Desktop.{{.RESET}}"
+          exit 1
+        }
   yaml-fix:
     internal: true
     silent: true
+    deps: [check-docker]
     desc: Fix YAML files
     cmds:
-      - printf "\n{{.GREEN}}Fixing YAML files...{{.RESET}}\n"
+      - printf "\n{{.GREEN}}✅ Fixing YAML files...{{.RESET}}\n"
       - docker run --rm -v "{{.ROOT_DIR}}:/workspace" -w /workspace -e YAMLFIX_LINE_LENGTH="90"
         -e YAMLFIX_WHITELINES="0" -e YAMLFIX_COMMENTS_WHITELINES="1" -e YAMLFIX_SECTION_WHITELINES="1"
         {{.YAMLFIX_IMAGE}} .
   md-fix:
     internal: true
     silent: true
+    deps: [check-docker]
     desc: Fix Markdown files
     cmds:
-      - printf "\n{{.GREEN}}Fixing markdown files...{{.RESET}}\n"
+      - printf "\n{{.GREEN}}✅ Fixing markdown files...{{.RESET}}\n"
       - docker run --rm -v "{{.ROOT_DIR}}:/app" -w /app {{.MARKDOWNLINT_IMAGE}} '**/*.md' --fix
   yaml-lint:
     internal: true
     silent: true
+    deps: [check-docker]
     desc: Lint YAML files
     cmds:
-      - printf "\n{{.GREEN}}Linting YAML files...{{.RESET}}\n"
+      - printf "\n{{.GREEN}}📝 Checking YAML syntax...{{.RESET}}\n"
       - docker run --rm -v "{{.ROOT_DIR}}:/data" {{.YAMLLINT_IMAGE}} -f colored .

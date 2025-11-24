@@ -24,7 +24,8 @@ helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
 
 # use helm to install argo-cd to our cluster
-helm install argocd argo/argo-cd --namespace core-argocd
+helm install argocd argo/argo-cd --namespace core-argocd `
+   --set server.config.kustomize.buildOptions="--enable-helm"
 
 # Get the randomly generated admin password
 kubectl -n core-argocd get secret argocd-initial-admin-secret `
