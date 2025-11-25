@@ -1,0 +1,57 @@
+---
+# Cilium Helm Values for Talos OS
+
+# Kubernetes API Configuration
+k8sServiceHost: localhost
+k8sServicePort: '7445'
+
+# Kube-proxy Replacement
+kubeProxyReplacement: true
+# Talos-specific Security Context (required for init containers)
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+# Talos-specific cgroup configuration
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+# IPAM Configuration
+ipam:
+  mode: kubernetes
+# Enable XDP acceleration (REQUIRED for Talos L2 announcements)
+# Fixes kernel ARP dropping issue between XDP and TC in Talos 1.9+
+# See: https://github.com/cilium/cilium/discussions/36829
+loadBalancer:
+  acceleration: best-effort
+# Gateway API Support
+gatewayAPI:
+  enabled: true
+  enableAlpn: true
+  enableAppProtocol: true
+# Hubble (Observability)
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+# Operator Configuration
+operator:
+  # Single replica is a single point of failure, but I only have one node
+  replicas: 1
