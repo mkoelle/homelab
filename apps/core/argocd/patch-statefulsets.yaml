@@ -11,6 +11,5 @@ spec:
       containers:
         - name: argocd-application-controller
           args:
-            - --repo-server
-            - argocd-repo-server:8081
+            - /usr/local/bin/argocd-application-controller
             - --enable-helm
