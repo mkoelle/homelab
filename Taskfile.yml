@@ -179,7 +179,6 @@ tasks:
           -schema-location default \
           -schema-location https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json \
           -ignore-missing-schemas \
-          -verbose \
           /data/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
           || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
