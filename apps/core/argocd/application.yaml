@@ -5,7 +5,7 @@ kind: Application
 metadata:
   name: argocd
   namespace: core-argocd
-  finalizers: [resources-finalizer.argocd.argoproj.io]
+  # finalizers: [resources-finalizer.argocd.argoproj.io]
 
 spec:
   project: default
@@ -30,13 +30,7 @@ spec:
       selfHeal: true
       allowEmpty: false
     syncOptions: [CreateNamespace=true, ServerSideApply=true]
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-  ignoreDifferences:
-    - group: argoproj.io
-      kind: Application
-      jsonPointers: [/status]
+  # ignoreDifferences:
+  #   - group: argoproj.io
+  #     kind: Application
+  #     jsonPointers: [/status]
