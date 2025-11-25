@@ -228,9 +228,11 @@ tasks:
         cmd: |-
           docker run --rm \
           -v "{{.ITEM}}/{{.BUILD_DIR}}:/data" \
+          -v ".config:/config" \
           {{.POLARIS_IMAGE}} \
           polaris audit \
           --audit-path /data \
+          --config /config/polaris.yaml \
           --format pretty \
           --only-show-failed-tests true \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
