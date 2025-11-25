@@ -11,5 +11,4 @@ spec:
       containers:
         - name: argocd-application-controller
           args:
-            - /usr/local/bin/argocd-application-controller
             - --enable-helm
