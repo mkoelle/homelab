@@ -15,6 +15,7 @@ vars:
   KUBECONFORM_IMAGE: ghcr.io/yannh/kubeconform:latest
   MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
   KUBE_LINTER_IMAGE: stackrox/kube-linter:latest
+  PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5
   YAMLLINT_IMAGE: cytopia/yamllint:latest
   KUBECTL_IMAGE: bitnami/kubectl:latest
   # Computed
@@ -57,7 +58,8 @@ tasks:
     silent: true
     cmds:
       - task: validate-schema
-      - task: security-check
+      - task: kube-lint
+      - task: deprecation-check
   clean:
     desc: Clean up build directory
     silent: true
@@ -179,7 +181,7 @@ tasks:
           /data/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
           || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
-  security-check:
+  kube-lint:
     desc: Run security and best practice checks with kube-linter
     internal: true
     silent: true
@@ -193,6 +195,23 @@ tasks:
           -v "{{.ITEM}}/{{.BUILD_DIR}}:/data" \
           {{.KUBE_LINTER_IMAGE}} \
           lint \
+          /data/deployment.yaml \
+          && printf "✅ Validated %s\n" "{{.ITEM}}" \
+          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+  deprecation-check:
+    desc: Check for deprecated Kubernetes APIs with pluto
+    internal: true
+    silent: true
+    deps: [kustomize-build]
+    cmds:
+      - printf "\n{{.GREEN}}🔒 Checking best practices...{{.RESET}}\n"
+      - for:
+          var: KUSTOMIZATION_DIRS
+        cmd: |-
+          docker run --rm \
+          -v "{{.ITEM}}/{{.BUILD_DIR}}:/data" \
+          {{.PLUTO_IMAGE}} \
+          detect \
           /data/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
           || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
