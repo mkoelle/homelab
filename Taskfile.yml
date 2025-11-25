@@ -15,6 +15,15 @@ vars:
   MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
   YAMLLINT_IMAGE: cytopia/yamllint:latest
   KUBECTL_IMAGE: bitnami/kubectl:latest
+  # Computed
+  KUSTOMIZATION_DIRS:
+    sh: |
+      if [ "$OS" = "Windows_NT" ]; then
+        powershell -Command 'Get-ChildItem . -Recurse -Include kustomization.yaml,kustomization.yml `
+          | ForEach-Object { [System.IO.Path]::GetDirectoryName($_.FullName) }'
+      else
+        find . -type f \( -name "kustomization.yaml" -o -name "kustomization.yml" \) -exec dirname {}
+      fi
 
 tasks:
   default:
@@ -24,7 +33,7 @@ tasks:
     cmds:
       - task: spell-check
       - task: lint
-      - task: kustomize-build
+      - task: build
       - cmd: printf "\n{{.GREEN}}✨ All validations passed!{{.RESET}}"
         silent: true
   lint:
@@ -34,6 +43,16 @@ tasks:
       - task: md-fix
       - task: yaml-fix
       - task: yaml-lint
+  build:
+    desc: Build all resources
+    silent: true
+    cmds:
+      - task: kustomize-build
+  clean:
+    desc: Clean up build directory
+    silent: true
+    cmds:
+      - task: remove-build-dirs
   spell-check:
     aliases: [spell]
     silent: true
@@ -83,30 +102,47 @@ tasks:
     cmds:
       - printf "\n{{.GREEN}}📝 Checking YAML syntax...{{.RESET}}\n"
       - docker run --rm -v "{{.ROOT_DIR}}:/data" {{.YAMLLINT_IMAGE}} -f colored .
+  create-build-dirs:
+    desc: Create build directory
+    internal: true
+    silent: true
+    cmds:
+      - for:
+          var: KUSTOMIZATION_DIRS
+        cmd: |
+          if [ "$OS" = "Windows_NT" ]; then
+            powershell -Command 'New-Item -Path "{{.ITEM}}/{{.BUILD_DIR}}" -ItemType Directory -Force' > /dev/null 2>&1
+          else
+            mkdir -p "{{.ITEM}}/{{.BUILD_DIR}}" > /dev/null 2>&1
+          fi
+  remove-build-dirs:
+    desc: Remove build directory
+    internal: true
+    silent: true
+    cmds:
+      - for:
+          var: KUSTOMIZATION_DIRS
+        cmd: |
+          if [ "$OS" = "Windows_NT" ]; then
+            powershell -Command 'Remove-Item -Path "{{.ITEM}}/{{.BUILD_DIR}}" -Recurse -Force' > /dev/null 2>&1
+          else
+            rm -rf "{{.ITEM}}/{{.BUILD_DIR}}" > /dev/null 2>&1
+          fi
   kustomize-build:
     desc: Build all kustomizations to verify syntax
-    aliases: [k]
+    internal: true
     silent: true
-    deps: [check-docker]
-    vars:
-      DIRS:
-        sh: |
-          if [ "$OS" = "Windows_NT" ]; then
-            powershell -Command 'Get-ChildItem . -Recurse -Include kustomization.yaml,kustomization.yml `
-             | ForEach-Object { [System.IO.Path]::GetDirectoryName($_.FullName) }'
-          else
-            find . -type f \( -name "kustomization.yaml" -o -name "kustomization.yml" \) -exec dirname {}
-          fi
+    deps: [check-docker, create-build-dirs]
     cmds:
       - printf "\n{{.GREEN}}🔨 Building kustomizations...{{.RESET}}\n"
       - for:
-          var: DIRS
+          var: KUSTOMIZATION_DIRS
         cmd: |-
           docker run --rm \
           -v "{{.ITEM}}:/workspace" \
           -w /workspace \
           {{.KUBECTL_IMAGE}} \
           kustomize . --enable-helm \
-          > /dev/null \
+          > "{{.ITEM}}/{{.BUILD_DIR}}/deployment.yaml" \
           && printf "✅ Built %s\n" "{{.ITEM}}" \
           || printf "{{.RED}}❌ Failed to build %s{{.RESET}}\n" "{{.ITEM}}"
