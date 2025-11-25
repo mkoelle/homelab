@@ -14,6 +14,7 @@ vars:
   YAMLFIX_IMAGE: otherguy/yamlfix:latest
   KUBECONFORM_IMAGE: ghcr.io/yannh/kubeconform:latest
   MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
+  KUBE_LINTER_IMAGE: stackrox/kube-linter:latest
   YAMLLINT_IMAGE: cytopia/yamllint:latest
   KUBECTL_IMAGE: bitnami/kubectl:latest
   # Computed
@@ -56,6 +57,7 @@ tasks:
     silent: true
     cmds:
       - task: validate-schema
+      - task: security-check
   clean:
     desc: Clean up build directory
     silent: true
@@ -114,6 +116,7 @@ tasks:
     desc: Create build directory
     internal: true
     silent: true
+    run: once
     cmds:
       - for:
           var: KUSTOMIZATION_DIRS
@@ -140,6 +143,7 @@ tasks:
     desc: Build all kustomizations to verify syntax
     internal: true
     silent: true
+    run: once
     deps: [check-docker, create-build-dirs]
     cmds:
       - printf "\n{{.GREEN}}🔨 Building kustomizations...{{.RESET}}\n"
@@ -172,6 +176,23 @@ tasks:
           -schema-location https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json \
           -ignore-missing-schemas \
           -verbose \
+          /data/deployment.yaml \
+          && printf "✅ Validated %s\n" "{{.ITEM}}" \
+          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+  security-check:
+    desc: Run security and best practice checks with kube-linter
+    internal: true
+    silent: true
+    deps: [kustomize-build]
+    cmds:
+      - printf "\n{{.GREEN}}🔒 Checking best practices...{{.RESET}}\n"
+      - for:
+          var: KUSTOMIZATION_DIRS
+        cmd: |-
+          docker run --rm \
+          -v "{{.ITEM}}/{{.BUILD_DIR}}:/data" \
+          {{.KUBE_LINTER_IMAGE}} \
+          lint \
           /data/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
           || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
