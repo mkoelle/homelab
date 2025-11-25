@@ -17,7 +17,6 @@ spec:
       parameters:
         - name: server.config.kustomize\.buildOptions
           value: --enable-helm
-      # Alternative: using values block
       values: |
         server:
           config:
