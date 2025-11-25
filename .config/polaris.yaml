@@ -1,3 +1,4 @@
+---
 checks:
   # reliability
   deploymentMissingReplicas: ignore
@@ -19,7 +20,7 @@ checks:
   cpuLimitsMissing: warning
   memoryRequestsMissing: warning
   memoryLimitsMissing: warning
-  
+
   # security
   automountServiceAccountToken: warning
   hostIPCSet: danger
@@ -49,9 +50,7 @@ checks:
   rolebindingClusterAdminClusterRole: danger
   rolebindingClusterAdminRole: danger
 
-
-mutations:
-  - pullPolicyNotAlways
+mutations: [pullPolicyNotAlways]
 
 exemptions:
   - namespace: kube-system
@@ -71,24 +70,16 @@ exemptions:
       - linuxHardening
       - missingNetworkPolicy
   - namespace: kube-system
-    controllerNames:
-      - coredns
-    rules:
-      - automountServiceAccountToken
-      - missingNetworkPolicy
+    controllerNames: [coredns]
+    rules: [automountServiceAccountToken, missingNetworkPolicy]
   - namespace: kube-system
-    controllerNames:
-      - ebs-csi-controller
-    rules:
-      - sensitiveContainerEnvVar
+    controllerNames: [ebs-csi-controller]
+    rules: [sensitiveContainerEnvVar]
   - namespace: kube-system
-    controllerNames:
-      - coredns-autoscaler
-    rules:
-      - linuxHardening
+    controllerNames: [coredns-autoscaler]
+    rules: [linuxHardening]
   - namespace: local-path-storage
-    controllerNames:
-      - local-path-provisioner
+    controllerNames: [local-path-provisioner]
     rules:
       - automountServiceAccountToken
       - linuxHardening
@@ -116,29 +107,19 @@ exemptions:
       - notReadOnlyRootFilesystem
       - hostPIDSet
   - namespace: datadog
-    controllerNames:
-      - datadogtoken
-    rules:
-      - sensitiveConfigmapContent
+    controllerNames: [datadogtoken]
+    rules: [sensitiveConfigmapContent]
   - namespace: datadog
-    controllerNames:
-      - datadog-cluster-agent-apiserver
-    rules:
-      - rolebindingClusterAdminRole
-      - rolebindingRolePodExecAttach
-
-  - controllerNames:
-      - ingress-nginx-controller
-    rules:
-      - sensitiveConfigmapContent
+    controllerNames: [datadog-cluster-agent-apiserver]
+    rules: [rolebindingClusterAdminRole, rolebindingRolePodExecAttach]
+  - controllerNames: [ingress-nginx-controller]
+    rules: [sensitiveConfigmapContent]
   - controllerNames:
       - ingress-nginx-controller
       - ingress-nginx-default-backend
       - polaris
       - rbac-manager
-    rules:
-      - automountServiceAccountToken
-      - missingNetworkPolicy
+    rules: [automountServiceAccountToken, missingNetworkPolicy]
   - controllerNames:
       - aws-iam-authenticator
       - aws-load-balancer-controller
@@ -150,15 +131,13 @@ exemptions:
       - automountServiceAccountToken
       - linuxHardening
       - missingNetworkPolicy
-  - controllerNames:
-      - oauth2-proxy
+  - controllerNames: [oauth2-proxy]
     rules:
       - automountServiceAccountToken
       - linuxHardening
       - missingNetworkPolicy
       - sensitiveContainerEnvVar
-  - controllerNames:
-      - kube-flannel-ds
+  - controllerNames: [kube-flannel-ds]
     rules:
       - notReadOnlyRootFilesystem
       - runAsRootAllowed
@@ -166,9 +145,7 @@ exemptions:
       - readinessProbeMissing
       - livenessProbeMissing
       - cpuLimitsMissing
-
-  - controllerNames:
-      - cert-manager
+  - controllerNames: [cert-manager]
     rules:
       - notReadOnlyRootFilesystem
       - runAsRootAllowed
@@ -177,9 +154,7 @@ exemptions:
       - automountServiceAccountToken
       - linuxHardening
       - missingNetworkPolicy
-
-  - controllerNames:
-      - cluster-autoscaler
+  - controllerNames: [cluster-autoscaler]
     rules:
       - notReadOnlyRootFilesystem
       - runAsRootAllowed
@@ -187,17 +162,13 @@ exemptions:
       - automountServiceAccountToken
       - linuxHardening
       - missingNetworkPolicy
-
-  - controllerNames:
-      - vpa
+  - controllerNames: [vpa]
     rules:
       - runAsRootAllowed
       - readinessProbeMissing
       - livenessProbeMissing
       - notReadOnlyRootFilesystem
-
-  - controllerNames:
-      - datadog
+  - controllerNames: [datadog]
     rules:
       - runAsRootAllowed
       - readinessProbeMissing
@@ -207,14 +178,11 @@ exemptions:
       - linuxHardening
       - missingNetworkPolicy
       - sensitiveContainerEnvVar
-
-  - controllerNames:
-      - nginx-ingress-controller
+  - controllerNames: [nginx-ingress-controller]
     rules:
       - privilegeEscalationAllowed
       - insecureCapabilities
       - runAsRootAllowed
-
   - controllerNames:
       - dns-controller
       - datadog-datadog
@@ -223,9 +191,7 @@ exemptions:
       - aws-iam-authenticator
       - datadog
       - kube2iam
-    rules:
-      - hostNetworkSet
-
+    rules: [hostNetworkSet]
   - controllerNames:
       - aws-iam-authenticator
       - aws-cluster-autoscaler
@@ -237,10 +203,7 @@ exemptions:
       - kubernetes-dashboard
       - install-cni
       - kube2iam
-    rules:
-      - readinessProbeMissing
-      - livenessProbeMissing
-
+    rules: [readinessProbeMissing, livenessProbeMissing]
   - controllerNames:
       - aws-iam-authenticator
       - nginx-ingress-default-backend
@@ -253,9 +216,7 @@ exemptions:
       - autoscaler
       - tiller
       - kube2iam
-    rules:
-      - runAsRootAllowed
-
+    rules: [runAsRootAllowed]
   - controllerNames:
       - aws-iam-authenticator
       - nginx-ingress-controller
@@ -269,9 +230,7 @@ exemptions:
       - autoscaler
       - tiller
       - kube2iam
-    rules:
-      - notReadOnlyRootFilesystem
-
+    rules: [notReadOnlyRootFilesystem]
   - controllerNames:
       - cert-manager
       - dns-controller
@@ -285,34 +244,17 @@ exemptions:
       - cpuLimitsMissing
       - memoryRequestsMissing
       - memoryLimitsMissing
-
-  - controllerNames:
-      - kube2iam
-      - kube-flannel-ds
-    rules:
-      - runAsPrivileged
-
-  - controllerNames:
-      - kube-hunter
-    rules:
-      - hostPIDSet
-
+  - controllerNames: [kube2iam, kube-flannel-ds]
+    rules: [runAsPrivileged]
+  - controllerNames: [kube-hunter]
+    rules: [hostPIDSet]
   - controllerNames:
       - polaris
       - kube-hunter
       - goldilocks
       - insights-agent-goldilocks-vpa-install
-    rules:
-      - notReadOnlyRootFilesystem
-
-  - controllerNames:
-      - insights-agent-goldilocks-controller
-    rules:
-      - livenessProbeMissing
-      - readinessProbeMissing
-
-  - controllerNames:
-      - insights-agent-goldilocks-vpa-install
-      - kube-hunter
-    rules:
-      - runAsRootAllowed
+    rules: [notReadOnlyRootFilesystem]
+  - controllerNames: [insights-agent-goldilocks-controller]
+    rules: [livenessProbeMissing, readinessProbeMissing]
+  - controllerNames: [insights-agent-goldilocks-vpa-install, kube-hunter]
+    rules: [runAsRootAllowed]
