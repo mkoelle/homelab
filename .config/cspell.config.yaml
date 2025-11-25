@@ -1,7 +1,7 @@
 ---
 files: ['**', .*/**]
 useGitignore: true
-ignorePaths: [.git]
+ignorePaths: [.git, .build, charts]
 
 dictionaryDefinitions:
   - name: myWords
