@@ -1,0 +1,13 @@
+[tool.yamlfix]
+YAMLFIX_LINE_LENGTH="80"
+YAMLFIX_WHITELINES="0"
+YAMLFIX_COMMENTS_WHITELINES="1"
+YAMLFIX_SECTION_WHITELINES="1"
+
+# This does not work, and has to be done fia cli flags
+# included for whenever it is fixed
+# https://github.com/lyz-code/yamlfix/issues/281
+exclude = [
+    "**/charts/",
+    "**/.build/"
+]
