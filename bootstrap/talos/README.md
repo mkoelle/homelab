@@ -60,12 +60,8 @@ talosctl --nodes $target --endpoints $target bootstrap
 talosctl --nodes $target --endpoints $target services
 
 # Finally, we can retrieve the kubeconfig file to interact with the Kubernetes cluster
-talosctl --nodes $target --endpoints $target kubeconfig ./kubeconfig
-# this creates the kubeconfig file
-
-# Set the location of the saved config file
-# This will save us from having to add --talosconfig ./talosconfig to every command
-$env:KUBECONFIG = (Get-Item "kubeconfig").FullName
+talosctl --nodes $target --endpoints $target kubeconfig $HOME/.kube/config
+# this creates the kubeconfig file in the default location
 ```
 
 ## Updates & Upgrades

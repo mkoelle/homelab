@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: core-argocd
+
+resources:
+  - namespace.yaml
+  - github.com/argoproj/argo-cd//manifests/cluster-install?ref=stable
+
+openapi:
+  path: https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json
+
+patches:
+  - path: patch-deployments.yaml
+  - path: patch-statefulsets.yaml
