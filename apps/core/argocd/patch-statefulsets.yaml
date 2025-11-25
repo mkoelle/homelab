@@ -6,9 +6,3 @@ metadata:
 
 spec:
   replicas: 1
-  template:
-    spec:
-      containers:
-        - name: argocd-application-controller
-          args:
-            - --enable-helm

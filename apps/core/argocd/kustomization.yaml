@@ -13,3 +13,7 @@ openapi:
 patches:
   - path: patch-deployments.yaml
   - path: patch-statefulsets.yaml
+  - path: argocd-cm.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-cm
