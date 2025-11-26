@@ -13,6 +13,8 @@ you may find it useful as a reference or inspiration for a similar home setup.
 
 - [docs/adrs](/docs/adrs/) - Architecture Decision Records
 - [bootstrap](/bootstrap/) - Instructions for getting started
+- [apps](/apps/) - Kubernetes applications
+  - [core](/apps/core/) - Core applications
 
 ## Getting started
 

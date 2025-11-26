@@ -1,7 +1,6 @@
 ---
 apiVersion: apps/v1
 kind: StatefulSet
-
 metadata:
   name: argocd-application-controller
 

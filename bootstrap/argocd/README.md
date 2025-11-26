@@ -15,17 +15,17 @@ The following instructions and steps are for setting up or starting over with on
 
 ### Install Argo CD
 
+Deploy the configured argocd application using the following commands:
+
 ```pwsh
-# Create the namespace in kubernetes that we will manage argocd under
-kubectl create namespace core-argocd
+# cd into the argocd directory
+cd apps\core\argocd
 
-# Add argo to helm
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
+# build the argocd application (this will use a docker container to build the argocd application)
+task build
 
-# use helm to install argo-cd to our cluster
-helm install argocd argo/argo-cd --namespace core-argocd `
-   --set server.config.kustomize.buildOptions="--enable-helm"
+# apply the argocd application
+kubectl apply -f deployment.yaml
 
 # Get the randomly generated admin password
 kubectl -n core-argocd get secret argocd-initial-admin-secret `
@@ -47,6 +47,19 @@ this is easiest to do using lens:
 Update the admin user password:
 
 ![Update the admin password](/docs/assets/argocd-update-password.png "update password")
+
+## Troubleshooting
+
+### Deleting the argocd resources
+
+If the namespace is stuck in terminating, it is likely due to the finalizers. You can remove them with the following command:
+
+```pwsh
+kubectl get applications.argoproj.io -n core-argocd -o name |
+ForEach-Object {
+    kubectl patch $_ -n core-argocd --type=json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
+}
+```
 
 ## References
 

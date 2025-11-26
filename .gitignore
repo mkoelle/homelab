@@ -3,3 +3,4 @@ talosconfig
 worker.yaml
 kubeconfig
 .build
+charts
