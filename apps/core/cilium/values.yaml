@@ -24,7 +24,7 @@ securityContext:
       - SETUID
     cleanCiliumState:
       - NET_ADMIN
-      - SYS_ADMIN
+      - SYS_ADMINwhat 
       - SYS_RESOURCE
 # Talos-specific cgroup configuration
 cgroup:
