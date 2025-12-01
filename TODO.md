@@ -65,3 +65,4 @@
 ## Resources
 
 - https://awesome-web.theravenhub.com/
+- https://www.cncf.io/projects/
