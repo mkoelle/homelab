@@ -28,6 +28,13 @@ vars:
       else
         find . -type f \( -name "kustomization.yaml" -o -name "kustomization.yml" \) -exec dirname {}
       fi
+  CONTAINER_ENGINE:
+    sh: |
+      if command -v podman >/dev/null 2>&1; then
+        echo "podman"
+      else
+        echo "docker"
+      fi
 
 tasks:
   default:
@@ -74,8 +81,9 @@ tasks:
     desc: Run spell check
     cmds:
       - printf "\n{{.GREEN}}✅ Running spell check...{{.RESET}}\n"
-      - docker run --rm -v "{{.ROOT_DIR}}:/work" -w /work
-        {{.CSPELL_IMAGE}}
+      - |
+        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        {{.CSPELL_IMAGE}} \
         --no-progress --color
   # Internal tasks
   check-docker:
@@ -85,7 +93,7 @@ tasks:
     run: once
     cmds:
       - |
-        docker info > /dev/null 2>&1 || {
+        {{.CONTAINER_ENGINE}} info > /dev/null 2>&1 || {
           printf "\n{{.RED}}❌ Docker is not running. Please start Docker Desktop.{{.RESET}}"
           exit 1
         }
@@ -96,12 +104,13 @@ tasks:
     desc: Fix YAML files
     cmds:
       - printf "\n{{.GREEN}}✅ Fixing YAML files...{{.RESET}}\n"
-      - docker run --rm -v "{{.ROOT_DIR}}:/work" -w /work
-        -v ".config:/config"
-        -e YAMLFIX_CONFIG_PATH=/config/yaml_fix.toml
-        {{.YAMLFIX_IMAGE}} .
-        --exclude "**/charts/"
-        --exclude "**/.build/"
+      - |
+        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        -v ".config:/config" \
+        -e YAMLFIX_CONFIG_PATH=/config/yaml_fix.toml \
+        {{.YAMLFIX_IMAGE}} . \
+        --exclude "**/charts/" \
+        --exclude "**/.build/" \
         # TODO: needs fix; exclusions cause execution to hang; config file is also ignored
   md-fix:
     internal: true
@@ -110,9 +119,10 @@ tasks:
     desc: Fix Markdown files
     cmds:
       - printf "\n{{.GREEN}}✅ Fixing markdown files...{{.RESET}}\n"
-      - docker run --rm -v "{{.ROOT_DIR}}:/work" -w /work
-        {{.MARKDOWNLINT_IMAGE}}
-        '**/*.md'
+      - |
+        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        {{.MARKDOWNLINT_IMAGE}} \
+        '**/*.md' \
         --fix
   yaml-lint:
     internal: true
@@ -121,8 +131,9 @@ tasks:
     desc: Lint YAML files
     cmds:
       - printf "\n{{.GREEN}}📝 Checking YAML syntax...{{.RESET}}\n"
-      - docker run --rm -v "{{.ROOT_DIR}}:/work" -w /work
-        {{.YAMLLINT_IMAGE}}
+      - |
+        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        {{.YAMLLINT_IMAGE}} \
         -f colored .
   create-build-dirs:
     desc: Create build directory
@@ -162,7 +173,7 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          docker run --rm -v "{{.ITEM}}:/work" -w /work \
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}:/work" -w /work \
           {{.K8S_IMAGE}} \
           kustomize build . --enable-helm \
           > "{{.ITEM}}/{{.BUILD_DIR}}/deployment.yaml" \
@@ -178,7 +189,7 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          docker run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
           {{.K8S_IMAGE}} \
           kubeconform \
           -summary \
@@ -198,7 +209,7 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          docker run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
           {{.KUBE_LINTER_IMAGE}} \
           lint \
           /work/deployment.yaml \
@@ -214,7 +225,7 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          docker run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
           {{.PLUTO_IMAGE}} \
           detect \
           /work/deployment.yaml \
@@ -230,7 +241,7 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          docker run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
           -v ".config:/config" \
           {{.POLARIS_IMAGE}} \
           polaris audit \

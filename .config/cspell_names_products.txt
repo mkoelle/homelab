@@ -9,6 +9,7 @@ fairwinds
 gruberdev
 ibiqlik
 otherguy
+Sidero
 siderolabs
 stackrox
 yannh
