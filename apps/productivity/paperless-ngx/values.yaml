@@ -1,0 +1,38 @@
+paperless:
+  image:
+    repository: ghcr.io/paperless-ngx/paperless-ngx
+    tag: 2.20.1
+    pullPolicy: IfNotPresent
+  persistence:
+    data:
+      enabled: false
+    media:
+      enabled: false
+    consume:
+      enabled: false
+    export:
+      enabled: false
+
+postgresql:
+  persistence:
+    enabled: false
+
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7.4"
+  persistence:
+    enabled: false
+
+gotenberg:
+  enabled: true
+  image:
+    repository: gotenberg/gotenberg
+    tag: 8.25.0
+
+tika:
+  enabled: true
+  image:
+    repository: apache/tika
+    tag: 3.2.3.0

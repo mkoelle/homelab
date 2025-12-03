@@ -42,6 +42,9 @@
 - **Organization & Workflow**
     - [Baikal](https://sabre.io/baikal/) - Lightweight CalDAV and CardDAV server.
     - [Kaneo](https://kaneo.app/) - Simple, self-hosted project management platform.
+- **Travel & Navigation**
+    - [AdventureLog](https://adventurelog.app/) - Adventure log and travel journal.
+    - [OpenTripPlanner](https://www.opentripplanner.org/) - Open source travel planning engine.
 
 ### Smart Home & Automation
 - [Frigate](https://docs.frigate.video/configuration/pwa/) - NVR with real-time local object detection for IP cameras.
@@ -57,6 +60,7 @@
 - [Ollama](https://ollama.com/) - Get up and running with large language models.
 - [nyno](https://github.com/empowerd-cms/nyno) - Workflow automation tool.
 - [n8n](https://n8n.io) - Workflow automation tool.
+- [MangaTranslator](https://github.com/meangrinch/MangaTranslator) - Translate manga.
 
 ## Hardware to investigate
 

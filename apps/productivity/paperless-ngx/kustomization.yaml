@@ -1,0 +1,11 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  - name: paperless-ngx
+    repo: https://charts.worli.dev
+    releaseName: paperless-ngx
+    version: 0.1.49
+    includeCRDs: true
+    namespace: paperless
+    valuesFile: ./values.yaml
