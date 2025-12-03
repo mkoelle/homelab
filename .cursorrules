@@ -14,7 +14,7 @@ The infrastructure is built on Talos Linux and uses Cilium for networking.
   - Each app should have a `kustomize.yaml`, `namespace.yaml`, and `values.yaml`.
   - Use `helmCharts` in `kustomization.yaml` to inflate charts.
 - `apps/.argocd/`: Contains the "App of Apps" bootstrap configuration.
-  - Individual `Application` manifests (e.g., `cilium.yaml`, `argocd.yaml`) that reference existing app directories.
+  - `apps/.argocd/apps.yaml`: ApplicationSet that manages all applications using a list generator.
   - `apps/.argocd/root-application.yaml`: The bootstrap manifest to initialize the App of Apps.
 - `Taskfile.yml`: The source of truth for build and verification commands.
   - containers are used for all commands to ensure consistency across environments.
@@ -37,7 +37,7 @@ The infrastructure is built on Talos Linux and uses Cilium for networking.
   - Set `namespace: <app_name>`.
   - Include `resources: [namespace.yaml]`.
   - Define `helmCharts` block pointing to the upstream repo.
-- Create a corresponding `Application` manifest in `apps/.argocd/<app_name>.yaml` that points to the app's directory.
+- Add an entry to the `elements` list in `apps/.argocd/apps.yaml` with the app's name, path, and namespace.
 
 ## 2. Verification
 - ALWAYS run `task build` to verify Kustomize builds and Helm template inflation.
@@ -45,8 +45,8 @@ The infrastructure is built on Talos Linux and uses Cilium for networking.
 
 ## 3. App of Apps Pattern
 - The root application is defined in `apps/.argocd/root-application.yaml`.
-- It syncs the `apps/.argocd` directory, which contains individual `Application` manifests.
-- Each `Application` manifest points directly to an app's Kustomize directory (e.g., `apps/core/cilium`).
+- It syncs the `apps/.argocd` directory, which contains an `ApplicationSet` manifest.
+- The `ApplicationSet` uses a list generator to create `Application` resources for each app defined in the `elements` list.
 
 # Style Guidelines
 - Prefer `kustomize` for overlaying changes on top of Helm charts.

@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - name: cilium
+        path: apps/core/cilium
+        namespace: kube-system
+      - name: argocd
+        path: apps/core/argocd
+        namespace: argocd
+      - name: photoprism
+        path: apps/media/photoprism
+        namespace: photoprism
+      - name: paperless-ngx
+        path: apps/productivity/paperless-ngx
+        namespace: paperless
+  template:
+    metadata:
+      name: '{{name}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/mkoelle/homelab.git
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
