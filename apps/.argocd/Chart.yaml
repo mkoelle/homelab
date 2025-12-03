@@ -1,6 +1,0 @@
-apiVersion: v2
-name: bootstrap
-description: A Helm chart for Argo CD App of Apps bootstrapping
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
