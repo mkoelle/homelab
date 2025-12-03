@@ -1,0 +1,53 @@
+# Project Context
+This is a Kubernetes Homelab repository managed via GitOps (Argo CD).
+The infrastructure is built on Talos Linux and uses Cilium for networking.
+
+# Tech Stack
+- **Orchestration**: Kubernetes (Talos)
+- **GitOps**: Argo CD (App of Apps pattern)
+- **Manifest Management**: Kustomize + Helm Charts (Hybrid)
+- **Automation**: Taskfile (go-task)
+- **Networking**: Cilium
+
+# Project Structure
+- `apps/<category>/<app_name>`: Application manifests.
+  - Each app should have a `kustomize.yaml`, `namespace.yaml`, and `values.yaml`.
+  - Use `helmCharts` in `kustomization.yaml` to inflate charts.
+- `argocd/`: Contains the "App of Apps" bootstrap configuration.
+  - `argocd/values.yaml`: Registry of all installed applications.
+- `Taskfile.yml`: The source of truth for build and verification commands.
+  - containers are used for all commands to ensure consistency across environments.
+
+# Development Conventions
+
+## 1. Adding a New Application
+- Create a directory: `apps/<category>/<app_name>`.
+- Create `namespace.yaml`:
+  ```yaml
+  apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: <app_name>
+  ```
+- Create `values.yaml`:
+  - For initial development, ALWAYS disable persistence by default unless explicitly required.
+  - Match the upstream chart's schema (check `persistence` nesting).
+- Create `kustomization.yaml`:
+  - Set `namespace: <app_name>`.
+  - Include `resources: [namespace.yaml]`.
+  - Define `helmCharts` block pointing to the upstream repo.
+- Register the app in `argocd/values.yaml` under `applications`.
+
+## 2. Verification
+- ALWAYS run `task build` to verify Kustomize builds and Helm template inflation.
+- Fix any linting errors or missing Helm repos immediately.
+
+## 3. App of Apps Pattern
+- The root application is defined in `root-application.yaml`.
+- It points to the `argocd` directory.
+- Child apps are generated via the local Helm chart in `argocd/`.
+
+# Style Guidelines
+- Prefer `kustomize` for overlaying changes on top of Helm charts.
+- Keep `values.yaml` minimal—only override what is necessary.
+- Use explicit namespaces in Kustomization files.
