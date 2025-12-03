@@ -1,0 +1,12 @@
+persistence:
+  config:
+    enabled: false
+  originals:
+    enabled: false
+  import:
+    enabled: false
+  backup:
+    enabled: false
+
+mariadb:
+  enabled: false

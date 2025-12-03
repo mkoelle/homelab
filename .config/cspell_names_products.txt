@@ -23,6 +23,7 @@ nyno
 ollama
 otherguy
 passbolt
+photoprism
 readeck
 rustdesk
 shkeeper
