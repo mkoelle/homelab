@@ -6,7 +6,6 @@ resources:
   - synology-namespace.yaml
   - synology-client-info.yaml
   - pv-photos.yaml
-  - secret-smb-creds.yaml
 
 helmCharts:
   - name: synology-csi

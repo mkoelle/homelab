@@ -3,17 +3,17 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: pv-photos-smb
+  name: pv-photos-ro
 spec:
   capacity:
     storage: 1Ti
   accessModes:
     - ReadOnlyMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: synology-smb-retain
+  storageClassName: synology-photos-ro
   csi:
     driver: csi.san.synology.com
-    volumeHandle: photos-smb
+    volumeHandle: photos-smb # Unique ID for the volume this should be made more specific
     volumeAttributes:
       protocol: smb
       location: /volume1
@@ -21,12 +21,12 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-photos-smb
+  name: pvc-photos-ro
   namespace: photoprism
 spec:
   accessModes:
     - ReadOnlyMany
-  storageClassName: synology-smb-retain
+  storageClassName: synology-photos-ro
   resources:
     requests:
       storage: 1Ti
