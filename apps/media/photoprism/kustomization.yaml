@@ -15,7 +15,7 @@ helmCharts:
     namespace: photoprism
     valuesFile: ./values.yaml
 
-secretGenerator:
-  - name: photoprism-secrets
-    envs:
-      - secrets.env
+# secretGenerator:
+#   - name: photoprism-secrets
+#     envs:
+#       - secrets.env

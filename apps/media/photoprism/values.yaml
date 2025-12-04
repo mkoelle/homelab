@@ -11,14 +11,14 @@ persistence:
 mariadb:
   enabled: false
 
-env:
-  PHOTOPRISM_ADMIN_PASSWORD:
-    valueFrom:
-      secretKeyRef:
-        name: photoprism-secrets
-        key: PHOTOPRISM_ADMIN_PASSWORD
-  PHOTOPRISM_DATABASE_PASSWORD:
-    valueFrom:
-      secretKeyRef:
-        name: photoprism-secrets
-        key: PHOTOPRISM_DATABASE_PASSWORD
+# env:
+#   PHOTOPRISM_ADMIN_PASSWORD:
+#     valueFrom:
+#       secretKeyRef:
+#         name: photoprism-secrets
+#         key: PHOTOPRISM_ADMIN_PASSWORD
+#   PHOTOPRISM_DATABASE_PASSWORD:
+#     valueFrom:
+#       secretKeyRef:
+#         name: photoprism-secrets
+#         key: PHOTOPRISM_DATABASE_PASSWORD
