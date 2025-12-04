@@ -10,6 +10,9 @@ spec:
         - name: cilium
           path: apps/core/cilium
           namespace: kube-system
+        - name: storage
+          path: apps/core/storage
+          namespace: storage
         - name: argocd
           path: apps/core/argocd
           namespace: argocd

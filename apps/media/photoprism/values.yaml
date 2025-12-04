@@ -2,7 +2,9 @@ persistence:
   config:
     enabled: false
   originals:
-    enabled: false
+    enabled: true
+    existingClaim: pvc-photos-ro
+    mountPath: /photoprism/originals
   import:
     enabled: false
   backup:
