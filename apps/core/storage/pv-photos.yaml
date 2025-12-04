@@ -1,5 +1,5 @@
 ---
-# TODO: Update with your actual NFS server details
+# NFS-backed PersistentVolume for read-only photo access
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -8,12 +8,12 @@ spec:
   capacity:
     storage: 1Ti
   accessModes:
-    - ReadOnly
+    - ReadOnlyMany
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs-photos
   nfs:
-    server: asgard.local  # e.g., 192.168.1.100 or nas.local
-    path: /volume1/photo  # e.g., /mnt/photos
+    server: asgard.local
+    path: /volume1/photo
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -22,7 +22,7 @@ metadata:
   namespace: photoprism
 spec:
   accessModes:
-    - ReadOnly
+    - ReadOnlyMany
   storageClassName: nfs-photos
   resources:
     requests:
