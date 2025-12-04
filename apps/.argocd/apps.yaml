@@ -5,20 +5,20 @@ metadata:
   namespace: argocd
 spec:
   generators:
-  - list:
+    - list:
       elements:
-      - name: cilium
-        path: apps/core/cilium
-        namespace: kube-system
-      - name: argocd
-        path: apps/core/argocd
-        namespace: argocd
-      - name: photoprism
-        path: apps/media/photoprism
-        namespace: photoprism
-      - name: paperless-ngx
-        path: apps/productivity/paperless-ngx
-        namespace: paperless
+        - name: cilium
+          path: apps/core/cilium
+          namespace: kube-system
+        - name: argocd
+          path: apps/core/argocd
+          namespace: argocd
+        - name: photoprism
+          path: apps/media/photoprism
+          namespace: photoprism
+        - name: paperless-ngx
+          path: apps/productivity/paperless-ngx
+          namespace: paperless
   template:
     metadata:
       name: '{{name}}'
