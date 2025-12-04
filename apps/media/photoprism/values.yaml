@@ -3,7 +3,7 @@ persistence:
     enabled: false
   originals:
     enabled: true
-    existingClaim: pvc-photos-smb
+    existingClaim: pvc-photos-ro
     mountPath: /photoprism/originals
   import:
     enabled: false

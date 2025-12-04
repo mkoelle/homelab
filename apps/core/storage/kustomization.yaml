@@ -16,4 +16,3 @@ helmCharts:
     version: 0.9.5
     includeCRDs: true
     namespace: core-synology-csi
-    # valuesFile: synology-values.yaml
