@@ -17,6 +17,7 @@ spec:
     volumeAttributes:
       protocol: smb
       location: /volume1
+      source: photos
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
