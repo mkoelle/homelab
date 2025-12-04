@@ -4,3 +4,13 @@ kind: Kustomization
 
 resources:
   - pv-photos.yaml
+  - pv-photos-smb.yaml
+  - secret-smb-creds.yaml
+
+helmCharts:
+  - name: csi-driver-smb
+    repo: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
+    releaseName: csi-driver-smb
+    version: v1.16.0
+    includeCRDs: true
+    namespace: kube-system
