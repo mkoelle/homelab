@@ -2,6 +2,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: core-synology-csi
+
 resources:
   - synology-namespace.yaml
   - synology-client-info.yaml
@@ -14,3 +16,4 @@ helmCharts:
     version: 0.9.5
     includeCRDs: true
     namespace: core-synology-csi
+    # valuesFile: synology-values.yaml
