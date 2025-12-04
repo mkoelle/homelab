@@ -7,7 +7,7 @@ namespace: core-synology-csi
 resources:
   - synology-namespace.yaml
   - synology-client-info.yaml
-  - pv-photos.yaml
+  
 
 helmCharts:
   - name: synology-csi

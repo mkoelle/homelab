@@ -5,6 +5,7 @@ namespace: photoprism
 
 resources:
   - namespace.yaml
+  - pv-photos.yaml
 
 helmCharts:
   - name: photoprism
