@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  asgard.server: |
+    asgard.local:53 {
+      hosts {
+        192.168.1.10 asgard.local asgard
+        fallthrough
+      }
+    }

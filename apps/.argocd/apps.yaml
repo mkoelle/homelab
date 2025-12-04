@@ -13,6 +13,9 @@ spec:
         - name: storage
           path: apps/core/storage
           namespace: default
+        - name: coredns-custom
+          path: apps/core/coredns-custom
+          namespace: kube-system
         - name: argocd
           path: apps/core/argocd
           namespace: argocd
