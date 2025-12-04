@@ -3,14 +3,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+  - synology-namespace.yaml
+  - synology-client-info.yaml
   - pv-photos.yaml
-  - pv-photos-smb.yaml
   - secret-smb-creds.yaml
 
 helmCharts:
-  - name: csi-driver-smb
-    repo: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
-    releaseName: csi-driver-smb
-    version: v1.16.0
+  - name: synology-csi
+    repo: https://christian-schlichtherle.github.io/synology-csi-chart
+    releaseName: synology-csi
+    version: 0.9.5
     includeCRDs: true
-    namespace: kube-system
+    namespace: synology-csi
