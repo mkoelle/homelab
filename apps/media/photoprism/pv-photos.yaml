@@ -13,17 +13,19 @@ spec:
   storageClassName: synology-photos-ro
   csi:
     driver: csi.san.synology.com
-    volumeHandle: photos-smb # Unique ID for the volume this should be made more specific
+    volumeHandle: photoprism-photos-smb-ro
     volumeAttributes:
       protocol: smb
+      dsm: "192.168.1.10"
       location: /volume1
-      source: photos
+    nodePublishSecretRef:
+      name: synology-smb-credentials
+      namespace: photoprism
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: pvc-photos-ro
-  namespace: photoprism
 spec:
   accessModes:
     - ReadOnlyMany

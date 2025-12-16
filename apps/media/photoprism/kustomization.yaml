@@ -5,6 +5,7 @@ namespace: photoprism
 
 resources:
   - namespace.yaml
+  - synology-smb-credentials.yaml
   - pv-photos.yaml
 
 helmCharts:

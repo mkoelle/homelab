@@ -20,6 +20,9 @@
   - [Umami](https://umami.is/) - Simple, fast, privacy-focused alternative to Google Analytics.
   - [Uptime Kuma](https://github.com/louislam/uptime-kuma) - A fancy self-hosted monitoring tool.
   - [Zabbix](https://github.com/zabbix/zabbix) - Enterprise-class open source distributed monitoring solution.
+  - [Fluentbit](https://fluentbit.io/) - Lightweight data collector for forward and processing log data.
+  - [Loki](https://grafana.com/loki/) - Open source, horizontally scalable, multi-tenant log aggregation system.
+  - [OpenCost](https://github.com/oleksandr-zhabenko/opencost) - Open source cost management for Kubernetes.
 - **Networking & Tunnels**
   - [Gluetun](https://github.com/qdm12/gluetun) - VPN client in a Docker container for multiple VPN providers.
   - [OPNsense](https://opnsense.org/) - Open source, easy-to-use firewall and routing platform.
@@ -66,6 +69,11 @@
 - [nyno](https://github.com/empowerd-cms/nyno) - Workflow automation tool.
 - [n8n](https://n8n.io) - Workflow automation tool.
 - [MangaTranslator](https://github.com/meangrinch/MangaTranslator) - Translate manga.
+
+### Media
+
+- [Immich](https://immich.app/) - Self-hosted photo and video gallery.
+- [PhotoPrism](https://www.photoprism.org/) - Self-hosted photo management system.
 
 ## Hardware to investigate
 
