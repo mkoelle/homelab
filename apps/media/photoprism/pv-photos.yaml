@@ -18,7 +18,7 @@ spec:
       protocol: smb
       dsm: "192.168.1.10"
       location: /volume1
-      source: photos
+      source: //192.168.1.10/photos
     nodeStageSecretRef:
       name: synology-smb-credentials
       namespace: photoprism
