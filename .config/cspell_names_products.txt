@@ -12,11 +12,13 @@ cytopia
 davidanson
 dozzle
 fairwinds
+Fluentbit
 Gluetun
 gotenberg
 gruberdev
 homebox
 ibiqlik
+Immich
 kaneo
 kanoe
 nyno

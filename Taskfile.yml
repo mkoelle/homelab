@@ -94,7 +94,7 @@ tasks:
     cmds:
       - |
         {{.CONTAINER_ENGINE}} info > /dev/null 2>&1 || {
-          printf "\n{{.RED}}❌ Docker is not running. Please start Docker Desktop.{{.RESET}}"
+          printf "\n{{.RED}}❌ {{.CONTAINER_ENGINE}} is not running. Please start {{.CONTAINER_ENGINE}}.{{.RESET}}\n"
           exit 1
         }
   yaml-fix:
