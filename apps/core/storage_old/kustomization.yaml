@@ -2,17 +2,18 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: core-synology-csi
+namespace: core-synology
 
 resources:
   - synology-namespace.yaml
   - synology-client-info.yaml
+  - pv-photos.yaml
 
 
 helmCharts:
   - name: synology-csi
     repo: https://christian-schlichtherle.github.io/synology-csi-chart
     releaseName: synology-csi
-    version: 0.9.5
+    version: 0.10.1
     includeCRDs: true
-    namespace: core-synology-csi
+    namespace: core-synology

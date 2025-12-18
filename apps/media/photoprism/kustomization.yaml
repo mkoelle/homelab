@@ -5,8 +5,7 @@ namespace: photoprism
 
 resources:
   - namespace.yaml
-  - synology-smb-credentials.yaml
-  - pv-photos.yaml
+  - pvc-photos.yaml
 
 helmCharts:
   - name: photoprism
@@ -16,8 +15,3 @@ helmCharts:
     includeCRDs: true
     namespace: photoprism
     valuesFile: ./values.yaml
-
-# secretGenerator:
-#   - name: photoprism-secrets
-#     envs:
-#       - secrets.env

@@ -5,6 +5,9 @@ persistence:
     enabled: true
     existingClaim: pvc-photos-ro
     mountPath: /photoprism/originals
+    # Required by chart library: specify access mode and requested size
+    accessMode: ReadWriteMany
+    size: 50Gi
   import:
     enabled: false
   backup:
@@ -12,15 +15,3 @@ persistence:
 
 mariadb:
   enabled: false
-
-# env:
-#   PHOTOPRISM_ADMIN_PASSWORD:
-#     valueFrom:
-#       secretKeyRef:
-#         name: photoprism-secrets
-#         key: PHOTOPRISM_ADMIN_PASSWORD
-#   PHOTOPRISM_DATABASE_PASSWORD:
-#     valueFrom:
-#       secretKeyRef:
-#         name: photoprism-secrets
-#         key: PHOTOPRISM_DATABASE_PASSWORD

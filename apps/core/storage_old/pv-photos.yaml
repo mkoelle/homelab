@@ -1,14 +1,14 @@
 ---
-# SMB-backed PersistentVolume using Synology CSI driver
+# Static SMB-backed PersistentVolume for Photoprism (managed in core storage)
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: pv-photos-ro
 spec:
   capacity:
-    storage: 1Ti
+    storage: 50Gi
   accessModes:
-    - ReadOnlyMany
+    - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   storageClassName: synology-photos-ro
   csi:
@@ -16,21 +16,9 @@ spec:
     volumeHandle: photoprism-photos-smb-ro
     volumeAttributes:
       protocol: smb
-      dsm: "192.168.1.10"
+      dsm: asgard.local
       location: /volume1
-      source: //192.168.1.10/photo
+      source: //asgard.local/photo
     nodeStageSecretRef:
       name: synology-smb-credentials
       namespace: photoprism
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: pvc-photos-ro
-spec:
-  accessModes:
-    - ReadOnlyMany
-  storageClassName: synology-photos-ro
-  resources:
-    requests:
-      storage: 1Ti

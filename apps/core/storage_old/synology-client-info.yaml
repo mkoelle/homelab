@@ -5,7 +5,7 @@ metadata:
   name: client-info-secret
 type: Opaque
 stringData:
-  client-info.yml: |
+  client-info.yaml: |
     ---
     clients:
     - host: 192.168.1.10
