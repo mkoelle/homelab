@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: synology-csi-node
+  namespace: core-synology
+  labels:
+    app: synology-csi
+spec:
+  selector:
+    matchLabels:
+      app: synology-csi
+  template:
+    metadata:
+      labels:
+        app: synology-csi
+    spec:
+      serviceAccountName: synology-csi
+      containers:
+        - name: synology-csi-node
+          image: synology/synology-csi:v1.1.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--v=3"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /var/lib/kubelet
+              name: kubelet-root
+            - mountPath: /dev
+              name: dev
+      volumes:
+        - name: kubelet-root
+          hostPath:
+            path: /var/lib/kubelet
+        - name: dev
+          hostPath:
+            path: /dev

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: synology-csi-controller
+  namespace: core-synology
+  labels:
+    app: synology-csi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: synology-csi
+  template:
+    metadata:
+      labels:
+        app: synology-csi
+    spec:
+      serviceAccountName: synology-csi
+      containers:
+        - name: synology-csi
+          image: synology/synology-csi:v1.1.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--v=3"
+          env: []
+          volumeMounts:
+            - name: client-info
+              mountPath: /etc/synology
+              readOnly: true
+      volumes:
+        - name: client-info
+          secret:
+            secretName: client-info-secret

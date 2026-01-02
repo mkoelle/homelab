@@ -1,0 +1,9 @@
+resources:
+  - namespace.yaml
+  - csi-driver.yaml
+  - controller.yaml
+  - node.yaml
+  - storage-class.yaml
+  - volume-snapshot-class.yaml
+
+namespace: core-synology
