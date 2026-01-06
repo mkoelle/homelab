@@ -1,7 +1,0 @@
----
-clients:
-  - host: 192.168.1.1  # DSM IP or hostname
-    port: 5000
-    https: false
-    username: admin
-    password: "changeme"

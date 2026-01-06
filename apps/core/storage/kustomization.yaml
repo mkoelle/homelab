@@ -1,9 +1,10 @@
-resources:
-  - namespace.yaml
-  - csi-driver.yaml
-  - controller.yaml
-  - node.yaml
-  - storage-class.yaml
-  - volume-snapshot-class.yaml
-
-namespace: core-synology
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  - name: synology-csi-talos
+    repo: https://zebernst.github.io/synology-csi-talos
+    releaseName: synology-csi-talos
+    includeCRDs: true
+    namespace: core-synology
+    valuesFile: ./values.yaml
