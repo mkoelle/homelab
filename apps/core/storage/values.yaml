@@ -1,18 +1,6 @@
 # Synology CSI Driver Helm Values
 # Configuration for multiple SMB shares with different credentials on asgard.local
 
-# DSM API connection information (for CSI controller)
-# This user needs ADMIN privileges to manage storage resources
-clientInfoSecret:
-  create: true
-  name: "client-info-secret"
-  clients:
-    - host: asgard.local
-      port: 5000          # Use 5001 if using HTTPS
-      https: false        # Set to true if using HTTPS
-      username: bort      # Admin user for API access
-      password: foobar
-
 # Storage Classes configuration
 # Each storage class can use different SMB credentials
 storageClasses:
@@ -92,6 +80,18 @@ volumeSnapshotClasses:
 # Run these commands BEFORE installing the Helm chart:
 #
 # kubectl create namespace synology-csi
+#
+# DSM API connection information (for CSI controller)
+# This user needs ADMIN privileges to manage storage resources
+#
+# kubectl create secret generic client-info-secret \
+#   --namespace synology-csi \
+#   --from-literal=client-info.yml="clients:
+#   - host: asgard.local
+#     port: 5000
+#     https: false
+#     username: bort
+#     password: foobar"
 #
 # # Pictures share credentials
 # kubectl create secret generic smb-pictures-credentials \
