@@ -38,7 +38,7 @@ storageClasses:
   smb-media:
     name: "synology-smb-media"
     provisioner: "csi.san.synology.com"
-    reclaimPolicy: "Delete"
+    reclaimPolicy: "Retain"
     allowVolumeExpansion: true
     isDefaultClass: false
     parameters:
