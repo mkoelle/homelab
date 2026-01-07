@@ -6,8 +6,9 @@ metadata:
   namespace: photoprism
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: synology-csi-synology-photos-ro
+    - ReadOnlyMany
+  storageClassName: photos-pv
   resources:
     requests:
-      storage: 50Gi
+      storage: 100Gi # Must be less than or equal to PV capacity (1Ti)
+
