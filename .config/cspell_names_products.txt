@@ -17,6 +17,7 @@ Gluetun
 gotenberg
 gruberdev
 homebox
+hurlenko
 ibiqlik
 Immich
 kaneo

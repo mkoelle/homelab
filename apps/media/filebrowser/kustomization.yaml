@@ -8,5 +8,3 @@ resources:
   - pvc-photos.yaml
   - deployment.yaml
   - service.yaml
-
-

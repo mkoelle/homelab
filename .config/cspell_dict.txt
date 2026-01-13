@@ -6,6 +6,8 @@ appprojects
 btrfs
 controlplane
 coredns
+Corefile
+creds
 customresourcedefinitions
 datadogtoken
 dnsmasq
@@ -19,12 +21,14 @@ kubeconfig
 kubeconform
 kubedns
 kustomizations
+lameduck
 logfile
 motherbox
 networkpolicies
 nfsd
 poddisruptionbudgets
 podtemplates
+resolv
 rolebindings
 serviceaccounts
 SETGID

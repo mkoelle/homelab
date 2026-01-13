@@ -13,23 +13,22 @@ spec:
         app: filebrowser
     spec:
       containers:
-      - name: filebrowser
-        image: hurlenko/filebrowser:latest
-        ports:
-        - containerPort: 8080
-          name: http
-        volumeMounts:
-        - name: data
-          mountPath: /data
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
+        - name: filebrowser
+          image: hurlenko/filebrowser:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
           limits:
             memory: "4Gi"
             cpu: "2000m"
       volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: pvc-photos-ro
-
+        - name: data
+          persistentVolumeClaim:
+            claimName: pvc-photos-ro

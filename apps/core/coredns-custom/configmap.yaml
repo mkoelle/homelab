@@ -40,7 +40,6 @@ data:
         reload
         loadbalance
     }
-    
     local:53 {
         errors
         hosts {

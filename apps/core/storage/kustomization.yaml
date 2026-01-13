@@ -14,4 +14,3 @@ helmCharts:
     # The driver itself is typically installed in kube-system
     namespace: kube-system
     includeCRDs: true
-
