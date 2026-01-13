@@ -34,6 +34,7 @@ Sidero
 siderolabs
 stackrox
 tika
+tmknom
 Traefik
 trilium
 umami

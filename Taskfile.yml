@@ -17,7 +17,7 @@ vars:
   KUBE_LINTER_IMAGE: stackrox/kube-linter:latest
   PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5
   POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:10
-  YAMLLINT_IMAGE: cytopia/yamllint:latest
+  PRETTIER_IMAGE: tmknom/prettier:latest
   K8S_IMAGE: alpine/k8s:1.31.13
   # Computed
   KUSTOMIZATION_DIRS:
@@ -52,8 +52,8 @@ tasks:
     desc: Run linters
     silent: true
     cmds:
+      - task: md-lint
       - task: md-fix
-      # - task: yaml-fix
       - task: yaml-lint
   build:
     desc: Build all resources
@@ -133,8 +133,19 @@ tasks:
       - printf "\n{{.GREEN}}📝 Checking YAML syntax...{{.RESET}}\n"
       - |
         {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
-        {{.YAMLLINT_IMAGE}} \
-        -f colored .
+        {{.PRETTIER_IMAGE}} \
+        --write --parser=yaml **/*.yaml
+  md-lint:
+    internal: true
+    silent: true
+    deps: [check-docker]
+    desc: Lint Markdown files
+    cmds:
+      - printf "\n{{.GREEN}}📝 Checking markdown syntax...{{.RESET}}\n"
+      - |
+        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        {{.PRETTIER_IMAGE}} \
+        --write --parser=markdown /work/**/*.md
   create-build-dirs:
     desc: Create build directory
     internal: true
