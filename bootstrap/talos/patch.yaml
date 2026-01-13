@@ -6,6 +6,8 @@ machine:
     extraHostEntries:
       - ip: 192.168.1.2
         aliases: [motherbox, motherbox.local]
+      - ip: 192.168.1.10
+        aliases: [asgard, asgard.local]
 
 cluster:
 

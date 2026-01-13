@@ -4,3 +4,4 @@ worker.yaml
 kubeconfig
 .build
 charts
+secrets.env

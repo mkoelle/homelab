@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: photos-pv
+spec:
+  capacity:
+    storage: 1Ti  # Set to a large default, adjust as needed
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: photos-pv
+  csi:
+    driver: smb.csi.k8s.io
+    volumeHandle: photos-pv
+    volumeAttributes:
+      source: "//asgard.local/photo"
+    nodeStageSecretRef:
+      name: smb-creds
+      namespace: core-secrets
+
+# kubectl create secret generic smb-creds `
+#   --namespace core-secrets `
+#   --from-literal=username=pod-photos `
+#   --from-literal=password=Not-th3-password!
