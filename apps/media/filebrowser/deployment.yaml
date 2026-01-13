@@ -25,9 +25,9 @@ spec:
             requests:
               memory: "1Gi"
               cpu: "500m"
-          limits:
-            memory: "4Gi"
-            cpu: "2000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
       volumes:
         - name: data
           persistentVolumeClaim:

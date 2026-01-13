@@ -4,3 +4,10 @@ kind: Namespace
 
 metadata:
   name: core-storage
+
+---
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: core-secrets
