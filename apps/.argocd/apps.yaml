@@ -11,6 +11,12 @@ spec:
   generators:
     - list:
         elements:
+          # Wave -1 — Secrets infrastructure (must precede all apps that consume secrets)
+          - name: external-secrets
+            path: apps/core/external-secrets
+            namespace: external-secrets
+            wave: "-1"
+
           # Wave 0 — GitOps layer (self-managed)
           - name: argocd
             path: apps/core/argocd
@@ -35,7 +41,6 @@ spec:
             namespace: filebrowser
             wave: "4"
 
-          # external-secrets: add here once apps/core/external-secrets/ has source files
   template:
     metadata:
       name: "{{name}}"

@@ -6,7 +6,7 @@ Findings from June 2026 full-repo audit. Grouped by severity. Check off as compl
 
 ## Critical — GitOps is broken or severely undermined
 
-- [ ] **Add `apps/.argocd/` — App of Apps is missing from git**
+- [X] **Add `apps/.argocd/` — App of Apps is missing from git**
   - Create `apps/.argocd/root-application.yaml` (ArgoCD root Application pointing to `apps/.argocd/`)
   - Create `apps/.argocd/apps.yaml` (ApplicationSet with list generator, one entry per app)
   - Without these files ArgoCD has nothing to sync; GitOps is manual kubectl.

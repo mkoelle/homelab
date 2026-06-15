@@ -18,8 +18,3 @@ spec:
     nodeStageSecretRef:
       name: smb-creds
       namespace: core-secrets
-
-# kubectl create secret generic smb-creds `
-#   --namespace core-secrets `
-#   --from-literal=username=pod-photos `
-#   --from-literal=password=Not-th3-password!
