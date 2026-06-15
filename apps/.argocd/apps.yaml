@@ -1,0 +1,60 @@
+---
+# ApplicationSet — one Application per homelab app via list generator.
+# Cilium is intentionally absent: see cilium-application.yaml for its standalone spec.
+# To add an app: create apps/<category>/<name>/kustomization.yaml, then add an element here.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: homelab-apps
+  namespace: core-argocd
+spec:
+  generators:
+    - list:
+        elements:
+          # Wave 0 — GitOps layer (self-managed)
+          - name: argocd
+            path: apps/core/argocd
+            namespace: core-argocd
+            wave: "0"
+
+          # Wave 1 — CSI drivers
+          - name: storage
+            path: apps/core/storage
+            namespace: kube-system
+            wave: "1"
+
+          # Wave 2 — Cluster services
+          - name: coredns-custom
+            path: apps/core/coredns-custom
+            namespace: kube-system
+            wave: "2"
+
+          # Wave 4 — User workloads
+          - name: filebrowser
+            path: apps/media/filebrowser
+            namespace: filebrowser
+            wave: "4"
+
+          # external-secrets: add here once apps/core/external-secrets/ has source files
+  template:
+    metadata:
+      name: "{{name}}"
+      namespace: core-argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "{{wave}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/mkoelle/homelab
+        targetRevision: HEAD
+        path: "{{path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
