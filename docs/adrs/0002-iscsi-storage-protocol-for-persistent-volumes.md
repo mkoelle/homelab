@@ -1,4 +1,8 @@
-# ADR: Choosing Storage Protocol for Persistent Volumes in Homelab
+# ADR 0002: Choosing Storage Protocol for Persistent Volumes in Homelab
+
+## Status
+
+Superseded by [ADR 0004](0004-smb-storage-for-all-workloads.md) — iSCSI was blocked by NAS capacity constraints; SMB is in use.
 
 ## Context
 
