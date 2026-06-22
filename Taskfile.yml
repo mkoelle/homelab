@@ -18,7 +18,7 @@ vars:
   PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5
   POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:10
   PRETTIER_IMAGE: tmknom/prettier:latest
-  K8S_IMAGE: alpine/k8s:1.31.13
+  K8S_IMAGE: alpine/k8s:1.36.3
   # Computed
   KUSTOMIZATION_DIRS:
     sh: |
@@ -97,21 +97,6 @@ tasks:
           printf "\n{{.RED}}❌ {{.CONTAINER_ENGINE}} is not running. Please start {{.CONTAINER_ENGINE}}.{{.RESET}}\n"
           exit 1
         }
-  yaml-fix:
-    internal: true
-    silent: true
-    deps: [check-docker]
-    desc: Fix YAML files
-    cmds:
-      - printf "\n{{.GREEN}}✅ Fixing YAML files...{{.RESET}}\n"
-      - |
-        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
-        -v ".config:/config" \
-        -e YAMLFIX_CONFIG_PATH=/config/yaml_fix.toml \
-        {{.YAMLFIX_IMAGE}} . \
-        --exclude "**/charts/" \
-        --exclude "**/.build/" \
-        # TODO: needs fix; exclusions cause execution to hang; config file is also ignored
   md-fix:
     internal: true
     silent: true
@@ -253,7 +238,7 @@ tasks:
           var: KUSTOMIZATION_DIRS
         cmd: |-
           {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
-          -v ".config:/config" \
+          -v "{{.ROOT_DIR}}/.config:/config" \
           {{.POLARIS_IMAGE}} \
           polaris audit \
           --audit-path /work \

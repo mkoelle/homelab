@@ -21,3 +21,16 @@ jobs:
       - uses: DavidAnson/markdownlint-cli2-action@v21
         with:
           globs: '**/*.md'
+  build-validate:
+    name: Build and Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+      - name: Build
+        run: task build
+      - name: Validate
+        run: task validate

@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: filebrowser-egress
+  namespace: filebrowser
+spec:
+  podSelector:
+    matchLabels:
+      app: filebrowser
+  policyTypes:
+    - Egress
+  egress:
+    # DNS
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # NAS (SMB)
+    - to:
+        - ipBlock:
+            cidr: 192.168.1.10/32
+      ports:
+        - protocol: TCP
+          port: 445

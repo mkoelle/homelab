@@ -55,3 +55,8 @@ hubble:
 operator:
   # Single replica is a single point of failure, but I only have one node
   replicas: 1
+# L2 Announcements (ARP-based, required for home network without BGP)
+l2announcements:
+  enabled: true
+externalIPs:
+  enabled: true

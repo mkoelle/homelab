@@ -26,7 +26,7 @@ helm repo update
 helm install `
     cilium `
     cilium/cilium `
-    --version 1.18.0 `
+    --version 1.19.3 `
     --namespace kube-system `
     --set ipam.mode=kubernetes `
     --set kubeProxyReplacement=true `

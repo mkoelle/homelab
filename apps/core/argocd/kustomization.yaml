@@ -5,7 +5,7 @@ namespace: core-argocd
 
 resources:
   - namespace.yaml
-  - github.com/argoproj/argo-cd//manifests/cluster-install?ref=stable
+  - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.3.8
 
 openapi:
   path: https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["every weekend"],
+  "labels": ["dependencies"],
+  "assignees": ["mkoelle"],
+  "helmValues": [
+    {
+      "fileMatch": ["apps/**/values\\.yaml"]
+    }
+  ],
+  "kubernetes": [
+    {
+      "fileMatch": ["apps/**/*.yaml", "bootstrap/**/*.yaml"]
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["helmv3", "helm-values"],
+      "groupName": "helm charts",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "automerge": true
+    },
+    {
+      "matchDepTypes": ["container"],
+      "groupName": "container images",
+      "automerge": false
+    },
+    {
+      "matchPackageNames": ["alpine/k8s"],
+      "groupName": "k8s tooling",
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["Taskfile\\.yml"],
+      "matchStrings": [
+        "K8S_IMAGE: alpine/k8s:(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "alpine/k8s",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["apps/core/argocd/kustomization\\.yaml"],
+      "matchStrings": [
+        "ref=(?<currentValue>v[\\d.]+)"
+      ],
+      "depNameTemplate": "argoproj/argo-cd",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
+}
