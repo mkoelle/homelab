@@ -15,6 +15,7 @@ spec:
     metadata:
       labels:
         app: filebrowser
+        app.kubernetes.io/instance: filebrowser
     spec:
       automountServiceAccountToken: false
       securityContext:
