@@ -20,10 +20,15 @@ homebox
 hurlenko
 ibiqlik
 Immich
+Jellyfin
 kaneo
 kanoe
+Komga
+mkoelle
+Navidrome
 nyno
 ollama
+openspec
 otherguy
 passbolt
 photoprism
