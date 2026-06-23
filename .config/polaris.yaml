@@ -88,11 +88,11 @@ exemptions:
       - automountServiceAccountToken
       - missingNetworkPolicy
       - linuxHardening
-      - metadataAndInstanceMismatched   # vendor chart labels
-      - topologySpreadConstraint        # single-node
-      - missingPodDisruptionBudget      # single-node
-      - pullPolicyNotAlways             # vendor init containers (mount-bpf-fs, config, etc.)
-      - cpuRequestsMissing              # vendor chart, no defaults set
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - pullPolicyNotAlways # vendor init containers (mount-bpf-fs, config, etc.)
+      - cpuRequestsMissing # vendor chart, no defaults set
       - cpuLimitsMissing
       - memoryRequestsMissing
       - memoryLimitsMissing
@@ -114,11 +114,11 @@ exemptions:
       - linuxHardening
       - notReadOnlyRootFilesystem
       - insecureCapabilities
-      - metadataAndInstanceMismatched   # vendor chart labels
-      - topologySpreadConstraint        # single-node
-      - missingPodDisruptionBudget      # single-node
-      - priorityClassNotSet             # homelab
-      - pullPolicyNotAlways             # vendor images
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
 
   # csi-driver-smb — CSI node plugin requires host mounts and kernel privileges; vendor chart
   - namespace: kube-system
@@ -137,14 +137,14 @@ exemptions:
       - missingNetworkPolicy
       - linuxHardening
       - insecureCapabilities
-      - metadataAndInstanceMismatched   # vendor chart labels
-      - topologySpreadConstraint        # DaemonSet / single-node
-      - missingPodDisruptionBudget      # DaemonSet (N/A) / single-node
-      - pullPolicyNotAlways             # vendor init containers
-      - cpuLimitsMissing                # vendor chart
-      - readinessProbeMissing           # vendor chart
-      - livenessProbeMissing            # vendor chart
-      - hostProcess                     # csi-smb-node-win Windows HostProcess; no Windows nodes in cluster
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # DaemonSet / single-node
+      - missingPodDisruptionBudget # DaemonSet (N/A) / single-node
+      - pullPolicyNotAlways # vendor init containers
+      - cpuLimitsMissing # vendor chart
+      - readinessProbeMissing # vendor chart
+      - livenessProbeMissing # vendor chart
+      - hostProcess # csi-smb-node-win Windows HostProcess; no Windows nodes in cluster
 
   # Talos control-plane components
   - namespace: kube-system
@@ -182,16 +182,16 @@ exemptions:
     rules:
       - automountServiceAccountToken
       - missingNetworkPolicy
-      - metadataAndInstanceMismatched   # vendor chart labels
-      - topologySpreadConstraint        # single-node
-      - missingPodDisruptionBudget      # single-node
-      - priorityClassNotSet             # homelab
-      - pullPolicyNotAlways             # vendor init containers (copyutil, secret-init)
-      - cpuRequestsMissing              # vendor chart, no defaults set
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor init containers (copyutil, secret-init)
+      - cpuRequestsMissing # vendor chart, no defaults set
       - cpuLimitsMissing
       - memoryRequestsMissing
       - memoryLimitsMissing
-      - readinessProbeMissing           # vendor chart
+      - readinessProbeMissing # vendor chart
       - livenessProbeMissing
 
   # External Secrets Operator — vendor chart
@@ -203,16 +203,16 @@ exemptions:
     rules:
       - automountServiceAccountToken
       - missingNetworkPolicy
-      - metadataAndInstanceMismatched   # vendor chart labels
-      - topologySpreadConstraint        # single-node
-      - missingPodDisruptionBudget      # single-node
-      - priorityClassNotSet             # homelab
-      - pullPolicyNotAlways             # vendor images
-      - cpuRequestsMissing              # cert-controller: vendor chart, no defaults
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
+      - cpuRequestsMissing # cert-controller: vendor chart, no defaults
       - cpuLimitsMissing
       - memoryRequestsMissing
       - memoryLimitsMissing
-      - readinessProbeMissing           # vendor chart
+      - readinessProbeMissing # vendor chart
       - livenessProbeMissing
 
   # Bitwarden SDK server — vendor chart; no config PVC so writes to container FS
@@ -222,12 +222,12 @@ exemptions:
     rules:
       - automountServiceAccountToken
       - missingNetworkPolicy
-      - metadataAndInstanceMismatched   # vendor chart labels
-      - topologySpreadConstraint        # single-node
-      - missingPodDisruptionBudget      # single-node
-      - priorityClassNotSet             # homelab
-      - pullPolicyNotAlways             # vendor image
-      - notReadOnlyRootFilesystem       # vendor image writes to container FS
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor image
+      - notReadOnlyRootFilesystem # vendor image writes to container FS
 
   # filebrowser — single-node homelab; PDB/topology/priority irrelevant.
   # notReadOnlyRootFilesystem: writes DB to container FS (no config PVC — pre-existing design gap).

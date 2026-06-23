@@ -16,7 +16,7 @@ vars:
   KUBE_LINTER_IMAGE: stackrox/kube-linter:v0.8.3
   PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5.24.0
   POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:v10.2.0
-  PRETTIER_IMAGE: tmknom/prettier:v0.22.1
+  PRETTIER_IMAGE: tmknom/prettier:3.6.2
   K8S_IMAGE: alpine/k8s:1.36.2
   # Computed
   KUSTOMIZATION_DIRS:

@@ -59,10 +59,12 @@ Findings from security + architecture audit. Grouped by severity.
   - `bootstrap/talos/controlplane.yaml:264` — global default enforces `baseline`, only warns/audits `restricted`.
   - Workload namespaces can deploy containers without seccomp profiles, with writable root filesystems, or with capabilities, and admission will not reject them.
   - Fix: add per-namespace labels to user app namespaces (e.g., `filebrowser`):
+
     ```yaml
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
     ```
+
   - Vendor namespaces (kube-system, core-argocd, external-secrets) retain `baseline` enforcement.
 
 - [ ] **Deploy observability stack: Prometheus + Grafana + Loki + Alertmanager**
@@ -97,6 +99,7 @@ Findings from security + architecture audit. Grouped by severity.
   - `apps/core/external-secrets/smb-creds.yaml` contains `<REPLACE-WITH-BSM-UUID-...>` placeholders that pass all CI checks.
   - A fresh cluster deploy with unsubstituted placeholders fails silently at runtime, not at CI time.
   - Fix: add a pre-build grep step to CI:
+
     ```bash
     grep -rq "REPLACE-WITH" apps/ && echo "ERROR: placeholder UUIDs found" && exit 1
     ```
