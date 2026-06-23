@@ -1,122 +1,130 @@
 # Homelab Backlog
 
-Findings from June 2026 full-repo audit. Grouped by severity. Check off as completed.
+Findings from security + architecture audit. Grouped by severity.
 
 ---
 
-## Critical — GitOps is broken or severely undermined
+## Critical
 
-- [X] **Add `apps/.argocd/` — App of Apps is missing from git**
-  - Create `apps/.argocd/root-application.yaml` (ArgoCD root Application pointing to `apps/.argocd/`)
-  - Create `apps/.argocd/apps.yaml` (ApplicationSet with list generator, one entry per app)
-  - Without these files ArgoCD has nothing to sync; GitOps is manual kubectl.
-  - See CLAUDE.md "ArgoCD > App of Apps Pattern" for expected structure.
+- [ ] **Pin Cilium Helm chart version**
+  - `apps/core/cilium/kustomization.yaml` — `helmCharts` block has no `version:` field.
+  - CNI inflates whatever is latest from `https://helm.cilium.io/` on each build.
+  - Fix: run `helm ls -n kube-system` to find deployed version, add `version: <x.y.z>` to the helmChart entry.
 
-- [X] **Create `apps/core/external-secrets/` source files**
-  - Directory exists with only a vendored chart. No `kustomization.yaml`, no manifests.
-  - Needs: `kustomization.yaml` (helmChart for external-secrets), `namespace.yaml`, `ClusterSecretStore` for Bitwarden, and an `ExternalSecret` for `smb-creds`.
+- [ ] **Remove RBAC write from ArgoCD ClusterRole**
+  - `apps/core/argocd/namespace.yaml:46-48` — ArgoCD can create/patch/delete ClusterRoles and ClusterRoleBindings.
+  - This is cluster-admin via RBAC escalation regardless of the removed explicit binding.
+  - Fix: remove `clusterroles` and `clusterrolebindings` from the `rbac.authorization.k8s.io` write rules. Namespace-scoped `roles`/`rolebindings` only.
 
-- [X] **Replace `smb-creds` kubectl comment with proper ExternalSecret**
-  - `apps/core/storage/volumes.yaml:22-25` has a commented `kubectl create secret` as the only reference to `smb-creds`.
-  - Move to `apps/core/external-secrets/smb-creds-external-secret.yaml` as an `ExternalSecret` backed by Bitwarden Secrets Manager.
-  - Remove the comment from `volumes.yaml`.
+- [ ] **Enable TLS on Bitwarden SDK server + add NetworkPolicy to external-secrets namespace**
+  - `apps/core/external-secrets/values.yaml` — `bitwarden-sdk-server.image.tls.enabled: false`.
+  - No NetworkPolicy in `external-secrets` namespace. Any pod can hit `http://bitwarden-sdk-server.external-secrets.svc.cluster.local:9998` and extract all secrets in plaintext.
+  - Fix part 1: set `tls.enabled: true` in values.yaml and update `ClusterSecretStore` to use `https://`.
+  - Fix part 2: add `default-deny-all` + explicit allow (ESO controller → SDK server only) NetworkPolicy to `external-secrets` namespace.
 
-- [X] **Remove redundant `cluster-admin` binding from ArgoCD**
-  - `apps/core/argocd/namespace.yaml:101-117` — `argocd-controller-admin` ClusterRoleBinding grants `cluster-admin` on top of the already-broad custom ClusterRole.
-  - Delete the `argocd-controller-admin` ClusterRoleBinding. The custom ClusterRole is sufficient.
-
-- [X] **Fix CoreDNS ConfigMap conflict**
-  - `apps/core/coredns-custom/configmap.yaml:16-51` defines a second full `coredns` ConfigMap as a resource (not a patch). ArgoCD will fail to create it — ConfigMap already exists.
-  - Remove the second `coredns` ConfigMap entirely.
-  - The first `coredns-custom` ConfigMap with the `.server` extension is correct for Talos. CoreDNS imports `custom/*.server` automatically.
+- [ ] **Replace placeholder UUIDs in smb-creds ExternalSecret**
+  - `apps/core/external-secrets/smb-creds.yaml` — `key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-USERNAME>"` committed to git.
+  - ESO fails to sync every hour. `smb-creds` Secret never materializes. PVC mount fails. filebrowser pod stuck.
+  - Fix: add real BSM UUIDs. If UUIDs are sensitive, use a kustomize secretGenerator with a `.gitignore`d patch file, or document the required Bitwarden item names so they can be reconstructed on cluster rebuild.
 
 ---
 
-## High — Correctness or reliability gaps
+## High
 
-- [X] **Pin ArgoCD kustomization to specific version**
-  - `apps/core/argocd/kustomization.yaml:8` uses `?ref=stable` (floating).
-  - Changed to `?ref=v3.3.8`.
+- [ ] **Add `StorageClass: photos-pv` manifest to git**
+  - `apps/core/storage/volumes.yaml:12` and `apps/media/filebrowser/pvc-photos.yaml:10` both reference `storageClassName: photos-pv`.
+  - No StorageClass resource exists anywhere in the repo. Created out-of-band. Cluster is not fully rebuildable from git.
+  - Fix: create `apps/core/storage/storageclass.yaml` with `provisioner: smb.csi.k8s.io`, `volumeBindingMode: Immediate`. Add to `storage/kustomization.yaml` resources.
 
-- [X] **Fix csi-driver-smb version mismatch**
-  - `apps/core/storage/kustomization.yaml:12` declares `version: 1.19.1`.
-  - Local vendored chart dir is `csi-driver-smb-1.20.1`.
-  - Updated kustomization to `version: 1.20.1`.
+- [ ] **Add persistent `/config` volume to filebrowser**
+  - `apps/media/filebrowser/deployment.yaml` — only mounts `/data` (read-only photos). No `/config` mount.
+  - `hurlenko/filebrowser` writes its database to `/database.db` (or `/config/`) by default. On the current setup this is ephemeral. Every pod restart wipes all users, bookmarks, settings.
+  - Fix: create an SMB-backed PV/PVC for filebrowser config (writable). Mount at `/config`. Add `--database /config/filebrowser.db` to container args.
 
-- [X] **Pin filebrowser image**
-  - `apps/media/filebrowser/deployment.yaml:17` — `hurlenko/filebrowser:latest`.
-  - Pinned to `v2` with `imagePullPolicy: IfNotPresent`.
+- [ ] **Add ingress NetworkPolicy to filebrowser + restrict LoadBalancer source range**
+  - `apps/media/filebrowser/networkpolicy.yaml` — `policyTypes: [Egress]` only. No ingress restriction.
+  - `apps/media/filebrowser/service.yaml` — `type: LoadBalancer` with no `loadBalancerSourceRanges`.
+  - Any device on the LAN reaches filebrowser. Default credentials are `admin`/`admin`.
+  - Fix part 1: add `Ingress` to `policyTypes` and an ingress rule in NetworkPolicy.
+  - Fix part 2: add `loadBalancerSourceRanges: ["192.168.1.0/24"]` (or tighter) to the Service.
+  - Fix part 3: mount a filebrowser config that overrides the default admin password, or document mandatory first-boot credential rotation.
 
-- [X] **Add health probes to filebrowser**
-  - Added `livenessProbe` and `readinessProbe` on `/health` port 8080.
+- [ ] **Gate PR merges on CI — add branch protection and `pull_request:` trigger**
+  - `.github/workflows/linters.yaml` — `on: push: {}` fires after merge, not before.
+  - No branch protection on `main`. Bad manifests merge freely.
+  - Fix: change trigger to include `pull_request:`. Enable branch protection on `main`: require status checks, require PR approval, no direct push.
 
-- [X] **Add SecurityContext to filebrowser**
-  - Added `runAsNonRoot: true`, `allowPrivilegeEscalation: false`.
+- [ ] **Fix Taskfile validation tasks swallowing exit codes**
+  - `Taskfile.yml` — every `kustomize build`, `kubeconform`, `kube-linter`, `polaris` call uses `|| printf "❌ Failed"` which exits 0 on failure.
+  - `task validate` returns success even when manifests are broken.
+  - Fix: replace `|| printf` with `|| { printf "❌ Failed %s\n" "{{.ITEM}}"; exit 1; }` in each task.
 
-- [X] **Expose filebrowser externally**
-  - Added `type: LoadBalancer` to `apps/media/filebrowser/service.yaml`.
-  - Requires `CiliumLoadBalancerIPPool` + L2 policy — both added to `apps/core/cilium/`.
+- [ ] **Add CRD schema sources to kubeconform — remove `-ignore-missing-schemas`**
+  - `Taskfile.yml` — validate-schema task uses `-ignore-missing-schemas`.
+  - All CRDs (ArgoCD, ESO, Cilium) are silently skipped. The validate step doesn't validate the most interesting resources.
+  - Fix: add `-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'` and remove `-ignore-missing-schemas`.
 
-- [X] **Right-size filebrowser resources**
-  - Changed to `requests: 256Mi/100m`, `limits: 1Gi/1000m`.
+- [ ] **Pin GitHub Actions to commit SHAs**
+  - `.github/workflows/linters.yaml` — `actions/checkout@v5`, `ibiqlik/action-yamllint@v3`, `DavidAnson/markdownlint-cli2-action@v21`, `arduino/setup-task@v2` all use mutable version tags.
+  - Supply chain risk: tag can be repointed to malicious code with `GITHUB_TOKEN` access.
+  - Fix: replace each `@vN` with a full SHA digest. Add `github-actions` group to Renovate to keep SHAs current.
 
-- [X] **Fix `autoupdate.yaml` branch name**
-  - `.github/workflows/autoupdate.yaml:6` — changed `master` to `main`.
-
-- [X] **Add `task build` / `task validate` step to CI**
-  - Added `build-validate` job to `.github/workflows/linters.yaml` using `arduino/setup-task`.
-
-- [X] **Fix or remove broken `yaml-fix` task**
-  - Removed the `yaml-fix` task from `Taskfile.yml`; rely on `prettier` for YAML formatting.
-
----
-
-## Medium — Missing config, outdated docs, best-practice gaps
-
-- [X] **Add sync-wave annotations to all apps**
-  - `apps/.argocd/apps.yaml` already uses `wave` field in list generator elements and templates to `argocd.argoproj.io/sync-wave` annotation.
-
-- [X] **Add `CiliumLoadBalancerIPPool` and `CiliumL2AnnouncementPolicy` to git**
-  - Added `apps/core/cilium/lb-ip-pool.yaml` and `apps/core/cilium/l2-announcement-policy.yaml`.
-  - Added `l2announcements.enabled: true` and `externalIPs.enabled: true` to `apps/core/cilium/values.yaml`.
-
-- [X] **Configure Renovate**
-  - Created `.github/renovate.json` with schedules for Helm charts, container images, GitHub Actions, and Taskfile K8S_IMAGE.
-
-- [X] **Bump `K8S_IMAGE` in Taskfile**
-  - Updated `Taskfile.yml` from `alpine/k8s:1.31.13` to `alpine/k8s:1.36.3`.
-
-- [X] **Add `CLAUDE.md` to git**
-  - Created `CLAUDE.md` at repo root with full project context, conventions, wave table, resource defaults, and secrets pattern.
-
-- [X] **Fix polaris task relative volume mount**
-  - Changed `-v ".config:/config"` to `-v "{{.ROOT_DIR}}/.config:/config"`.
-
-- [X] **Create ADR for External Secrets Operator + Bitwarden**
-  - Created `docs/adrs/0005-external-secrets-bitwarden.md`.
-
-- [X] **Create ADR for Cilium as CNI**
-  - Created `docs/adrs/0006-cilium-cni.md`.
+- [ ] **Prune polaris.yaml — remove AWS/EKS/Datadog exemptions that don't apply**
+  - `.config/polaris.yaml` — exempts `aws-iam-authenticator`, `kube2iam`, `ebs-csi-controller`, `datadog`, `local-path-provisioner`, `tiller`, `kops-controller`, and 30+ others that don't exist in this cluster.
+  - Polaris config is copy-pasted boilerplate. Gives false confidence. Hides real issues by diluting the signal.
+  - Fix: delete all exemptions for components not in this cluster. Keep only: `cilium`, `hubble-*`, `coredns`, `argocd-*`, `external-secrets`.
 
 ---
 
-## Low — Cleanup and minor improvements
+## Medium
 
-- [X] **Add explicit `replicas: 1` to filebrowser deployment**
+- [ ] **Add default-deny NetworkPolicy to all core namespaces**
+  - `core-argocd`, `external-secrets`, `core-secrets`, `kube-system` have no NetworkPolicy.
+  - Lateral movement after any pod compromise is unrestricted. ArgoCD gRPC, Bitwarden SDK server, and materialized secrets are reachable from any namespace.
+  - Fix: add a `default-deny-all` NetworkPolicy to each core namespace, then add explicit allow rules for required traffic paths only.
 
-- [X] **Add explicit `imagePullPolicy: IfNotPresent` to filebrowser** (after pinning tag)
+- [ ] **Configure ArgoCD OIDC / SSO**
+  - `apps/core/argocd/argocd-cm.yaml` — no `oidc.config` or Dex configuration.
+  - All users share a single `admin` account. No audit trail.
+  - Fix short-term: set a strong `admin` password via bootstrapped Secret. Fix long-term: configure GitHub OAuth via Dex or deploy Authentik (planned feature).
 
-- [X] **Update `bootstrap/cilium/README.md`** — updated version reference from `v1.18.0` to `1.19.3`.
+- [ ] **Verify and fix filebrowser `runAsNonRoot: true` — add explicit `runAsUser`**
+  - `apps/media/filebrowser/deployment.yaml` — `runAsNonRoot: true` with no `runAsUser`.
+  - If `hurlenko/filebrowser:v2` image has `USER root` (or no USER), pod crashes with `container has runAsNonRoot and image has non-numeric user`.
+  - Fix: run `docker inspect hurlenko/filebrowser:v2 --format='{{.Config.User}}'`. If root/empty, add `runAsUser: 1000`. Also add `readOnlyRootFilesystem: true` (after adding the `/config` persistent volume).
 
-- [X] **Populate `openspec/` or remove it** — directory was never tracked; no action needed.
+- [ ] **Delete orphaned ArgoCD vendored chart**
+  - `apps/core/argocd/charts/argo-cd-9.5.9/` — vendored Helm chart that is not used.
+  - `kustomization.yaml` installs ArgoCD from `github.com/argoproj/argo-cd//manifests/cluster-install`, not from the local chart.
+  - The directory implies Helm install is active. It is not. It's dead weight and confusion.
+  - Fix: `git rm -r apps/core/argocd/charts/`.
 
-- [X] **Add namespace-level `ResourceQuota`** — created `apps/media/filebrowser/resourcequota.yaml`.
+- [ ] **Set `strategy: Recreate` on filebrowser Deployment**
+  - `apps/media/filebrowser/deployment.yaml` — no `strategy:` field. Defaults to `RollingUpdate` with `maxUnavailable: 25%` = 1 for single replica.
+  - Every update causes downtime. `RollingUpdate` on `replicas: 1` is just `Recreate` with a misleading name.
+  - Fix: add `spec.strategy.type: Recreate`.
 
-- [X] **Add basic `NetworkPolicy`** — created `apps/media/filebrowser/networkpolicy.yaml` (egress: DNS + NAS 192.168.1.10:445).
+- [ ] **Remove dead `YAMLFIX_IMAGE` variable from Taskfile**
+  - `Taskfile.yml:15` — `YAMLFIX_IMAGE: otherguy/yamlfix:latest`. The `yaml-fix` task that used it was removed. Variable is unreferenced.
+  - Fix: delete the line.
 
 ---
 
-## Planned Features (from TODO.md, not yet started)
+## Low
+
+- [ ] **Pin Taskfile tool images to specific versions**
+  - `Taskfile.yml` — `CSPELL_IMAGE`, `MARKDOWNLINT_IMAGE`, `KUBE_LINTER_IMAGE`, `PRETTIER_IMAGE` all use `:latest`.
+  - Local `task all` is non-reproducible across time. Tool updates can silently break or change lint behavior.
+  - Fix: pin each to a specific version tag. Add to Renovate `customManagers`.
+
+- [ ] **Automate etcd backup**
+  - No `talosctl etcd snapshot` task, CronJob, or documentation exists.
+  - Single-node etcd: disk failure or bad Talos upgrade = unrecoverable cluster state.
+  - Fix: add a Kubernetes CronJob or Talos machine config snippet that runs daily snapshots to the NAS.
+
+---
+
+## Planned Features
 
 - [ ] Monitoring stack — Prometheus, Grafana, Loki
 - [ ] cert-manager — TLS for Gateway API HTTPRoutes
