@@ -2,7 +2,10 @@
 name: Linters and utilities
 
 on:
-  push: {}
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   yaml-linter:

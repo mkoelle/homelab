@@ -1,0 +1,11 @@
+---
+# Static StorageClass for pre-provisioned SMB volumes.
+# Volumes are defined manually in volumes.yaml; this class exists solely
+# to satisfy the storageClassName reference on the PV/PVC.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: photos-pv
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: Immediate
+reclaimPolicy: Retain

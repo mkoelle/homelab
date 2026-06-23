@@ -2,14 +2,23 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: filebrowser-egress
+  name: filebrowser-policy
   namespace: filebrowser
 spec:
   podSelector:
     matchLabels:
       app: filebrowser
   policyTypes:
+    - Ingress
     - Egress
+  ingress:
+    # LAN access only
+    - from:
+        - ipBlock:
+            cidr: 192.168.1.0/24
+      ports:
+        - protocol: TCP
+          port: 8080
   egress:
     # DNS
     - ports:

@@ -12,7 +12,6 @@ vars:
   BUILD_DIR: .build
   # Docker images
   CSPELL_IMAGE: ghcr.io/streetsidesoftware/cspell:latest
-  YAMLFIX_IMAGE: otherguy/yamlfix:latest
   MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
   KUBE_LINTER_IMAGE: stackrox/kube-linter:latest
   PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5
@@ -174,7 +173,7 @@ tasks:
           kustomize build . --enable-helm \
           > "{{.ITEM}}/{{.BUILD_DIR}}/deployment.yaml" \
           && printf "✅ Built %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to build %s{{.RESET}}\n" "{{.ITEM}}"
+          || { printf "{{.RED}}❌ Failed to build %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   validate-schema:
     desc: Validate against Kubernetes schemas with kubeconform
     internal: true
@@ -190,11 +189,11 @@ tasks:
           kubeconform \
           -summary \
           -schema-location default \
-          -schema-location https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json \
-          -ignore-missing-schemas \
+          -schema-location 'https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json' \
+          -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
           /work/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   kube-lint:
     desc: Run security and best practice checks with kube-linter
     internal: true
@@ -210,7 +209,7 @@ tasks:
           lint \
           /work/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   deprecation-check:
     desc: Check for deprecated Kubernetes APIs with pluto
     internal: true
@@ -226,7 +225,7 @@ tasks:
           detect \
           /work/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   polaris:
     desc: Run security and best practice checks with polaris
     internal: true
@@ -246,4 +245,4 @@ tasks:
           --format pretty \
           --only-show-failed-tests true \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
