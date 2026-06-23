@@ -29,12 +29,12 @@ Use **SMB** via `csi-driver-smb` for all NAS-backed Kubernetes storage. iSCSI is
 
 ## Storage Class Layout
 
-| StorageClass   | Access Mode     | Use case                                   |
-|----------------|-----------------|---------------------------------------------|
-| `smb-readonly` | ReadOnlyMany    | Media libraries (Jellyfin, Komga, Navidrome)|
-| `smb-readwrite`| ReadWriteMany   | Downloads share, photo import               |
-| `smb-appdata`  | ReadWriteOnce   | App state, SQLite databases, config         |
-| `local-path`   | ReadWriteOnce   | PostgreSQL / high-IOPS only                 |
+| StorageClass    | Access Mode   | Use case                                     |
+| --------------- | ------------- | -------------------------------------------- |
+| `smb-readonly`  | ReadOnlyMany  | Media libraries (Jellyfin, Komga, Navidrome) |
+| `smb-readwrite` | ReadWriteMany | Downloads share, photo import                |
+| `smb-appdata`   | ReadWriteOnce | App state, SQLite databases, config          |
+| `local-path`    | ReadWriteOnce | PostgreSQL / high-IOPS only                  |
 
 SQLite on `smb-appdata` is acceptable. PostgreSQL on SMB is not — use `local-path` for any Postgres instance.
 

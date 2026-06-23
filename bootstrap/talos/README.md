@@ -13,11 +13,11 @@ Schematic ID `e4452f8d06fe312ec9ebf81b8e970ab527c48f2dcd1e52b0153bd6954abf510b`
 
 ```yaml
 customization:
-    systemExtensions:
-        officialExtensions:
-            - siderolabs/btrfs
-            - siderolabs/nfsd
-            - siderolabs/zfs
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/btrfs
+      - siderolabs/nfsd
+      - siderolabs/zfs
 ```
 
 ## Initial Configuration
@@ -33,7 +33,7 @@ $target = "motherbox.local"
 talosctl gen config $target "https://${target}:6443"
 # This will create the controlplane.yaml, talosconfig, and worker.yaml
 
-# Apply the patch containing host ip mappings and the flag to 
+# Apply the patch containing host ip mappings and the flag to
 # allow running workloads on control-plane nodes.
 # (Needed because of running a single node instance)
 talosctl gen config $target "https://${target}:6443" --config-patch `@patch.yaml --force
@@ -49,7 +49,7 @@ talosctl --nodes $target get disks --insecure
 # otherwise, adjust the disk name accordingly in the controlplane.yaml and worker.yaml files
 
 # Apply the Talos configuration to the control plane node
-talosctl --nodes $target apply-config --file ./controlplane.yaml --insecure 
+talosctl --nodes $target apply-config --file ./controlplane.yaml --insecure
 # The system will reboot automatically
 
 # Once the node is back up, bootstrap the cluster to initialize etcd and the control plane

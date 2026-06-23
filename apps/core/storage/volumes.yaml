@@ -5,7 +5,7 @@ metadata:
   name: photos-pv
 spec:
   capacity:
-    storage: 1Ti  # Set to a large default, adjust as needed
+    storage: 1Ti # Set to a large default, adjust as needed
   accessModes:
     - ReadOnlyMany
   persistentVolumeReclaimPolicy: Retain

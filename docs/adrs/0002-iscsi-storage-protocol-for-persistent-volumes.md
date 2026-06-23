@@ -17,15 +17,15 @@ I choose **iSCSI** as the storage protocol for Kubernetes persistent volumes.
 
 ## Rationale
 
-- **Performance**  
+- **Performance**
   - iSCSI provides block-level access, which significantly improves I/O performance compared to NFS.
   - Better suited for workloads with high read/write demands (e.g., databases, caching layers).
-- **Reliability**  
+- **Reliability**
   - Supports multipath configurations for failover and redundancy.
   - Works well with Synology’s LUN-based snapshots for consistent backups.
-- **Flexibility**  
+- **Flexibility**
   - Allows fine-grained control over storage allocation and performance tuning.
-- **Kubernetes Integration**  
+- **Kubernetes Integration**
   - CSI drivers for iSCSI are mature and widely supported.
 
 ## Alternatives Considered

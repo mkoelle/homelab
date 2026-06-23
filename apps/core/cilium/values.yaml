@@ -3,7 +3,7 @@
 
 # Kubernetes API Configuration
 k8sServiceHost: localhost
-k8sServicePort: '7445'
+k8sServicePort: "7445"
 
 # Kube-proxy Replacement
 kubeProxyReplacement: true

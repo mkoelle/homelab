@@ -10,7 +10,6 @@ machine:
         aliases: [asgard, asgard.local]
 
 cluster:
-
   # Disable default CNI to allow installing Cilium
   network:
     cni:
