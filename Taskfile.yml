@@ -10,13 +10,13 @@ vars:
   # Directories
   APPS_DIR: apps
   BUILD_DIR: .build
-  # Docker images
-  CSPELL_IMAGE: ghcr.io/streetsidesoftware/cspell:latest
-  MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
-  KUBE_LINTER_IMAGE: stackrox/kube-linter:latest
-  PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5
-  POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:10
-  PRETTIER_IMAGE: tmknom/prettier:latest
+  # Docker images — pinned to specific versions; Renovate manages updates.
+  CSPELL_IMAGE: ghcr.io/streetsidesoftware/cspell:v10.0.1
+  MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:v0.22.1
+  KUBE_LINTER_IMAGE: stackrox/kube-linter:v0.8.3
+  PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5.24.0
+  POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:v10.2.0
+  PRETTIER_IMAGE: tmknom/prettier:v0.22.1
   K8S_IMAGE: alpine/k8s:1.36.2
   # Computed
   KUSTOMIZATION_DIRS:
@@ -58,6 +58,7 @@ tasks:
     desc: Build all resources
     silent: true
     cmds:
+      - task: check-placeholders
       - task: kustomize-build
   validate:
     desc: Validate all resources
@@ -85,6 +86,18 @@ tasks:
         {{.CSPELL_IMAGE}} \
         --no-progress --color
   # Internal tasks
+  check-placeholders:
+    desc: Fail if placeholder UUIDs remain in manifests
+    internal: true
+    silent: true
+    cmds:
+      - |
+        if grep -rq 'REPLACE-WITH' apps/; then
+          printf "{{.RED}}❌ Placeholder UUIDs found — replace before applying:{{.RESET}}\n"
+          grep -rn 'REPLACE-WITH' apps/
+          exit 1
+        fi
+        printf "✅ No placeholder UUIDs found\n"
   check-docker:
     desc: Check if Docker is running
     internal: true

@@ -2,15 +2,47 @@
 # Deny ingress from other namespaces. Intra-namespace traffic (server→redis,
 # server→repo-server, controller→dex, etc.) is allowed by the podSelector rule.
 # kubectl port-forward bypasses NetworkPolicy — UI access is unaffected.
+#
+# Egress: allow intra-namespace + DNS + kube-apiserver ClusterIP + external HTTPS
+# (GitHub for repo sync, OCI registries). All other egress is blocked.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: deny-cross-namespace-ingress
+  name: argocd-policy
   namespace: core-argocd
 spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
   ingress:
     - from:
         - podSelector: {}
+  egress:
+    # DNS — kube-dns in kube-system
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Intra-namespace (server↔redis, controller↔repo-server, etc.)
+    - to:
+        - podSelector: {}
+    # Kubernetes API via ClusterIP (kubernetes.default.svc → 10.96.0.0/12)
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.0/12
+      ports:
+        - protocol: TCP
+          port: 443
+    # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443

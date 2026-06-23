@@ -11,7 +11,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
     targetRevision: HEAD
@@ -33,9 +33,10 @@ spec:
         - /data/tls.key
   syncPolicy:
     automated:
-      prune: true
+      prune: false
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
       - RespectIgnoreDifferences=true

@@ -16,12 +16,12 @@ Findings from security + architecture audit. Grouped by severity.
   - ESO fails to sync. `smb-creds` Secret never materializes. PVC mount fails. Storage is broken on a fresh deploy.
   - Fix: create two items in Bitwarden Secrets Manager (SMB username, SMB password). Replace both UUID placeholders with the real BSM item IDs.
 
-- [ ] **Create ArgoCD AppProject with source/destination restrictions**
+- [x] **Create ArgoCD AppProject with source/destination restrictions**
   - All Applications run in the `default` project. No `AppProject` exists. Zero source repo, destination namespace, or cluster resource restrictions.
   - A compromised or malicious Helm chart in any synced Application can deploy to any namespace or create cluster-scoped resources.
   - Fix: create an `AppProject` named `homelab` with `sourceRepos: ["https://github.com/mkoelle/homelab"]`, explicit `destinations` (known namespaces only), and a scoped `clusterResourceWhitelist`. Bind all Applications to it.
 
-- [ ] **Remove auto-prune from root Application; add sync safety gate for core apps**
+- [x] **Remove auto-prune from root Application; add sync safety gate for core apps**
   - `apps/.argocd/root-application.yaml` — `prune: true` + `selfHeal: true`. `apps/.argocd/apps.yaml` — same on all apps including wave -1 and wave 0.
   - A single bad push to `main` deletes live cluster resources including PVs, Secrets, and RBAC. If ArgoCD deletes itself, it cannot self-recover.
   - Fix: remove `prune: true` from `root-application.yaml`. For wave -1/0 apps (external-secrets, argocd, cilium), remove automated sync entirely and require manual ArgoCD sync. Add Sync Windows to prevent automated syncs during off-hours.
@@ -30,22 +30,22 @@ Findings from security + architecture audit. Grouped by severity.
 
 ## High
 
-- [ ] **Scope ArgoCD application-controller ClusterRole (remove wildcard secret read)**
+- [x] **Scope ArgoCD application-controller ClusterRole (remove wildcard secret read)**
   - `apps/core/argocd/kustomization.yaml:25` — `apiGroups: ["*"] resources: ["*"] verbs: [get, list, watch]` grants read on ALL resources cluster-wide, including Secrets in every namespace.
   - Compromised application-controller = full secret exfiltration across the entire cluster.
   - Fix: replace the wildcard read rule with explicit API group + resource pairs. Exclude `""` group `secrets` from the read rule. Add `resourceExclusions` in `argocd-cm` to prevent ArgoCD from syncing raw Secrets.
 
-- [ ] **Pin filebrowser image to digest**
+- [x] **Pin filebrowser image to digest**
   - `apps/media/filebrowser/deployment.yaml:27` — `image: hurlenko/filebrowser:v2` is a floating major version tag.
   - Any silent update to the `v2` tag on Docker Hub deploys arbitrary code on next pod restart.
   - Fix: pin to `hurlenko/filebrowser:v2@sha256:<digest>`. Consider switching to `filebrowser/filebrowser` (official upstream). Configure Renovate `containerDigest` preset.
 
-- [ ] **Add egress NetworkPolicy to core-argocd and external-secrets namespaces**
+- [x] **Add egress NetworkPolicy to core-argocd and external-secrets namespaces**
   - Both namespaces have ingress-only NetworkPolicies (`policyTypes: [Ingress]`). No egress restrictions.
   - Compromised ArgoCD or ESO can reach any pod in the cluster, any external endpoint, or the Talos API (port 50000).
   - Fix: add explicit egress policies. `core-argocd`: allow GitHub (443), cluster DNS (53), kube-apiserver (6443), Redis (6379), Dex (5556) — deny all else. `external-secrets`: allow bitwarden-sdk-server (9998), Bitwarden API (443), cluster DNS (53), kube-apiserver (6443) — deny all else.
 
-- [ ] **Add container image CVE scanning to CI (Trivy)**
+- [x] **Add container image CVE scanning to CI (Trivy)**
   - CI pipeline runs yamllint → kustomize build → kubeconform → kube-linter → polaris. No image scanning.
   - Vulnerable base images run until a human notices or Renovate bumps the tag.
   - Fix: add Trivy step after `kustomize build` to scan manifests for image references and check for CRITICAL/HIGH CVEs. Fail CI on CRITICAL findings.
@@ -55,7 +55,7 @@ Findings from security + architecture audit. Grouped by severity.
   - CI reports green while meaningful security checks are silently bypassed. Any new app inherits these suppressions.
   - Fix: remove global exclusions. Scope per-object via kube-linter annotations (`kube-linter.io/ignore-check`) on specific vendor resources that legitimately need exceptions.
 
-- [ ] **Enforce PodSecurity `restricted` for user workload namespaces**
+- [x] **Enforce PodSecurity `restricted` for user workload namespaces**
   - `bootstrap/talos/controlplane.yaml:264` — global default enforces `baseline`, only warns/audits `restricted`.
   - Workload namespaces can deploy containers without seccomp profiles, with writable root filesystems, or with capabilities, and admission will not reject them.
   - Fix: add per-namespace labels to user app namespaces (e.g., `filebrowser`):
@@ -75,7 +75,7 @@ Findings from security + architecture audit. Grouped by severity.
   - filebrowser database (users, settings) is on the ephemeral container layer and wiped on every pod restart or image update.
   - Fix: create an SMB share on the NAS (`//asgard.local/appdata/filebrowser`), add PV + PVC (ReadWriteOnce), mount at `/config` in the Deployment, add `--database /config/filebrowser.db` to container args.
 
-- [ ] **Pin GitHub Actions to commit SHAs**
+- [x] **Pin GitHub Actions to commit SHAs**
   - `.github/workflows/linters.yaml` — all actions use mutable version tags (`@v5`, `@v3`, etc.).
   - Renovate (configured with `github-actions` group) will handle this automatically once authorized in the repo settings.
 
@@ -93,7 +93,7 @@ Findings from security + architecture audit. Grouped by severity.
   - Build fails if GitHub is unavailable. Supply chain risk if the upstream ref is tampered with. `.build` directories are gitignored so artifacts are not pinned.
   - Fix: vendor the manifests locally (like cilium and external-secrets charts). Run `task build` pointing to local files only. Renovate can track the `ref=` string to automate version bumps.
 
-- [ ] **Add CI validation for placeholder UUID detection**
+- [x] **Add CI validation for placeholder UUID detection**
   - `apps/core/external-secrets/smb-creds.yaml` contains `<REPLACE-WITH-BSM-UUID-...>` placeholders that pass all CI checks.
   - A fresh cluster deploy with unsubstituted placeholders fails silently at runtime, not at CI time.
   - Fix: add a pre-build grep step to CI:
@@ -111,7 +111,7 @@ Findings from security + architecture audit. Grouped by severity.
   - Any LAN device (IoT, guest WiFi on same subnet) has potential unauthenticated access to the photo library over cleartext HTTP.
   - Fix: mount `filebrowser.json` settings from a Secret (via ExternalSecret) with a non-default admin password. Add TLS via Gateway API + cert-manager once both are deployed.
 
-- [ ] **Pin Taskfile tool images to specific versions**
+- [x] **Pin Taskfile tool images to specific versions**
   - `Taskfile.yml` — `CSPELL_IMAGE`, `MARKDOWNLINT_IMAGE`, `KUBE_LINTER_IMAGE`, `PRETTIER_IMAGE` use `:latest`; `PLUTO_IMAGE` uses `:v5`; `POLARIS_IMAGE` uses `:10`.
   - CI results are non-reproducible. A compromised `:latest` image silently subverts CI.
   - Fix: pin all to digests. Add custom Renovate managers for each `IMAGE_VAR: image:tag` pattern in `Taskfile.yml`.

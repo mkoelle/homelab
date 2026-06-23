@@ -48,7 +48,7 @@ spec:
       annotations:
         argocd.argoproj.io/sync-wave: "{{wave}}"
     spec:
-      project: default
+      project: homelab
       source:
         repoURL: https://github.com/mkoelle/homelab
         targetRevision: HEAD
@@ -58,8 +58,9 @@ spec:
         namespace: "{{namespace}}"
       syncPolicy:
         automated:
-          prune: true
+          prune: false
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true
+          - ApplyOutOfSyncOnly=true
