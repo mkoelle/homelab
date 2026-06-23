@@ -17,7 +17,7 @@ vars:
   PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5
   POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:10
   PRETTIER_IMAGE: tmknom/prettier:latest
-  K8S_IMAGE: alpine/k8s:1.36.3
+  K8S_IMAGE: alpine/k8s:1.36.2
   # Computed
   KUSTOMIZATION_DIRS:
     sh: |
@@ -207,9 +207,10 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -v "{{.ROOT_DIR}}/.config:/config" -w /work \
           {{.KUBE_LINTER_IMAGE}} \
           lint \
+          --config /config/kube-linter.yaml \
           /work/deployment.yaml \
           && printf "✅ Validated %s\n" "{{.ITEM}}" \
           || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
@@ -239,13 +240,23 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
-          -v "{{.ROOT_DIR}}/.config:/config" \
-          {{.POLARIS_IMAGE}} \
-          polaris audit \
-          --audit-path /work \
-          --config /config/polaris.yaml \
-          --format pretty \
-          --only-show-failed-tests true \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          if command -v polaris >/dev/null 2>&1; then
+            polaris audit \
+            --audit-path "{{.ITEM}}/{{.BUILD_DIR}}" \
+            --config "{{.ROOT_DIR}}/.config/polaris.yaml" \
+            --format pretty \
+            --only-show-failed-tests true \
+            && printf "✅ Validated %s\n" "{{.ITEM}}" \
+            || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          else
+            {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+            -v "{{.ROOT_DIR}}/.config:/config" \
+            {{.POLARIS_IMAGE}} \
+            polaris audit \
+            --audit-path /work \
+            --config /config/polaris.yaml \
+            --format pretty \
+            --only-show-failed-tests true \
+            && printf "✅ Validated %s\n" "{{.ITEM}}" \
+            || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          fi

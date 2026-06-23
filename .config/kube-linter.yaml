@@ -1,0 +1,23 @@
+---
+checks:
+  exclude:
+    # ArgoCD Helm chart ships without resource requests/limits on vendor containers.
+    - unset-cpu-requirements
+    - unset-memory-requirements
+    # argocd-notifications-controller liveness probe uses unexposed port (vendor default).
+    - liveness-port
+    # hubble-relay and cilium-envoy probes reference ports not in the container port list (vendor).
+    - readiness-port
+    - startup-port
+    # Cilium agent requires NET_RAW for eBPF/networking operations.
+    - drop-net-raw-capability
+    # Cilium agent mounts /proc for kernel-level network configuration.
+    - sensitive-host-mounts
+    # csi-driver-smb requires host networking to mount SMB shares.
+    - host-network
+    # csi-driver-smb containers run privileged; required for kernel-level SMB mount.
+    - privilege-escalation-container
+    - privileged-container
+    # csi-driver-smb runs as root; also filebrowser needs a writable root filesystem.
+    - run-as-non-root
+    - no-read-only-root-fs

@@ -25,7 +25,13 @@ This setup expects at least two machines:
 
 ### Development machine config
 
-The following tools need to be installed
+On macOS, install all required tools at once:
+
+```sh
+brew bundle
+```
+
+Otherwise install manually:
 
 - **Management tools**
   - Kubectl — Kubernetes CLI ([install instructions](https://kubernetes.io/docs/tasks/tools/))
@@ -33,8 +39,9 @@ The following tools need to be installed
   - Helm — Kubernetes package manager ([install instructions](https://helm.sh/docs/intro/install/))
 - **Development tools**
   - Task — task runner ([install instructions](https://taskfile.dev/docs/installation))
-  - Docker — container runtime ([install instructions](https://docs.docker.com/engine/install/))
-  - Lens — k8s IDE ([install instructions](https://docs.k8slens.dev/k8slens/getting-started/install-lens/))
+  - Polaris — Kubernetes best practices auditor ([install instructions](https://polaris.docs.fairwinds.com/infrastructure-as-code/#installation))
+  - Docker or Podman — container runtime ([Docker](https://docs.docker.com/engine/install/) / [Podman Desktop](https://podman-desktop.io/))
+  - Freelens — k8s IDE ([install instructions](https://github.com/freelensapp/freelens))
 
 ### Host machine install and config
 
