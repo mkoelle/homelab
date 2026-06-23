@@ -40,12 +40,14 @@ checks:
   hostPortSet: warning
   tlsSettingsMissing: warning
   sensitiveContainerEnvVar: danger
-  sensitiveConfigmapContent: danger
-  clusterrolePodExecAttach: danger
-  rolePodExecAttach: danger
-  clusterrolebindingPodExecAttach: danger
-  rolebindingClusterRolePodExecAttach: danger
-  rolebindingRolePodExecAttach: danger
+  # ArgoCD needs pod exec for its UI exec feature; downgraded from danger.
+  clusterrolePodExecAttach: warning
+  rolePodExecAttach: warning
+  clusterrolebindingPodExecAttach: warning
+  rolebindingClusterRolePodExecAttach: warning
+  rolebindingRolePodExecAttach: warning
+  # cilium-config triggers on bootstrap JSON key names — false positive.
+  sensitiveConfigmapContent: warning
   clusterrolebindingClusterAdmin: danger
   rolebindingClusterAdminClusterRole: danger
   rolebindingClusterAdminRole: danger
@@ -70,31 +72,58 @@ exemptions:
   - namespace: kube-system
     controllerNames:
       - cilium
+      - cilium-envoy
       - cilium-operator
     rules:
       - runAsRootAllowed
       - runAsPrivileged
+      - privilegeEscalationAllowed
       - notReadOnlyRootFilesystem
       - hostNetworkSet
       - hostPIDSet
+      - hostPathSet
+      - hostPortSet
       - dangerousCapabilities
       - insecureCapabilities
       - automountServiceAccountToken
       - missingNetworkPolicy
       - linuxHardening
 
-  # csi-driver-smb — CSI node plugin requires host mounts
+  # Cilium observability components — vendor chart, no resource limits set
+  - namespace: kube-system
+    controllerNames:
+      - hubble-relay
+      - hubble-ui
+    rules:
+      - cpuRequestsMissing
+      - cpuLimitsMissing
+      - memoryRequestsMissing
+      - memoryLimitsMissing
+      - livenessProbeMissing
+      - readinessProbeMissing
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+      - linuxHardening
+      - notReadOnlyRootFilesystem
+      - insecureCapabilities
+
+  # csi-driver-smb — CSI node plugin requires host mounts and kernel privileges
   - namespace: kube-system
     controllerNames:
       - csi-smb-controller
       - csi-smb-node
+      - csi-smb-node-win
     rules:
       - runAsRootAllowed
+      - runAsPrivileged
+      - privilegeEscalationAllowed
+      - hostNetworkSet
       - notReadOnlyRootFilesystem
       - hostPathSet
       - automountServiceAccountToken
       - missingNetworkPolicy
       - linuxHardening
+      - insecureCapabilities
 
   # Talos control-plane components
   - namespace: kube-system
@@ -139,6 +168,14 @@ exemptions:
       - external-secrets
       - external-secrets-webhook
       - external-secrets-cert-controller
+    rules:
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+
+  # Bitwarden SDK server — vendor chart; resource limits set but no explicit probe tuning
+  - namespace: external-secrets
+    controllerNames:
+      - bitwarden-sdk-server
     rules:
       - automountServiceAccountToken
       - missingNetworkPolicy

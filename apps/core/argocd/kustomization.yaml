@@ -18,3 +18,42 @@ patches:
     target:
       kind: ConfigMap
       name: argocd-cm
+  - patch: |
+      - op: replace
+        path: /rules
+        value:
+          - apiGroups: ["*"]
+            resources: ["*"]
+            verbs: [get, list, watch]
+          - apiGroups: [""]
+            resources: [pods, services, endpoints, configmaps, secrets, namespaces,
+              serviceaccounts, events, resourcequotas, podtemplates]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - apiGroups: [apps]
+            resources: [deployments, statefulsets, daemonsets, replicasets]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - apiGroups: [networking.k8s.io]
+            resources: [ingresses, networkpolicies]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - apiGroups: [rbac.authorization.k8s.io]
+            resources: [roles, rolebindings]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - apiGroups: [rbac.authorization.k8s.io]
+            resources: [clusterroles, clusterrolebindings]
+            verbs: [get, list, watch]
+          - apiGroups: [policy]
+            resources: [poddisruptionbudgets]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - apiGroups: [batch]
+            resources: [jobs, cronjobs]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - apiGroups: [coordination.k8s.io]
+            resources: [leases]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - apiGroups: [argoproj.io]
+            resources: [applications, appprojects, applicationsets,
+              applicationsets/finalizers, applicationsets/status]
+            verbs: [get, list, watch, create, update, patch, delete]
+    target:
+      kind: ClusterRole
+      name: argocd-application-controller

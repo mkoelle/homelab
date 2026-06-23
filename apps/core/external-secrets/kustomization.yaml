@@ -16,3 +16,29 @@ helmCharts:
     namespace: external-secrets
     includeCRDs: true
     valuesFile: ./values.yaml
+
+patches:
+  - target:
+      kind: Deployment
+      name: bitwarden-sdk-server
+      namespace: external-secrets
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: bitwarden-sdk-server
+      spec:
+        template:
+          spec:
+            automountServiceAccountToken: false
+            securityContext:
+              seccompProfile:
+                type: RuntimeDefault
+            containers:
+              - name: bitwarden-sdk-server
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  runAsNonRoot: true
+                  runAsUser: 65532
+                  capabilities:
+                    drop: [ALL]
