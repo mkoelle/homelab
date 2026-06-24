@@ -49,6 +49,7 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+              readOnly: true
           resources:
             requests:
               memory: "256Mi"

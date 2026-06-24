@@ -1,67 +1,65 @@
 # Cilium
 
-Cilium is a networking plugin that implements the Container Networking Interface (CNI)
-for Kubernetes. It provides network connectivity and security policies using eBPF
-(extended Berkeley Packet Filter) for high performance and low overhead.
+Cilium is the CNI for this cluster. It handles pod networking, kube-proxy replacement, L2 LoadBalancer IP announcements (ARP), and Hubble observability.
 
-Cilium is used in this homelab for:
+Cilium must be installed **before ArgoCD** — without a CNI, no pods can schedule, so ArgoCD itself won't start.
 
-- High-performance networking with eBPF acceleration
-- Network security policies without kube-proxy
-- Observability and troubleshooting capabilities
-- Gateway API support for advanced routing
+## Install
 
-## Install Cilium
+Installation uses Helm against `apps/core/cilium/values.yaml` as the single source of truth. This ensures the bootstrap install matches what ArgoCD manages going forward — no drift.
 
-Installation is done through Helm so that it can later be managed by ArgoCD.
+Run from the **repo root**:
 
-```pwsh
-# Add cilium to helm
+```bash
 helm repo add cilium https://helm.cilium.io/
 helm repo update
 
-# Use helm to install cilium to our cluster
-# This contains the params to deploy without kube-proxy,
-# with GatewayAPI support, and only one operator replica.
-helm install `
-    cilium `
-    cilium/cilium `
-    --version 1.19.3 `
-    --namespace kube-system `
-    --set ipam.mode=kubernetes `
-    --set kubeProxyReplacement=true `
-    --set securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}" `
-    --set securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}" `
-    --set cgroup.autoMount.enabled=false `
-    --set cgroup.hostRoot=/sys/fs/cgroup `
-    --set k8sServiceHost=localhost `
-    --set k8sServicePort=7445 `
-    --set operator.replicas=1 `
-    --set=gatewayAPI.enabled=true `
-    --set=gatewayAPI.enableAlpn=true `
-    --set=gatewayAPI.enableAppProtocol=true
+helm install cilium cilium/cilium \
+    --version 1.19.3 \
+    --namespace kube-system \
+    -f apps/core/cilium/values.yaml
 ```
 
-## Verification
+```powershell
+# PowerShell
+helm repo add cilium https://helm.cilium.io/
+helm repo update
 
-```pwsh
-# Verify Cilium pods are running:
+helm install cilium cilium/cilium `
+    --version 1.19.3 `
+    --namespace kube-system `
+    -f apps/core/cilium/values.yaml
+```
+
+> **Do not** add individual `--set` flags — they diverge from `values.yaml` and create state ArgoCD will fight to reconcile. The values file is the record of why each setting exists.
+
+## Verify L2 Announcements
+
+L2 announcement policy matches interfaces via regex `^eth[0-9]+`. If your NIC uses predictable names (`enp*`, `eno*`, `ens*`), LoadBalancer IPs will stay `<pending>` silently.
+
+```bash
+# Check actual interface name on the node
+talosctl -n motherbox.local get links | grep -v loopback
+
+# If interface is not eth0/eth1/etc., update the policy:
+# apps/core/cilium/l2-announcement-policy.yaml → spec.interfaces
+```
+
+## Verify Installation
+
+```bash
+# Cilium pods running
 kubectl get pods -n kube-system -l k8s-app=cilium
 
-# Check Cilium status and connectivity:
+# Cilium agent healthy
 kubectl exec -n kube-system ds/cilium -- cilium status
+
+# L2 announcement policy active (after LB IP pool is deployed by ArgoCD)
+kubectl exec -n kube-system ds/cilium -- cilium l2announce list
 ```
 
 ## References
 
-### Official Documentation
-
 - [Talos Cilium Install Guide](https://docs.siderolabs.com/kubernetes-guides/cni/deploying-cilium)
-- [Cilium Quickstart Guide](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/)
 - [Cilium Helm Chart Values](https://docs.cilium.io/en/stable/helm-reference/)
-
-### Advanced Topics
-
-- [Network Policies](https://docs.cilium.io/en/stable/policy/)
-- [Gateway API Support](https://docs.cilium.io/en/stable/gettingstarted/gateway-api/)
-- [Performance Tuning](https://docs.cilium.io/en/stable/operations/)
+- [L2 Announcements](https://docs.cilium.io/en/stable/network/l2-announcements/)

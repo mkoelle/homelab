@@ -23,7 +23,7 @@
     {
       "matchManagers": ["github-actions"],
       "groupName": "github actions",
-      "automerge": true
+      "automerge": false
     },
     {
       "matchDepTypes": ["container"],
@@ -41,9 +41,8 @@
       "customType": "regex",
       "fileMatch": ["Taskfile\\.yml"],
       "matchStrings": [
-        "K8S_IMAGE: alpine/k8s:(?<currentValue>[\\d.]+)"
+        "[A-Z_]+_IMAGE: (?<depName>[^:\\s]+):(?<currentValue>[^\\s]+)"
       ],
-      "depNameTemplate": "alpine/k8s",
       "datasourceTemplate": "docker"
     },
     {
