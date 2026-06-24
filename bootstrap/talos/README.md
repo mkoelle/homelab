@@ -4,17 +4,15 @@ Talos OS is a lightweight, immutable operating system built specifically for run
 
 ## Factory Image
 
-Build the installer at [Talos Image Factory](https://factory.talos.dev/?arch=amd64&cmdline-set=true&extensions=-&extensions=siderolabs%2Fbtrfs&extensions=siderolabs%2Fnfsd&extensions=siderolabs%2Fzfs&platform=metal&secureboot=true&target=metal&version=1.13.0).
+Build the installer at [Talos Image Factory](https://factory.talos.dev/?arch=amd64&cmdline-set=true&extensions=-&extensions=siderolabs/btrfs&platform=metal&secureboot=true&target=metal&version=1.13.5).
 
-**Current schematic extensions** (review before rebuilding — `nfsd`/`btrfs`/`zfs` are not actively used by this cluster; SMB-CSI does not require them):
+**Current schematic extensions** (review before rebuilding — `btrfs` are not actively used by this cluster; SMB-CSI does not require them):
 
 ```yaml
 customization:
   systemExtensions:
     officialExtensions:
       - siderolabs/btrfs
-      - siderolabs/nfsd
-      - siderolabs/zfs
 ```
 
 > The factory URL pins a schematic ID. If you change extensions or the Talos version, regenerate the URL at factory.talos.dev to get an updated schematic ID and installer image.
@@ -123,7 +121,7 @@ Keep `talosctl` version on the admin machine in sync with the cluster version.
 
 ```powershell
 $target = "motherbox.local"
-$version = "v1.13.3"
+$version = "v1.13.5"
 
 # Upgrade Talos OS
 talosctl upgrade -n $target --image "ghcr.io/siderolabs/installer:${version}"
