@@ -62,6 +62,10 @@ $env:TALOSCONFIG = (Get-Item "talosconfig").FullName
 target="motherbox.local"
 talosctl gen config $target "https://${target}:6443" --config-patch @patch.yaml
 export TALOSCONFIG=$(pwd)/talosconfig
+
+# Remove HostnameConfig document appended by Talos 1.13+ (conflicts with patch hostname)
+line=$(grep -n "^kind: HostnameConfig" controlplane.yaml | cut -d: -f1)
+sed -i '' "$((line-2)),\$d" controlplane.yaml
 ```
 
 **Post-gen required edit:** Talos 1.13+ appends a `HostnameConfig: auto: stable` document to the generated file. This conflicts with `machine.network.hostname` from the patch and causes `apply-config` to fail with:
@@ -73,11 +77,9 @@ static hostname is already set in v1alpha1 config
 Remove the appended section from `controlplane.yaml` before applying:
 
 ```bash
-# Find and delete these lines at the end of controlplane.yaml:
-# ---
-# apiVersion: v1alpha1
-# kind: HostnameConfig
-# auto: stable
+# HostnameConfig is appended at end of file; delete from its --- separator to EOF
+line=$(grep -n "^kind: HostnameConfig" controlplane.yaml | cut -d: -f1)
+sed -i '' "$((line-2)),\$d" controlplane.yaml
 ```
 
 > `controlplane.yaml` in this repo is your live cluster config — gitignored, not a template. For a fresh machine, the above generates new PKI. **Store the generated `controlplane.yaml` and `talosconfig` somewhere safe** (e.g., Bitwarden) — losing them = losing cluster access.
@@ -121,7 +123,7 @@ Keep `talosctl` version on the admin machine in sync with the cluster version.
 
 ```powershell
 $target = "motherbox.local"
-$version = "v1.13.0"
+$version = "v1.13.3"
 
 # Upgrade Talos OS
 talosctl upgrade -n $target --image "ghcr.io/siderolabs/installer:${version}"

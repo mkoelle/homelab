@@ -17,7 +17,7 @@ Start from a bare-metal machine and follow these steps in order to bring up the 
 
 ## Prerequisites on the admin machine
 
-- `talosctl` — version matching the cluster (currently `v1.13.0`)
+- `talosctl` — version matching the cluster (currently `v1.13.3`)
 - `kubectl`
 - `helm` (v3)
 - `task` (go-task)
