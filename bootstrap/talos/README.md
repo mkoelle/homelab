@@ -64,6 +64,22 @@ talosctl gen config $target "https://${target}:6443" --config-patch @patch.yaml
 export TALOSCONFIG=$(pwd)/talosconfig
 ```
 
+**Post-gen required edit:** Talos 1.13+ appends a `HostnameConfig: auto: stable` document to the generated file. This conflicts with `machine.network.hostname` from the patch and causes `apply-config` to fail with:
+
+```
+static hostname is already set in v1alpha1 config
+```
+
+Remove the appended section from `controlplane.yaml` before applying:
+
+```bash
+# Find and delete these lines at the end of controlplane.yaml:
+# ---
+# apiVersion: v1alpha1
+# kind: HostnameConfig
+# auto: stable
+```
+
 > `controlplane.yaml` in this repo is your live cluster config — gitignored, not a template. For a fresh machine, the above generates new PKI. **Store the generated `controlplane.yaml` and `talosconfig` somewhere safe** (e.g., Bitwarden) — losing them = losing cluster access.
 
 ### Step 3 — Apply configuration and bootstrap
