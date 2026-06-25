@@ -60,13 +60,20 @@ The `ICRC ABRT` error is how the kernel's libata layer surfaces a write abort fr
 
 **Fixes applied:**
 1. Added `machine.install.wipe: true` to `patch.yaml` — forces the Talos installer to zero the partition table before install, clearing old LUKS metadata.
-2. After sector 4409402 was written successfully by Debian's installer (clearing the transient locked state), the sector became writable again.
+2. Sector 4409402 confirmed writeable from Debian via `hdparm --write-sector` (succeeded).
 
-**Confirmed via `hdparm` from Debian:**
+**Remaining issue:** Talos installer uses **NCQ DMA** writes; Debian's `hdparm` uses non-NCQ PIO. The sector write succeeds non-NCQ but fails under NCQ. `extraKernelArgs: [libata.force=noncq]` in `machine.install` is **invalid with SecureBoot UKI** — the setting `grubUseUKICmdline: true` (auto-set by SecureBoot factory images) is mutually exclusive with `extraKernelArgs`.
+
+**Resolution:** Embed `libata.force=noncq` in the factory image schematic at `factory.talos.dev`. Add to the schematic YAML:
+```yaml
+customization:
+  extraKernelArgs:
+    - libata.force=noncq
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/btrfs
 ```
-hdparm --write-sector 4409402 --yes-i-know-what-i-am-doing /dev/sda
-re-writing sector 4409402: succeeded
-```
+Download the resulting ISO, add to Ventoy, boot from it. The installer kernel will have NCQ disabled globally.
 
 ---
 
