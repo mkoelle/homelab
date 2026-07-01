@@ -64,9 +64,11 @@ customization:
     - libata.force=noncq
   systemExtensions:
     officialExtensions:
-      - siderolabs/btrfs
+      - siderolabs/intel-ucode
 ```
 Select `metal`, `amd64`, `SecureBoot`, target Talos version. Download the ISO, replace the existing ISO on Ventoy, and reboot. The installer kernel will have NCQ disabled for all SATA devices on the controller.
+
+**Current schematic ID:** `3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4` ([factory link](https://factory.talos.dev/?arch=amd64&platform=metal&schematic-id=3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4&secureboot=true&target=metal&version=1.13.5))
 
 > **Every reinstall on this machine requires this ISO.** A standard factory ISO without `libata.force=noncq` will always fail at the STATE partition write step, regardless of which SATA drive is the target.
 
@@ -140,7 +142,7 @@ Obtained from Debian 13 via `smartctl -a /dev/sda`:
 
 ## Next Steps
 
-1. Build new factory ISO with `libata.force=noncq` at `factory.talos.dev` (schematic in Issue 2 above)
+1. ✅ Factory ISO built — schematic ID `3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4` (noncq + intel-ucode, SecureBoot)
 2. Replace ISO on Ventoy, reboot `motherbox` from it
 3. Run apply-config from `bootstrap/talos/`:
    ```bash

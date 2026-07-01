@@ -4,18 +4,23 @@ Talos OS is a lightweight, immutable operating system built specifically for run
 
 ## Factory Image
 
-Build the installer at [Talos Image Factory](https://factory.talos.dev/?arch=amd64&cmdline-set=true&extensions=-&extensions=siderolabs/btrfs&platform=metal&secureboot=true&target=metal&version=1.13.5).
+Build the installer at [Talos Image Factory](https://factory.talos.dev/?arch=amd64&platform=metal&schematic-id=3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4&secureboot=true&target=metal&version=1.13.5).
 
-**Current schematic extensions** (review before rebuilding — `btrfs` are not actively used by this cluster; SMB-CSI does not require them):
+**Current schematic** (schematic ID `3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4`):
 
 ```yaml
 customization:
+  extraKernelArgs:
+    - libata.force=noncq
   systemExtensions:
     officialExtensions:
-      - siderolabs/btrfs
+      - siderolabs/intel-ucode
 ```
 
-> The factory URL pins a schematic ID. If you change extensions or the Talos version, regenerate the URL at factory.talos.dev to get an updated schematic ID and installer image.
+- `libata.force=noncq` — required: Intel Z97 AHCI controller rejects NCQ DMA writes under Talos (IOMMU/VT-d fault). Without this, install always fails at STATE partition XFS log write. Cannot be set via `extraKernelArgs` in `controlplane.yaml` — SecureBoot UKI ignores it. Must be baked into schematic.
+- `intel-ucode` — Intel microcode updates (Spectre/Meltdown patches for Haswell).
+
+> If you change extensions or the Talos version, regenerate the schematic at factory.talos.dev and update the schematic ID here, in `controlplane.yaml` and `worker.yaml` installer images, and in the upgrade command below.
 
 ## Initial Setup
 
@@ -36,7 +41,7 @@ Identify the target disk from the output. The `controlplane.yaml` uses a WWID se
 machine:
   install:
     diskSelector:
-      wwid: naa.50025388a040deb7   # Samsung SSD 840
+      wwid: naa.50014ee2afc640d2   # WDC WD2003FYPS-2 2TB
 ```
 
 **Verify this WWID matches your disk before continuing.** Cross-reference the `Id` column from `get disks` output. Wrong WWID = wrong disk wiped.
@@ -124,7 +129,7 @@ $target = "motherbox.local"
 $version = "v1.13.5"
 
 # Upgrade Talos OS
-talosctl upgrade -n $target --image "ghcr.io/siderolabs/installer:${version}"
+talosctl upgrade -n $target --image "factory.talos.dev/installer/3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4:${version}"
 
 # Upgrade Kubernetes
 talosctl -n $target -e $target upgrade-k8s
