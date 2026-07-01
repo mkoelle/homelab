@@ -41,7 +41,7 @@ Identify the target disk from the output. The `controlplane.yaml` uses a WWID se
 machine:
   install:
     diskSelector:
-      wwid: naa.50014ee2afc640d2   # WDC WD2003FYPS-2 2TB
+      wwid: naa.50025388a040deb7   # Samsung SSD 840 EVO 250GB
 ```
 
 **Verify this WWID matches your disk before continuing.** Cross-reference the `Id` column from `get disks` output. Wrong WWID = wrong disk wiped.
