@@ -36,35 +36,28 @@ This one-liner is now embedded in the bash block in `bootstrap/talos/README.md`.
 
 ---
 
-## Issue 2 — XFS I/O Error on STATE Partition (sda3)
+## Issue 2 — XFS I/O Error on STATE Partition (NCQ DMA, Intel AHCI Controller)
 
-**Symptom:** Install appeared to start but failed with:
+**Symptom:** Install fails with:
 ```
-ata3.00: error: { ICRC ABRT }
-I/O error, dev sda, sector 4409402 op 0x1:(WRITE)
-XFS (sda3): log recovery write I/O error at daddr 0x2 len 4096 error -5
-XFS (sda3): log mount failed
+ata2.00: failed command: WRITE FPDMA QUEUED
+I/O error, dev sdc, sector 4409402 op 0x1:(WRITE)
+XFS (sdc3): log recovery write I/O error at daddr 0x2 len 4096 error -5
+XFS (sdc3): log mount failed
 [talos] controller failed block.MountController: failed to mount "STATE": input/output error
 ```
 
-Same sector (`4409402`) failed on every attempt, regardless of:
-- SATA cable (replaced — no change)
-- SATA port (moved ata3 → ata4 — no change)
-- Disk wipe (`wipe: true` added to patch.yaml — no change to error)
+Sector `4409402` is where Talos places the STATE partition's XFS log. Same error appeared on:
+- Samsung SSD 840 EVO (`sda`/`sdd`) — prior Talos/LUKS install on disk
+- WDC WD2003FYPS-2 2TB (`sdc`) — **no prior Talos install, no LUKS** (confirmed July 2026)
 
-**Initial misdiagnosis:** Assumed failing drive. Ruled out after Debian 13 installed successfully to the same drive with no errors — including writes to the sector range containing LBA 4409402.
+Same sector, different drives, same AHCI controller. LUKS metadata was not the cause.
 
-**Root cause (confirmed):** The drive had a prior Talos install with **SecureBoot + TPM-sealed LUKS encryption** on the STATE partition (`sda3`). The encrypted partition was not properly wiped before reinstall. Talos's XFS log write to the start of sda3 attempted to write over the locked LUKS container, which the drive or controller rejected.
+**Root cause:** The **Intel 9 Series Chipset AHCI controller** (`0000:00:1f.2`) rejects NCQ DMA writes (`WRITE FPDMA QUEUED`) to this LBA under Talos's installer kernel. Debian writes the same sector successfully because `hdparm --write-sector` uses non-NCQ PIO — not because the sector or drive is healthy. The `ICRC ABRT` / host bus error is a controller-level NCQ abort, not a physical media failure.
 
-The `ICRC ABRT` error is how the kernel's libata layer surfaces a write abort from the drive — not necessarily a physical CRC failure on the SATA bus.
+**Why `extraKernelArgs` doesn't work:** Talos SecureBoot factory images set `grubUseUKICmdline: true`, which makes the bootloader read cmdline from the UKI binary rather than building it at boot. `machine.install.extraKernelArgs` in `controlplane.yaml` is ignored when this flag is set — the arg never reaches the kernel.
 
-**Fixes applied:**
-1. Added `machine.install.wipe: true` to `patch.yaml` — forces the Talos installer to zero the partition table before install, clearing old LUKS metadata.
-2. Sector 4409402 confirmed writeable from Debian via `hdparm --write-sector` (succeeded).
-
-**Remaining issue:** Talos installer uses **NCQ DMA** writes; Debian's `hdparm` uses non-NCQ PIO. The sector write succeeds non-NCQ but fails under NCQ. `extraKernelArgs: [libata.force=noncq]` in `machine.install` is **invalid with SecureBoot UKI** — the setting `grubUseUKICmdline: true` (auto-set by SecureBoot factory images) is mutually exclusive with `extraKernelArgs`.
-
-**Resolution:** Embed `libata.force=noncq` in the factory image schematic at `factory.talos.dev`. Add to the schematic YAML:
+**Resolution:** Embed `libata.force=noncq` directly in the factory image schematic at `factory.talos.dev`:
 ```yaml
 customization:
   extraKernelArgs:
@@ -73,7 +66,15 @@ customization:
     officialExtensions:
       - siderolabs/btrfs
 ```
-Download the resulting ISO, add to Ventoy, boot from it. The installer kernel will have NCQ disabled globally.
+Select `metal`, `amd64`, `SecureBoot`, target Talos version. Download the ISO, replace the existing ISO on Ventoy, and reboot. The installer kernel will have NCQ disabled for all SATA devices on the controller.
+
+> **Every reinstall on this machine requires this ISO.** A standard factory ISO without `libata.force=noncq` will always fail at the STATE partition write step, regardless of which SATA drive is the target.
+
+**What does NOT fix it:**
+- Changing SATA ports
+- Replacing SATA cables
+- Adding `machine.install.wipe: true` (wipe runs fine; XFS log write fails after)
+- Adding `extraKernelArgs` to `controlplane.yaml` (ignored by UKI bootloader)
 
 ---
 
@@ -129,25 +130,33 @@ Obtained from Debian 13 via `smartctl -a /dev/sda`:
 
 ---
 
-## Bootstrap State at End of Session
+## Bootstrap State at End of Session (updated July 2026)
 
-- Debian 13 installed on `sda` (temporary — to be wiped by Talos reinstall)
-- Talos reinstall **not yet completed** — pending boot back to Talos USB
+- Install on WDC WD2003FYPS-2 2TB (`sdc`, WWID `naa.50014ee2afc640d2`) attempted and failed — same NCQ error
+- `controlplane.yaml` updated: disk selector changed from `/dev/sda` to `diskSelector.wwid: naa.50014ee2afc640d2`
+- Ventoy ISO does **not** have `libata.force=noncq` — must rebuild before retrying
 - `controlplane.yaml` and `talosconfig` generated (gitignored — store in Bitwarden)
 - ArgoCD, Cilium, all apps not yet deployed
 
 ## Next Steps
 
-1. Reboot `motherbox` to Talos USB (Ventoy)
-2. Run apply-config from `bootstrap/talos/`:
+1. Build new factory ISO with `libata.force=noncq` at `factory.talos.dev` (schematic in Issue 2 above)
+2. Replace ISO on Ventoy, reboot `motherbox` from it
+3. Run apply-config from `bootstrap/talos/`:
    ```bash
-   target="192.168.1.2"
-   talosctl gen config motherbox.local "https://motherbox.local:6443" --config-patch @patch.yaml --force
-   line=$(grep -n "^kind: HostnameConfig" controlplane.yaml | cut -d: -f1)
-   sed -i '' "$((line-2)),\$d" controlplane.yaml
+   cd bootstrap/talos
+   export TALOSCONFIG=$(pwd)/talosconfig
+   target="motherbox.local"
    talosctl --nodes $target apply-config --file ./controlplane.yaml --insecure
    ```
-3. Wait for health, run bootstrap, get kubeconfig
-4. Install Cilium (`bootstrap/cilium/README.md`)
-5. Install ArgoCD and apply root application (`bootstrap/argocd/README.md`)
-6. Order replacement drive
+   (`controlplane.yaml` already has correct disk selector — no need to regen unless PKI is lost)
+4. Wait for health, run bootstrap, get kubeconfig:
+   ```bash
+   talosctl --nodes $target --endpoints $target health --wait-timeout 10m
+   talosctl --nodes $target --endpoints $target bootstrap
+   talosctl --nodes $target --endpoints $target health --wait-timeout 10m
+   talosctl --nodes $target --endpoints $target kubeconfig $HOME/.kube/config
+   ```
+5. Install Cilium (`bootstrap/cilium/README.md`)
+6. Install ArgoCD and apply root application (`bootstrap/argocd/README.md`)
+7. Order replacement drive for Samsung SSD 840 (degraded — see Drive Health section)
