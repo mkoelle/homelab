@@ -9,6 +9,8 @@ kind: ExternalSecret
 metadata:
   name: smb-creds
   namespace: core-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   refreshInterval: 1h
   secretStoreRef:
