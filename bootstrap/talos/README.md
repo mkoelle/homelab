@@ -43,7 +43,7 @@ Identify the target disk from the output. The `controlplane.yaml` uses a WWID se
 machine:
   install:
     diskSelector:
-      wwid: naa.50025388a040deb7   # Samsung SSD 840 EVO 250GB
+      wwid: naa.50025388a040deb7 # Samsung SSD 840 EVO 250GB
 ```
 
 **Verify this WWID matches your disk before continuing.** Cross-reference the `Id` column from `get disks` output. Wrong WWID = wrong disk wiped.
@@ -75,7 +75,7 @@ sed -i '' "$((line-2)),\$d" controlplane.yaml
 
 **Post-gen required edit:** Talos 1.13+ appends a `HostnameConfig: auto: stable` document to the generated file. This conflicts with `machine.network.hostname` from the patch and causes `apply-config` to fail with:
 
-```
+```txt
 static hostname is already set in v1alpha1 config
 ```
 

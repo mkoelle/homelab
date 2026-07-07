@@ -26,12 +26,12 @@ Start from a bare-metal machine and follow these steps in order to bring up the 
 
 ## What is and isn't in Git
 
-| File | In Git | Notes |
-|---|---|---|
-| `bootstrap/talos/patch.yaml` | yes | patch applied during gen config |
-| `bootstrap/talos/controlplane.yaml` | **no** (gitignored) | contains cluster PKI private keys |
-| `bootstrap/talos/talosconfig` | **no** (gitignored) | contains admin client certificate and key |
-| `bootstrap/talos/worker.yaml` | **no** (gitignored) | |
-| `apps/**/*.yaml` | yes | all app manifests, managed by ArgoCD |
+| File                                | In Git              | Notes                                     |
+| ----------------------------------- | ------------------- | ----------------------------------------- |
+| `bootstrap/talos/patch.yaml`        | yes                 | patch applied during gen config           |
+| `bootstrap/talos/controlplane.yaml` | **no** (gitignored) | contains cluster PKI private keys         |
+| `bootstrap/talos/talosconfig`       | **no** (gitignored) | contains admin client certificate and key |
+| `bootstrap/talos/worker.yaml`       | **no** (gitignored) |                                           |
+| `apps/**/*.yaml`                    | yes                 | all app manifests, managed by ArgoCD      |
 
 Store `controlplane.yaml` and `talosconfig` in Bitwarden. Losing them on disk = no way to manage the Talos node.

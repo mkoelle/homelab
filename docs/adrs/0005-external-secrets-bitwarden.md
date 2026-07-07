@@ -41,20 +41,22 @@ Use **External Secrets Operator (ESO)** with **Bitwarden Secrets Manager (BSM)**
 
 Secrets in BSM use a path-like naming scheme that mirrors the repo's `apps/<category>/<app>/` structure:
 
-```
+```txt
 <category>/<app-or-service>/<key>
 ```
 
 All secrets live in a single BSM project named `homelab`. Additional projects are only warranted if per-project RBAC is needed (not required for a single-node homelab).
 
 **Current secrets:**
-| BSM Secret Name | Materialized as |
-|---|---|
+
+| BSM Secret Name                 | Materialized as                       |
+| ------------------------------- | ------------------------------------- |
 | `storage/synology-smb/username` | `core-secrets/smb-creds` → `username` |
 | `storage/synology-smb/password` | `core-secrets/smb-creds` → `password` |
 
 **Future pattern:**
-```
+
+```txt
 apps/grafana/admin-password
 apps/postgres/password
 infra/cloudflare/api-token

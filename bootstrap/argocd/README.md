@@ -107,10 +107,10 @@ Before the `external-secrets` app can sync, replace the placeholder UUIDs in `ap
 data:
   - secretKey: username
     remoteRef:
-      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-USERNAME>"   # ← replace
+      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-USERNAME>" # ← replace
   - secretKey: password
     remoteRef:
-      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-PASSWORD>"   # ← replace
+      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-PASSWORD>" # ← replace
 ```
 
 `task build` will fail until these are replaced (intentional guard). Commit the real UUIDs, then ArgoCD reconciles and the `smb-creds` Secret materializes in `core-secrets`.

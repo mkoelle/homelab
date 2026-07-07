@@ -8,10 +8,10 @@ Phased roadmap derived from security audit backlog. Each phase has hard prerequi
 
 These require out-of-band action before any automated work proceeds.
 
-| Task | File | Unblocks |
-|------|------|----------|
-| Replace BSM UUIDs in smb-creds ExternalSecret | `apps/core/external-secrets/smb-creds.yaml` | Storage on fresh deploy |
-| Provision NAS share `//asgard.local/appdata/filebrowser` | Synology DSM | Filebrowser /config PVC |
+| Task                                                     | File                                        | Unblocks                |
+| -------------------------------------------------------- | ------------------------------------------- | ----------------------- |
+| Replace BSM UUIDs in smb-creds ExternalSecret            | `apps/core/external-secrets/smb-creds.yaml` | Storage on fresh deploy |
+| Provision NAS share `//asgard.local/appdata/filebrowser` | Synology DSM                                | Filebrowser /config PVC |
 
 ---
 
@@ -119,7 +119,7 @@ Update `apps/core/argocd/kustomization.yaml`:
 resources:
   - namespace.yaml
   - networkpolicy.yaml
-  - vendor/install.yaml  # replaces github.com/... remote
+  - vendor/install.yaml # replaces github.com/... remote
 ```
 
 Add Renovate regex manager to track `ref=v3.3.8` → bump vendored file on new ArgoCD releases.
@@ -177,7 +177,7 @@ bitwarden-sdk-server:
       enabled: true
 ```
 
-3. Update `ClusterSecretStore` URL: `http://` → `https://`.
+1. Update `ClusterSecretStore` URL: `http://` → `https://`.
 
 ### 2c. Deploy Gateway API (GatewayClass + Gateway)
 
@@ -271,10 +271,11 @@ alertmanager:
   config:
     receivers:
       - name: slack
-        slack_configs: []  # fill after Phase 4
+        slack_configs: [] # fill after Phase 4
 ```
 
 Key alerts to configure:
+
 - Pod CrashLoopBackOff
 - Node memory > 80%
 - etcd latency > 1s
@@ -388,7 +389,7 @@ Slack webhook via ExternalSecret.
 
 ## Dependency Graph
 
-```
+```txt
 BSM UUIDs ──────────────────────────────────────────► Storage works
 NAS share ──────────────────────────────────────────► Filebrowser /config
 
@@ -425,14 +426,14 @@ Phase 5 (remote access)
 
 ## Wave Assignment Summary
 
-| Wave | App | Phase |
-|------|-----|-------|
-| -10 | AppProject homelab | Done |
-| -1 | external-secrets | Done |
-| 0 | cilium, argocd | Done |
-| 1 | csi-driver-smb, cert-manager | Phase 2 |
-| 2 | gateway (GatewayClass + Gateway) | Phase 2 |
-| 3 | kube-prometheus-stack, loki | Phase 3 |
-| 4 | authentik | Phase 4 |
-| 5 | tailscale | Phase 5 |
-| 6+ | filebrowser, other workloads | Done / Phase 2 |
+| Wave | App                              | Phase          |
+| ---- | -------------------------------- | -------------- |
+| -10  | AppProject homelab               | Done           |
+| -1   | external-secrets                 | Done           |
+| 0    | cilium, argocd                   | Done           |
+| 1    | csi-driver-smb, cert-manager     | Phase 2        |
+| 2    | gateway (GatewayClass + Gateway) | Phase 2        |
+| 3    | kube-prometheus-stack, loki      | Phase 3        |
+| 4    | authentik                        | Phase 4        |
+| 5    | tailscale                        | Phase 5        |
+| 6+   | filebrowser, other workloads     | Done / Phase 2 |
