@@ -44,12 +44,17 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
           volumeMounts:
             - name: data
               mountPath: /data
               readOnly: true
+            - name: config
+              mountPath: /config
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               memory: "256Mi"
@@ -61,3 +66,7 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: pvc-photos-ro
+        - name: config
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

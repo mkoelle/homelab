@@ -4,3 +4,5 @@ kind: Namespace
 
 metadata:
   name: core-argocd
+  labels:
+    gateway-access: "true"

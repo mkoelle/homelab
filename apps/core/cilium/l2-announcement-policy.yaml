@@ -5,7 +5,7 @@ metadata:
   name: homelab-l2-policy
 spec:
   loadBalancerIPs: true
-  externalIPs: true
+  externalIPs: false
   interfaces:
     - ^eth[0-9]+
     - ^eno[0-9]+

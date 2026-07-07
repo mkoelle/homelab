@@ -13,6 +13,9 @@ spec:
   description: Homelab GitOps — single repo, explicit namespace allowlist
   sourceRepos:
     - https://github.com/mkoelle/homelab
+    - https://helm.cilium.io/
+    - https://charts.external-secrets.io
+    - https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
   destinations:
     - server: https://kubernetes.default.svc
       namespace: core-argocd

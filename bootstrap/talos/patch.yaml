@@ -1,7 +1,5 @@
 ---
 machine:
-  install:
-    wipe: true
   # certSANs for the Talos API (talosctl). Without these, talosctl connections
   # to motherbox.local or its IP fail with certificate errors after apply.
   certSANs:

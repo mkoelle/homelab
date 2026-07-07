@@ -18,6 +18,11 @@ spec:
   ingress:
     - from:
         - podSelector: {}
+    # Gateway namespace — Cilium gateway proxy sends traffic to argocd-server
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
   egress:
     # DNS — kube-dns in kube-system
     - ports:

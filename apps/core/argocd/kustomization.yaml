@@ -61,7 +61,7 @@ patches:
         value:
           - apiGroups: ["*"]
             resources: ["*"]
-            verbs: [get, list, watch, create, update, patch, delete, escalate, bind]
+            verbs: [get, list, watch, create, update, patch, delete]
           - nonResourceURLs: ["*"]
             verbs: [get]
     target:
