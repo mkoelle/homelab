@@ -39,10 +39,8 @@ ipam:
 # See: https://github.com/cilium/cilium/discussions/36829
 loadBalancer:
   acceleration: best-effort
-# Gateway API Support — disabled until cert-manager and GatewayClass are deployed.
-# An unguarded Gateway object would expose services with no admission controls.
 gatewayAPI:
-  enabled: false
+  enabled: true
 # Hubble (Observability)
 hubble:
   enabled: true

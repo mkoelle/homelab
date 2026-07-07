@@ -7,6 +7,7 @@ resources:
   - namespace.yaml
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
+  - httproute.yaml
   - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.3.8
 
 openapi:
@@ -46,6 +47,10 @@ patches:
     target:
       kind: ConfigMap
       name: argocd-rbac-cm
+  - path: argocd-cmd-params-cm.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-cmd-params-cm
   # Grant cluster-wide read/write to all resources.
   # Minimal-permission approach caused whack-a-mole RBAC failures as ArgoCD's
   # cluster cache discovery hits every API group. Single-node homelab has no

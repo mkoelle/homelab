@@ -26,6 +26,8 @@ spec:
       namespace: core-secrets
     - server: https://kubernetes.default.svc
       namespace: cilium-secrets
+    - server: https://kubernetes.default.svc
+      namespace: gateway
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
@@ -57,3 +59,5 @@ spec:
       kind: ApplicationSet
     - group: argoproj.io
       kind: AppProject
+    - group: gateway.networking.k8s.io
+      kind: GatewayClass

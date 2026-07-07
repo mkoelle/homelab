@@ -13,6 +13,9 @@ metadata:
   namespace: core-argocd
 spec:
   endpointSelector: {}
+  ingress:
+    - fromEntities:
+        - "ingress"
   egress:
     - toEntities:
         - "kube-apiserver"
