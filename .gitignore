@@ -6,3 +6,6 @@ kubeconfig
 charts
 secrets.env
 .env
+
+docs/planning/*
+docs/reviews/*
