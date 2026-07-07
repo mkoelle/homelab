@@ -8,3 +8,4 @@ spec:
   externalIPs: true
   interfaces:
     - ^eth[0-9]+
+    - ^eno[0-9]+
