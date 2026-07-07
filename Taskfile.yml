@@ -16,6 +16,7 @@ vars:
   KUBE_LINTER_IMAGE: stackrox/kube-linter:v0.8.3
   PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5.24.0
   POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:v10.2.0
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
   PRETTIER_IMAGE: tmknom/prettier:3.6.2
   K8S_IMAGE: alpine/k8s:1.36.2
   # Computed
@@ -69,6 +70,7 @@ tasks:
       - task: kube-lint
       - task: deprecation-check
       - task: polaris
+      - task: trivy
   clean:
     desc: Clean up build directory
     silent: true
@@ -273,3 +275,23 @@ tasks:
             && printf "✅ Validated %s\n" "{{.ITEM}}" \
             || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
           fi
+  trivy:
+    desc: Scan source manifests for misconfigurations with Trivy
+    internal: true
+    silent: true
+    deps: [check-docker]
+    cmds:
+      - printf "\n{{.GREEN}}🔒 Scanning source manifests with Trivy...{{.RESET}}\n"
+      - for:
+          - apps/core
+          - apps/media
+        cmd: |-
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+          {{.TRIVY_IMAGE}} \
+          config \
+          --severity CRITICAL,HIGH \
+          --exit-code 1 \
+          --skip-dirs "**/.build" \
+          {{.ITEM}} \
+          && printf "✅ Scanned {{.ITEM}}\n" \
+          || { printf "{{.RED}}❌ Trivy failed for {{.ITEM}}{{.RESET}}\n"; exit 1; }
