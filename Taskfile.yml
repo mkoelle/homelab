@@ -205,13 +205,12 @@ tasks:
           {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
           {{.K8S_IMAGE}} \
           kubeconform \
-          -summary \
           -schema-location default \
           -schema-location 'https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json' \
           -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
           /work/deployment.yaml \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          && printf "  ✅ %s\n" "{{.ITEM}}" \
+          || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   kube-lint:
     desc: Run security and best practice checks with kube-linter
     internal: true
@@ -227,8 +226,8 @@ tasks:
           lint \
           --config /config/kube-linter.yaml \
           /work/deployment.yaml \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          && printf "  ✅ %s\n" "{{.ITEM}}" \
+          || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   deprecation-check:
     desc: Check for deprecated Kubernetes APIs with pluto
     internal: true
@@ -243,8 +242,8 @@ tasks:
           {{.PLUTO_IMAGE}} \
           detect \
           /work/deployment.yaml \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          && printf "  ✅ %s\n" "{{.ITEM}}" \
+          || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   polaris:
     desc: Run security and best practice checks with polaris
     internal: true
@@ -261,8 +260,8 @@ tasks:
             --config "{{.ROOT_DIR}}/.config/polaris.yaml" \
             --format pretty \
             --only-show-failed-tests true \
-            && printf "✅ Validated %s\n" "{{.ITEM}}" \
-            || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+            && printf "  ✅ %s\n" "{{.ITEM}}" \
+            || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
           else
             {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
             -v "{{.ROOT_DIR}}/.config:/config" \
@@ -272,8 +271,8 @@ tasks:
             --config /config/polaris.yaml \
             --format pretty \
             --only-show-failed-tests true \
-            && printf "✅ Validated %s\n" "{{.ITEM}}" \
-            || { printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+            && printf "  ✅ %s\n" "{{.ITEM}}" \
+            || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
           fi
   trivy:
     desc: Scan source manifests for misconfigurations with Trivy
@@ -285,9 +284,10 @@ tasks:
           {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
           {{.TRIVY_IMAGE}} \
           config \
+          --quiet \
           --severity CRITICAL,HIGH \
           --exit-code 1 \
           --skip-dirs "**/.build,**/charts" \
           apps \
-          && printf "✅ Scanned apps/\n" \
-          || { printf "{{.RED}}❌ Trivy failed{{.RESET}}\n"; exit 1; }
+          && printf "  ✅ apps/\n" \
+          || { printf "{{.RED}}❌ Trivy{{.RESET}}\n"; exit 1; }
