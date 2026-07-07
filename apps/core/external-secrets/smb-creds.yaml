@@ -4,7 +4,7 @@
 #
 # Before applying: add two secrets to Bitwarden Secrets Manager under the homelab
 # project and replace the UUIDs below with their BSM IDs.
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: smb-creds
