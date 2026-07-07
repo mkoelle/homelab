@@ -6,6 +6,7 @@ namespace: core-argocd
 resources:
   - namespace.yaml
   - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
   - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.3.8
 
 openapi:
@@ -14,6 +15,29 @@ openapi:
 patches:
   - path: patch-deployments.yaml
   - path: patch-statefulsets.yaml
+  # Kustomize namespace transformer does not update subjects[].namespace in ClusterRoleBindings.
+  # ArgoCD chart hardcodes namespace: argocd — patch all three to use the actual namespace.
+  - patch: |
+      - op: replace
+        path: /subjects/0/namespace
+        value: core-argocd
+    target:
+      kind: ClusterRoleBinding
+      name: argocd-application-controller
+  - patch: |
+      - op: replace
+        path: /subjects/0/namespace
+        value: core-argocd
+    target:
+      kind: ClusterRoleBinding
+      name: argocd-applicationset-controller
+  - patch: |
+      - op: replace
+        path: /subjects/0/namespace
+        value: core-argocd
+    target:
+      kind: ClusterRoleBinding
+      name: argocd-server
   - path: argocd-cm.yaml
     target:
       kind: ConfigMap
@@ -22,76 +46,19 @@ patches:
     target:
       kind: ConfigMap
       name: argocd-rbac-cm
+  # Grant cluster-wide read/write to all resources.
+  # Minimal-permission approach caused whack-a-mole RBAC failures as ArgoCD's
+  # cluster cache discovery hits every API group. Single-node homelab has no
+  # multi-tenant threat model that warrants the maintenance overhead.
   - patch: |
       - op: replace
         path: /rules
         value:
-          # Core resources — full write for managed objects, nodes read-only
-          - apiGroups: [""]
-            resources: [pods, services, endpoints, configmaps, secrets, namespaces,
-              serviceaccounts, events, resourcequotas, podtemplates,
-              persistentvolumes, persistentvolumeclaims,
-              replicationcontrollers, limitranges]
+          - apiGroups: ["*"]
+            resources: ["*"]
             verbs: [get, list, watch, create, update, patch, delete]
-          - apiGroups: [""]
-            resources: [nodes]
-            verbs: [get, list, watch]
-          # Apps
-          - apiGroups: [apps]
-            resources: [deployments, statefulsets, daemonsets, replicasets, controllerrevisions]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # Batch
-          - apiGroups: [batch]
-            resources: [jobs, cronjobs]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # Networking
-          - apiGroups: [networking.k8s.io]
-            resources: [ingresses, networkpolicies, ingressclasses]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # RBAC — namespace-scoped write; cluster-scoped read-only
-          - apiGroups: [rbac.authorization.k8s.io]
-            resources: [roles, rolebindings]
-            verbs: [get, list, watch, create, update, patch, delete]
-          - apiGroups: [rbac.authorization.k8s.io]
-            resources: [clusterroles, clusterrolebindings]
-            verbs: [get, list, watch]
-          # Policy
-          - apiGroups: [policy]
-            resources: [poddisruptionbudgets]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # Coordination
-          - apiGroups: [coordination.k8s.io]
-            resources: [leases]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # Storage — StorageClass, PV, CSIDriver managed by csi-driver-smb chart
-          - apiGroups: [storage.k8s.io]
-            resources: [storageclasses, volumeattachments, csidrivers, csinodes]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # CRDs — installed via helmCharts with includeCRDs: true (Cilium, ESO)
-          - apiGroups: [apiextensions.k8s.io]
-            resources: [customresourcedefinitions]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # Webhooks — ESO validating webhook
-          - apiGroups: [admissionregistration.k8s.io]
-            resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # Autoscaling — read-only observation
-          - apiGroups: [autoscaling]
-            resources: [horizontalpodautoscalers]
-            verbs: [get, list, watch]
-          # ArgoCD own resources
-          - apiGroups: [argoproj.io]
-            resources: [applications, appprojects, applicationsets,
-              applicationsets/finalizers, applicationsets/status]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # Cilium — only the two CRDs managed in git
-          - apiGroups: [cilium.io]
-            resources: [ciliuml2announcementpolicies, ciliumloadbalancerippools]
-            verbs: [get, list, watch, create, update, patch, delete]
-          # External Secrets — only the two CRDs managed in git
-          - apiGroups: [external-secrets.io]
-            resources: [clustersecretstores, externalsecrets]
-            verbs: [get, list, watch, create, update, patch, delete]
+          - nonResourceURLs: ["*"]
+            verbs: [get]
     target:
       kind: ClusterRole
       name: argocd-application-controller

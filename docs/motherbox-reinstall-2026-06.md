@@ -36,9 +36,11 @@ This one-liner is now embedded in the bash block in `bootstrap/talos/README.md`.
 
 ---
 
-## Issue 2 — XFS I/O Error on STATE Partition (NCQ DMA, Intel AHCI Controller)
+## Issue 2 — XFS I/O Error on STATE Partition (Intel AHCI Controller / IOMMU DMA Fault)
 
-**Symptom:** Install fails with:
+**Symptom:** Install fails with one of two error forms depending on whether NCQ is disabled:
+
+With NCQ enabled (standard ISO):
 ```
 ata2.00: failed command: WRITE FPDMA QUEUED
 I/O error, dev sdc, sector 4409402 op 0x1:(WRITE)
@@ -47,36 +49,49 @@ XFS (sdc3): log mount failed
 [talos] controller failed block.MountController: failed to mount "STATE": input/output error
 ```
 
-Sector `4409402` is where Talos places the STATE partition's XFS log. Same error appeared on:
+With `libata.force=noncq` (noncq-only schematic, July 7 2026):
+```
+ata4.00: failed command: WRITE DMA EXT
+ata4.00: exception Emask 0x60 SAct 0x0 SErr 0x800 action 0x6 frozen
+ata4.00: irq_stat 0x20000000, host bus error
+I/O error, dev sdd, sector 4409416 op 0x1:(WRITE)
+XFS (sdd3): log recovery write I/O error at daddr 0x10 len 4096 error -5
+XFS (sdd3): log mount failed
+[talos] controller failed block.MountController: failed to mount "STATE": openfs failed
+```
+
+Sectors `4409402`–`4409416` are where Talos places the STATE partition's XFS log. Error appeared on:
 - Samsung SSD 840 EVO (`sda`/`sdd`) — prior Talos/LUKS install on disk
-- WDC WD2003FYPS-2 2TB (`sdc`) — **no prior Talos install, no LUKS** (confirmed July 2026)
+- WDC WD2003FYPS-2 2TB (`sdc`/`sdd`) — **no prior Talos install, no LUKS** (confirmed July 2026)
 
-Same sector, different drives, same AHCI controller. LUKS metadata was not the cause.
+Same sector region, different drives, same AHCI controller, with and without NCQ. LUKS metadata was not the cause.
 
-**Root cause:** The **Intel 9 Series Chipset AHCI controller** (`0000:00:1f.2`) rejects NCQ DMA writes (`WRITE FPDMA QUEUED`) to this LBA under Talos's installer kernel. Debian writes the same sector successfully because `hdparm --write-sector` uses non-NCQ PIO — not because the sector or drive is healthy. The `ICRC ABRT` / host bus error is a controller-level NCQ abort, not a physical media failure.
+**Root cause:** The **Intel 9 Series Chipset AHCI controller** (`0000:00:1f.2`) produces host bus errors (`SErr 0x800` = `DIAGERR`, `Emask 0x60`) on DMA writes to this LBA under Talos's installer kernel. `libata.force=noncq` changes the command type from `WRITE FPDMA QUEUED` to `WRITE DMA EXT` but does not fix the underlying fault — the Intel VT-d IOMMU is aborting DMA address translation at this sector for both NCQ and non-NCQ DMA. Disabling the IOMMU entirely with `intel_iommu=off` is required.
 
 **Why `extraKernelArgs` doesn't work:** Talos SecureBoot factory images set `grubUseUKICmdline: true`, which makes the bootloader read cmdline from the UKI binary rather than building it at boot. `machine.install.extraKernelArgs` in `controlplane.yaml` is ignored when this flag is set — the arg never reaches the kernel.
 
-**Resolution:** Embed `libata.force=noncq` directly in the factory image schematic at `factory.talos.dev`:
+**Resolution:** Embed both `libata.force=noncq` and `intel_iommu=off` in the factory image schematic at `factory.talos.dev`:
 ```yaml
 customization:
   extraKernelArgs:
     - libata.force=noncq
+    - intel_iommu=off
   systemExtensions:
     officialExtensions:
       - siderolabs/intel-ucode
 ```
-Select `metal`, `amd64`, `SecureBoot`, target Talos version. Download the ISO, replace the existing ISO on Ventoy, and reboot. The installer kernel will have NCQ disabled for all SATA devices on the controller.
+Select `metal`, `amd64`, `SecureBoot`, target Talos version. Download the ISO, replace the existing ISO on Ventoy, and reboot.
 
-**Current schematic ID:** `3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4` ([factory link](https://factory.talos.dev/?arch=amd64&platform=metal&schematic-id=3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4&secureboot=true&target=metal&version=1.13.5))
+**Current schematic ID:** `7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884` ([factory link](https://factory.talos.dev/?arch=amd64&platform=metal&schematic-id=7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884&secureboot=true&target=metal&version=1.13.5))
 
-> **Every reinstall on this machine requires this ISO.** A standard factory ISO without `libata.force=noncq` will always fail at the STATE partition write step, regardless of which SATA drive is the target.
+> **Every reinstall on this machine requires this ISO.** A standard factory ISO, or one with only `libata.force=noncq`, will always fail at the STATE partition write step regardless of which SATA drive is the target.
 
 **What does NOT fix it:**
 - Changing SATA ports
 - Replacing SATA cables
 - Adding `machine.install.wipe: true` (wipe runs fine; XFS log write fails after)
 - Adding `extraKernelArgs` to `controlplane.yaml` (ignored by UKI bootloader)
+- `libata.force=noncq` alone (changes command type, host bus error persists)
 
 ---
 
@@ -132,17 +147,30 @@ Obtained from Debian 13 via `smartctl -a /dev/sda`:
 
 ---
 
-## Bootstrap State at End of Session (updated July 2026)
+## Bootstrap State at End of Session (updated July 7 2026)
 
-- Install on WDC WD2003FYPS-2 2TB (`sdc`, WWID `naa.50014ee2afc640d2`) attempted and failed — same NCQ error
-- `controlplane.yaml` updated: disk selector changed from `/dev/sda` to `diskSelector.wwid: naa.50014ee2afc640d2`
-- Ventoy ISO does **not** have `libata.force=noncq` — must rebuild before retrying
+- Install on WDC WD2003FYPS-2 2TB (`sdc`/`sdd`, WWID `naa.50014ee2afc640d2`) attempted twice — failed both times
+  - First attempt: standard ISO — `WRITE FPDMA QUEUED` NCQ abort at sector 4409402
+  - Second attempt: noncq-only ISO (`3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4`) — `WRITE DMA EXT` host bus error at sector 4409416 — noncq confirmed working, IOMMU DMA abort persists
+- Root cause updated: Intel VT-d IOMMU aborts DMA at this LBA for both NCQ and non-NCQ writes; `intel_iommu=off` required
+- `controlplane.yaml` disk selector: `wwid: naa.50014ee2afc640d2` (WD 2TB) — correct, no regen needed
 - `controlplane.yaml` and `talosconfig` generated (gitignored — store in Bitwarden)
+- Ventoy ISO must be replaced with new schematic including `intel_iommu=off` before next attempt
 - ArgoCD, Cilium, all apps not yet deployed
 
 ## Next Steps
 
-1. ✅ Factory ISO built — schematic ID `3683263dbb2b4b1898ea2a6312d1dd2549b9752505201da1b07f71a9538886c4` (noncq + intel-ucode, SecureBoot)
+1. Build new factory ISO at factory.talos.dev with schematic:
+   ```yaml
+   customization:
+     extraKernelArgs:
+       - libata.force=noncq
+       - intel_iommu=off
+     systemExtensions:
+       officialExtensions:
+         - siderolabs/intel-ucode
+   ```
+   Select `metal`, `amd64`, `SecureBoot`, `v1.13.5`. Update schematic ID in `bootstrap/talos/README.md`.
 2. Replace ISO on Ventoy, reboot `motherbox` from it
 3. Run apply-config from `bootstrap/talos/`:
    ```bash

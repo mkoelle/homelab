@@ -1,0 +1,18 @@
+---
+# CiliumNetworkPolicy — allows ArgoCD pods to reach the Kubernetes API server.
+# Standard NetworkPolicy ipBlock rules do not match Cilium's "host" identity
+# (the node IP 192.168.1.2 is the host entity in Cilium's identity model).
+# kubeProxyReplacement DNAT rewrites 10.96.0.1:443 → 192.168.1.2:6443 at the
+# socket level before NetworkPolicy evaluation, so the TC BPF program sees
+# dst=192.168.1.2:6443 (host), not the ClusterIP. The kube-apiserver entity
+# matches regardless of the actual IP or port.
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-kube-apiserver
+  namespace: core-argocd
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - "kube-apiserver"

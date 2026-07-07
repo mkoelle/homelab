@@ -28,13 +28,20 @@ spec:
     # Intra-namespace (server↔redis, controller↔repo-server, etc.)
     - to:
         - podSelector: {}
-    # Kubernetes API via ClusterIP (kubernetes.default.svc → 10.96.0.0/12)
+    # Kubernetes API — ClusterIP pre-DNAT (10.96.0.1:443) and post-DNAT (192.168.1.2:6443)
+    # Cilium kubeProxyReplacement evaluates some paths post-DNAT, so both are required.
     - to:
         - ipBlock:
             cidr: 10.96.0.0/12
       ports:
         - protocol: TCP
           port: 443
+    - to:
+        - ipBlock:
+            cidr: 192.168.1.2/32
+      ports:
+        - protocol: TCP
+          port: 6443
     # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
     - to:
         - ipBlock:

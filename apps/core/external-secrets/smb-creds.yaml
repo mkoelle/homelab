@@ -20,7 +20,7 @@ spec:
   data:
     - secretKey: username
       remoteRef:
-        key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-USERNAME>"
+        key: "ce211409-8caa-41c3-a798-b4800035e38f"
     - secretKey: password
       remoteRef:
-        key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-PASSWORD>"
+        key: "3bdc6e8e-378b-4707-9837-b4800036105f"

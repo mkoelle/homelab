@@ -37,8 +37,34 @@ Use **External Secrets Operator (ESO)** with **Bitwarden Secrets Manager (BSM)**
 - **ArgoCD compatible**: ESO resources are standard CRDs, sync'd normally by ArgoCD.
 - **Rotation**: Updating a secret in BSM is reflected in the cluster on the next `refreshInterval` without any git changes.
 
+## BSM Naming Convention
+
+Secrets in BSM use a path-like naming scheme that mirrors the repo's `apps/<category>/<app>/` structure:
+
+```
+<category>/<app-or-service>/<key>
+```
+
+All secrets live in a single BSM project named `homelab`. Additional projects are only warranted if per-project RBAC is needed (not required for a single-node homelab).
+
+**Current secrets:**
+| BSM Secret Name | Materialized as |
+|---|---|
+| `storage/synology-smb/username` | `core-secrets/smb-creds` → `username` |
+| `storage/synology-smb/password` | `core-secrets/smb-creds` → `password` |
+
+**Future pattern:**
+```
+apps/grafana/admin-password
+apps/postgres/password
+infra/cloudflare/api-token
+infra/oidc/client-secret
+infra/tailscale/auth-key
+```
+
 ## Consequences
 
 - BSM UUID references in `ExternalSecret` manifests must be replaced with real IDs before applying (not committed as placeholders).
 - The `bitwarden-access-token` secret must be bootstrapped manually before ESO can pull any secrets.
 - All new secrets should use this pattern; raw `Secret` manifests are prohibited in git.
+- New secrets must follow the `<category>/<app-or-service>/<key>` naming convention in BSM.
