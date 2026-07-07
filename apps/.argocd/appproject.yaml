@@ -24,6 +24,8 @@ spec:
       namespace: filebrowser
     - server: https://kubernetes.default.svc
       namespace: core-secrets
+    - server: https://kubernetes.default.svc
+      namespace: cilium-secrets
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
