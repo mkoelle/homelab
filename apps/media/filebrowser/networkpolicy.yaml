@@ -19,6 +19,14 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+    # Gateway API proxy: envoy pods run in cluster CIDR, not LAN
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
+      ports:
+        - protocol: TCP
+          port: 8080
   egress:
     # DNS
     - ports:

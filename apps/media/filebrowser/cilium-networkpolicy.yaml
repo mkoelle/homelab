@@ -9,5 +9,8 @@ spec:
     matchLabels:
       app: filebrowser
   ingress:
-    - fromEntities:
-        - "ingress"
+    # Gateway API proxy: Cilium envoy pods in gateway namespace
+    - fromEndpoints:
+        - matchNamespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway

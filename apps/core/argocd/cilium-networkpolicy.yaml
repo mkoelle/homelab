@@ -14,8 +14,16 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
-    - fromEntities:
-        - "ingress"
+    # Intra-namespace: ArgoCD components communicate with each other
+    - fromEndpoints:
+        - matchNamespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: core-argocd
+    # Gateway API proxy: Cilium envoy pods in gateway namespace
+    - fromEndpoints:
+        - matchNamespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
   egress:
     - toEntities:
         - "kube-apiserver"

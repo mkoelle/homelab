@@ -41,6 +41,8 @@ loadBalancer:
   acceleration: best-effort
 gatewayAPI:
   enabled: true
+  enableAlpn: true
+  enableAppProtocol: true
 # Hubble (Observability)
 hubble:
   enabled: true
