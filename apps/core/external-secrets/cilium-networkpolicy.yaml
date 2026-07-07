@@ -1,0 +1,11 @@
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: external-secrets-kube-apiserver
+  namespace: external-secrets
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - "kube-apiserver"

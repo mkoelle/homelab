@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
   - cluster-secret-store.yaml
   - smb-creds.yaml
 
