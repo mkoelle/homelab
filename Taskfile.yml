@@ -277,21 +277,17 @@ tasks:
           fi
   trivy:
     desc: Scan source manifests for misconfigurations with Trivy
-    internal: true
     silent: true
     deps: [check-docker]
     cmds:
       - printf "\n{{.GREEN}}🔒 Scanning source manifests with Trivy...{{.RESET}}\n"
-      - for:
-          - apps/core
-          - apps/media
-        cmd: |-
+      - cmd: |-
           {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
           {{.TRIVY_IMAGE}} \
           config \
           --severity CRITICAL,HIGH \
           --exit-code 1 \
-          --skip-dirs "**/.build" \
-          {{.ITEM}} \
-          && printf "✅ Scanned {{.ITEM}}\n" \
-          || { printf "{{.RED}}❌ Trivy failed for {{.ITEM}}{{.RESET}}\n"; exit 1; }
+          --skip-dirs "**/.build,**/charts" \
+          apps \
+          && printf "✅ Scanned apps/\n" \
+          || { printf "{{.RED}}❌ Trivy failed{{.RESET}}\n"; exit 1; }

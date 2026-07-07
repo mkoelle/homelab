@@ -37,11 +37,12 @@ jobs:
         run: task build
       - name: Validate
         run: task validate
-      - name: Trivy — scan user workload manifests for misconfigurations
+      - name: Trivy — scan all app manifests for misconfigurations
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
-          scan-ref: apps/media
+          scan-ref: apps
           severity: CRITICAL,HIGH
           exit-code: "1"
           format: table
+          skip-dirs: "**/.build,**/charts"
