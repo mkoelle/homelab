@@ -35,6 +35,22 @@ spec:
             namespace: gateway
             wave: "2"
 
+          # Wave 3 — Observability (metrics + logs)
+          - name: monitoring
+            path: apps/core/monitoring
+            namespace: monitoring
+            wave: "3"
+
+          - name: loki
+            path: apps/core/loki
+            namespace: loki
+            wave: "3"
+
+          - name: alloy
+            path: apps/core/alloy
+            namespace: alloy
+            wave: "3"
+
           # Wave 4 — User workloads
           - name: filebrowser
             path: apps/media/filebrowser

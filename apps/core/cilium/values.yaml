@@ -43,6 +43,11 @@ gatewayAPI:
   enabled: true
   enableAlpn: true
   enableAppProtocol: true
+# Agent + operator metrics. No Prometheus Operator in this cluster (see ADR 0007) —
+# serviceMonitor left disabled everywhere; Alloy scrapes these metrics endpoints
+# directly via Kubernetes service discovery instead of a ServiceMonitor CRD.
+prometheus:
+  enabled: true
 # Hubble (Observability)
 hubble:
   enabled: true
@@ -50,10 +55,20 @@ hubble:
     enabled: true
   ui:
     enabled: true
+  metrics:
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - icmp
+      - http
 # Operator Configuration
 operator:
   # Single replica is a single point of failure, but I only have one node
   replicas: 1
+  prometheus:
+    enabled: true
 # L2 Announcements (ARP-based, required for home network without BGP)
 l2announcements:
   enabled: true

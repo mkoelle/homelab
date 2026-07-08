@@ -21,3 +21,5 @@ checks:
     # csi-driver-smb runs as root; also filebrowser needs a writable root filesystem.
     - run-as-non-root
     - no-read-only-root-fs
+    # node-exporter needs the host process namespace to see host-level process/mount metrics.
+    - host-pid

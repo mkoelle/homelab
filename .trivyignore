@@ -1,0 +1,6 @@
+# KSV-0047: apps/core/alloy/rbac.yaml grants nodes/proxy get to the Alloy ServiceAccount.
+# Required to scrape kubelet/cadvisor metrics via /api/v1/nodes/{name}/proxy/metrics —
+# same permission kube-prometheus-stack's own kubelet-scrape ClusterRole needs. Scoped to
+# one verb (get) on one resource, bound to one ServiceAccount in one namespace — not a
+# blanket exception.
+KSV-0047

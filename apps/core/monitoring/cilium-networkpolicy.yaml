@@ -1,0 +1,29 @@
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: monitoring-gateway
+  namespace: monitoring
+spec:
+  endpointSelector: {}
+  ingress:
+    # Intra-namespace
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+    # Gateway API proxy: Cilium envoy pods in gateway namespace, Grafana port only
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: gateway
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+    # Alloy (alloy namespace) remote_write to VictoriaMetrics
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: alloy
+      toPorts:
+        - ports:
+            - port: "8428"
+              protocol: TCP

@@ -23,6 +23,26 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: gateway
+    # Alloy (alloy namespace) scraping ArgoCD's metrics endpoints — see
+    # apps/core/alloy/values.yaml's "argocd" discovery.kubernetes job. No CRDs in
+    # this cluster (ADR 0007), so Alloy — not a ServiceMonitor — is the scraper.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: alloy
+      ports:
+        - protocol: TCP
+          port: 8082 # argocd-metrics (application-controller)
+        - protocol: TCP
+          port: 8083 # argocd-server-metrics
+        - protocol: TCP
+          port: 8084 # argocd-repo-server
+        - protocol: TCP
+          port: 8080 # argocd-applicationset-controller
+        - protocol: TCP
+          port: 9001 # argocd-notifications-controller-metrics
+        - protocol: TCP
+          port: 5558 # argocd-dex-server
   egress:
     # DNS — kube-dns in kube-system
     - ports:

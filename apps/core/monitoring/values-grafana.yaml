@@ -1,0 +1,36 @@
+---
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+persistence:
+  enabled: false
+testFramework:
+  enabled: false
+ingress:
+  enabled: false # exposed via Gateway API HTTPRoute instead, see httproute.yaml
+sidecar:
+  dashboards:
+    enabled: true
+  datasources:
+    enabled: true
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: VictoriaMetrics
+        type: prometheus
+        access: proxy
+        url: http://vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
+        isDefault: true
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.loki.svc.cluster.local:3100
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
