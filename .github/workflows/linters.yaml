@@ -4,8 +4,7 @@ name: Linters and utilities
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  pull_request: {}
 
 jobs:
   yaml-linter:

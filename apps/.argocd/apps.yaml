@@ -23,6 +23,12 @@ spec:
             namespace: core-argocd
             wave: "0"
 
+          # Wave 0 — CoreDNS custom overrides (asgard.local host entry)
+          - name: coredns-custom
+            path: apps/core/coredns-custom
+            namespace: kube-system
+            wave: "0"
+
           # Wave 1 — CSI drivers
           - name: storage
             path: apps/core/storage

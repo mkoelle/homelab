@@ -20,6 +20,7 @@ cluster:
     certSANs:
       - motherbox
       - motherbox.local
+      - 192.168.1.2
   # Allows running workload on control-plane nodes.
   # Needed because of running a single node instance
   allowSchedulingOnControlPlanes: true

@@ -94,9 +94,9 @@ tasks:
     silent: true
     cmds:
       - |
-        if grep -rq 'REPLACE-WITH' apps/; then
-          printf "{{.RED}}❌ Placeholder UUIDs found — replace before applying:{{.RESET}}\n"
-          grep -rn 'REPLACE-WITH' apps/
+        if grep -rq --exclude-dir=.build --exclude-dir=charts '00000000-0000-0000-0000-000000000000' apps/; then
+          printf "{{.RED}}❌ Placeholder UUIDs found — replace with real Bitwarden secret IDs before applying:{{.RESET}}\n"
+          grep -rn --exclude-dir=.build --exclude-dir=charts '00000000-0000-0000-0000-000000000000' apps/
           exit 1
         fi
         printf "✅ No placeholder UUIDs found\n"
