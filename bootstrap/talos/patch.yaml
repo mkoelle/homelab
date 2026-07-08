@@ -8,11 +8,6 @@ machine:
     - 192.168.1.2
   network:
     hostname: motherbox.local
-    extraHostEntries:
-      - ip: 192.168.1.2
-        aliases: [motherbox, motherbox.local]
-      - ip: 192.168.1.10
-        aliases: [asgard, asgard.local]
 
 cluster:
   # Disable default CNI to allow installing Cilium

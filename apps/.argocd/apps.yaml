@@ -34,10 +34,6 @@ spec:
             path: apps/core/gateway
             namespace: gateway
             wave: "2"
-          - name: coredns-custom
-            path: apps/core/coredns-custom
-            namespace: kube-system
-            wave: "2"
 
           # Wave 4 — User workloads
           - name: filebrowser

@@ -11,6 +11,5 @@ spec:
   ingress:
     # Gateway API proxy: Cilium envoy pods in gateway namespace
     - fromEndpoints:
-        - matchNamespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: gateway
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: gateway
