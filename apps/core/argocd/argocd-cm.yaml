@@ -5,3 +5,26 @@ metadata:
   namespace: core-argocd
 data:
   kustomize.buildOptions: "--enable-helm"
+  # Exclude API groups not managed by this cluster's GitOps manifests.
+  # ArgoCD cluster cache sync fails if it cannot list any discovered API group.
+  # resource.k8s.io (DRA) and flowcontrol are cluster-internal; snapshot.storage.k8s.io
+  # is managed by the CSI driver directly, not via GitOps.
+  resource.exclusions: |
+    - apiGroups:
+        - "resource.k8s.io"
+      kinds:
+        - "*"
+      clusters:
+        - "*"
+    - apiGroups:
+        - "flowcontrol.apiserver.k8s.io"
+      kinds:
+        - "*"
+      clusters:
+        - "*"
+    - apiGroups:
+        - "snapshot.storage.k8s.io"
+      kinds:
+        - "*"
+      clusters:
+        - "*"

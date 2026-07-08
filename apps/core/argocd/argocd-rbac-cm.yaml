@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+data:
+  # Deny all by default. Named roles must be explicitly granted.
+  # Long-term: replace admin policy with Authentik OIDC group mappings.
+  policy.default: role:''
+  policy.csv: |
+    p, role:admin, *, *, *, allow
+    g, mkoelle@gmail.com, role:admin
+  scopes: "[email]"

@@ -1,0 +1,50 @@
+---
+# CiliumNetworkPolicy — allows ArgoCD pods to reach the Kubernetes API server.
+# Standard NetworkPolicy ipBlock rules do not match Cilium's "host" identity
+# (the node IP 192.168.1.2 is the host entity in Cilium's identity model).
+# kubeProxyReplacement DNAT rewrites 10.96.0.1:443 → 192.168.1.2:6443 at the
+# socket level before NetworkPolicy evaluation, so the TC BPF program sees
+# dst=192.168.1.2:6443 (host), not the ClusterIP. The kube-apiserver entity
+# matches regardless of the actual IP or port.
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-kube-apiserver
+  namespace: core-argocd
+spec:
+  endpointSelector: {}
+  ingress:
+    # Intra-namespace: ArgoCD components communicate with each other
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: core-argocd
+    # Gateway API proxy: Cilium envoy pods in gateway namespace
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: gateway
+  egress:
+    # kube-apiserver entity matches post-DNAT regardless of IP/port (workaround for kubeProxyReplacement)
+    - toEntities:
+        - "kube-apiserver"
+    # DNS — CiliumNP AND standard NP both apply; must allow port 53 here too
+    - toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Intra-namespace — server↔redis, controller↔repo-server, etc.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: core-argocd
+    # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
+    - toCIDRSet:
+        - cidr: "0.0.0.0/0"
+          except:
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

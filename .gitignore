@@ -5,3 +5,7 @@ kubeconfig
 .build
 charts
 secrets.env
+.env
+
+docs/planning/*
+docs/reviews/*

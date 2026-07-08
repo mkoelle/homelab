@@ -1,16 +1,15 @@
 ---
 machine:
+  # certSANs for the Talos API (talosctl). Without these, talosctl connections
+  # to motherbox.local or its IP fail with certificate errors after apply.
+  certSANs:
+    - motherbox
+    - motherbox.local
+    - 192.168.1.2
   network:
-    # Add extra host entries for statically assigned IP of host box
-    hostname: motherbox.local
-    extraHostEntries:
-      - ip: 192.168.1.2
-        aliases: [motherbox, motherbox.local]
-      - ip: 192.168.1.10
-        aliases: [asgard, asgard.local]
+    hostname: motherbox
 
 cluster:
-
   # Disable default CNI to allow installing Cilium
   network:
     cni:
@@ -22,5 +21,5 @@ cluster:
       - motherbox
       - motherbox.local
   # Allows running workload on control-plane nodes.
-  # Needed because of single node instance
+  # Needed because of running a single node instance
   allowSchedulingOnControlPlanes: true

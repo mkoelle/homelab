@@ -1,90 +1,144 @@
 # Talos
 
-Talos OS is a lightweight, immutable operating system built specifically for running Kubernetes clusters. Unlike traditional Linux distributions, Talos eliminates SSH access and package managers, focusing on security, automation, and consistency. Everything is managed through a secure API, making it ideal for declarative setups and GitOps workflows.
-I use Talos OS as the backend for my homelab because it provides:
+Talos OS is a lightweight, immutable operating system built specifically for running Kubernetes clusters. Unlike traditional Linux distributions, Talos eliminates SSH access and package managers, focusing on security, automation, and consistency. Everything is managed through a secure API.
 
-- Predictable Infrastructure: Immutable design ensures every node runs the same, reducing drift.
-- API-Driven Management: No manual tinkering—perfect for automation and reproducibility.
-- Security by Design: Minimal attack surface and strong cryptographic guarantees.
-- Kubernetes-First Approach: Optimized for container orchestration without unnecessary OS overhead.
+## Factory Image
 
-[TALOS image](https://factory.talos.dev/?arch=amd64&cmdline-set=true&extensions=-&extensions=siderolabs%2Fbtrfs&extensions=siderolabs%2Fnfsd&extensions=siderolabs%2Fzfs&platform=metal&secureboot=true&target=metal&version=1.10.6)
-Schematic ID `e4452f8d06fe312ec9ebf81b8e970ab527c48f2dcd1e52b0153bd6954abf510b`
+**Current schematic** (schematic ID `7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884`, [factory link](https://factory.talos.dev/?arch=amd64&platform=metal&schematic-id=7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884&secureboot=true&target=metal&version=1.13.5)):
 
 ```yaml
 customization:
-    systemExtensions:
-        officialExtensions:
-            - siderolabs/btrfs
-            - siderolabs/nfsd
-            - siderolabs/zfs
+  extraKernelArgs:
+    - libata.force=noncq
+    - intel_iommu=off
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/intel-ucode
 ```
 
-## Initial Configuration
+- `libata.force=noncq` — disables NCQ; changes `WRITE FPDMA QUEUED` to `WRITE DMA EXT`. Necessary but not sufficient on its own.
+- `intel_iommu=off` — required: Intel Z97 VT-d IOMMU aborts DMA writes to the STATE partition XFS log sector for both NCQ and non-NCQ DMA. Without this, install always fails regardless of NCQ mode. Cannot be set via `extraKernelArgs` in `controlplane.yaml` — SecureBoot UKI ignores it. Must be baked into schematic.
+- `intel-ucode` — Intel microcode updates (Spectre/Meltdown patches for Haswell).
 
-The following instructions and steps are for setting up or starting over with a blank machine, freshly provisioned.
+Build the installer at [Talos Image Factory](https://factory.talos.dev) — select `metal`, `amd64`, `SecureBoot`, `v1.13.5`.
 
-```pwsh
+> If you change extensions or the Talos version, regenerate the schematic at factory.talos.dev and update the schematic ID here, in `controlplane.yaml` and `worker.yaml` installer images, and in the upgrade command below.
+
+## Initial Setup
+
+These steps assume a blank machine. Follow them in order — each step depends on the previous one completing successfully.
+
+### Step 1 — Boot from Talos ISO
+
+Write the factory image ISO to a USB drive and boot `motherbox` from it. The machine enters **maintenance mode**, which accepts unauthenticated `talosctl` connections.
+
+```bash
+# Verify the machine is in maintenance mode and reachable
+talosctl --nodes motherbox.local get disks --insecure
+```
+
+Identify the target disk from the output. The `controlplane.yaml` uses a WWID selector:
+
+```yaml
+machine:
+  install:
+    diskSelector:
+      wwid: naa.50025388a040deb7 # Samsung SSD 840 EVO 250GB
+```
+
+**Verify this WWID matches your disk before continuing.** Cross-reference the `Id` column from `get disks` output. Wrong WWID = wrong disk wiped.
+
+### Step 2 — Generate Talos configuration
+
+Run from the `bootstrap/talos/` directory. This generates `controlplane.yaml`, `worker.yaml`, and `talosconfig` — all gitignored because they contain cluster PKI private keys.
+
+```powershell
 $target = "motherbox.local"
 
-# Generate Talos configuration for a bare metal cluster
-# Creates the controlplane.yaml and worker.yaml files
-# in addition to the talosconfig file in the current directory
-talosctl gen config $target "https://${target}:6443"
-# This will create the controlplane.yaml, talosconfig, and worker.yaml
+# Single call — generates config with patch applied
+talosctl gen config $target "https://${target}:6443" --config-patch @patch.yaml
 
-# Apply the patch containing host ip mappings and the flag to 
-# allow running workloads on control-plane nodes.
-# (Needed because of running a single node instance)
-talosctl gen config $target "https://${target}:6443" --config-patch `@patch.yaml --force
-
-# Set the location of the saved config file
-# This will save us from having to add --talosconfig ./talosconfig to every command
+# Set TALOSCONFIG so subsequent commands don't need --talosconfig flag
 $env:TALOSCONFIG = (Get-Item "talosconfig").FullName
+```
 
-# Get the disks on the Talos node
-# This will list the disks available on the node so we can pick one for the Talos installation
-talosctl --nodes $target get disks --insecure
-# if the desired disk is /dev/sda, then we can proceed with the installation
-# otherwise, adjust the disk name accordingly in the controlplane.yaml and worker.yaml files
+```bash
+# bash equivalent
+target="motherbox.local"
+talosctl gen config $target "https://${target}:6443" --config-patch @patch.yaml
+export TALOSCONFIG=$(pwd)/talosconfig
 
-# Apply the Talos configuration to the control plane node
-talosctl --nodes $target apply-config --file ./controlplane.yaml --insecure 
-# The system will reboot automatically
+# Remove HostnameConfig document appended by Talos 1.13+ (conflicts with patch hostname)
+line=$(grep -n "^kind: HostnameConfig" controlplane.yaml | cut -d: -f1)
+sed -i '' "$((line-2)),\$d" controlplane.yaml
+```
 
-# Once the node is back up, bootstrap the cluster to initialize etcd and the control plane
+**Post-gen required edit:** Talos 1.13+ appends a `HostnameConfig: auto: stable` document to the generated file. This conflicts with `machine.network.hostname` from the patch and causes `apply-config` to fail with:
+
+```txt
+static hostname is already set in v1alpha1 config
+```
+
+Remove the appended section from `controlplane.yaml` before applying:
+
+```bash
+# HostnameConfig is appended at end of file; delete from its --- separator to EOF
+line=$(grep -n "^kind: HostnameConfig" controlplane.yaml | cut -d: -f1)
+sed -i '' "$((line-2)),\$d" controlplane.yaml
+```
+
+> `controlplane.yaml` in this repo is your live cluster config — gitignored, not a template. For a fresh machine, the above generates new PKI. **Store the generated `controlplane.yaml` and `talosconfig` somewhere safe** (e.g., Bitwarden) — losing them = losing cluster access.
+
+### Step 3 — Apply configuration and bootstrap
+
+```powershell
+# Apply config — triggers install to disk and automatic reboot
+talosctl --nodes $target apply-config --file ./controlplane.yaml --insecure
+
+# Wait for node to come back up and API to be ready before proceeding
+# This can take 3-5 minutes on first boot after install
+talosctl --nodes $target --endpoints $target health --wait-timeout 10m
+
+# Bootstrap etcd and the control plane — run EXACTLY ONCE
+# Running this a second time on an already-bootstrapped cluster causes errors
 talosctl --nodes $target --endpoints $target bootstrap
-# Dashboard will be angry for a few min as it configures
 
-# we can now check the status of the node and list the nodes in the cluster
+# Wait for Kubernetes control plane to become healthy
+talosctl --nodes $target --endpoints $target health --wait-timeout 10m
+
+# Verify services are running
 talosctl --nodes $target --endpoints $target services
 
-# Finally, we can retrieve the kubeconfig file to interact with the Kubernetes cluster
+# Write kubeconfig to default location
 talosctl --nodes $target --endpoints $target kubeconfig $HOME/.kube/config
-# this creates the kubeconfig file in the default location
 ```
 
-## Updates & Upgrades
+### Step 4 — Verify cluster is up
 
-```pwsh
+```bash
+kubectl get nodes
+kubectl get pods -A
+```
+
+Both should show `Ready` / `Running` before proceeding to Cilium install.
+
+## Upgrades
+
+Keep `talosctl` version on the admin machine in sync with the cluster version.
+
+```powershell
 $target = "motherbox.local"
-$version = "v1.11.5"
+$version = "v1.13.5"
 
-# upgrade talos on the target machine
-talosctl upgrade -n $target --image "ghcr.io/siderolabs/installer:${version}"
+# Upgrade Talos OS
+talosctl upgrade -n $target --image "factory.talos.dev/installer/7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884:${version}"
 
-# upgrade kubernetes on the target machine
-talosctl -n $target -e $target  upgrade-k8s
+# Upgrade Kubernetes
+talosctl -n $target -e $target upgrade-k8s
 ```
-
-Try to keep the version of talosctl on the administrative machine in sync with the version of talos installed on the cluster machines
 
 ## References
 
-- [Talos Storage Configuration Guide](https://www.talos.dev/v1.9/kubernetes-guides/configuration/storage/#nfs) - NFS and iSCSI storage options for Talos
-
-- [Kubernetes Monitoring: A Complete Solution - Part 1 (Architecture)](https://itnext.io/kubernetes-monitoring-a-complete-solution-part-1-architecture-eb5b998658d5) - Comprehensive monitoring setup
-
-- [Talos Kubernetes Setup](https://www.youtube.com/watch?v=HzNszgkVuaA) - Visual walkthrough of Talos installation and configuration
-
-- [gruberdev/homelab](https://github.com/gruberdev/homelab) - Homelab setup reference
+- [Talos Storage Configuration Guide](https://www.talos.dev/v1.13/kubernetes-guides/configuration/storage/)
+- [Talos Kubernetes Setup](https://www.youtube.com/watch?v=HzNszgkVuaA)
+- [gruberdev/homelab](https://github.com/gruberdev/homelab)

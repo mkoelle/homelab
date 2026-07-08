@@ -20,6 +20,7 @@ kops
 kubeconfig
 kubeconform
 kubedns
+kustomization
 kustomizations
 lameduck
 logfile

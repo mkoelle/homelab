@@ -1,0 +1,16 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: filebrowser
+  namespace: filebrowser
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: gateway
+  hostnames:
+    - filebrowser.motherbox.local
+  rules:
+    - backendRefs:
+        - name: filebrowser
+          port: 80

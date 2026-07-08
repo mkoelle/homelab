@@ -1,67 +1,150 @@
 # ArgoCD
 
-Argo CD is a declarative, GitOps-focused continuous delivery tool designed specifically for Kubernetes. It continuously monitors your Git repositories and automatically synchronizes your cluster state with the desired state defined in your manifests. Unlike traditional CI/CD tools, Argo CD treats Git as the single source of truth, providing automatic drift detection and self-healing capabilities.
+Argo CD is the GitOps controller. Once running, it owns all subsequent cluster state. Manual `kubectl apply` after this point should be avoided — changes go through Git.
 
-I use Argo CD as the continuous delivery engine for my homelab because it provides:
+## Prerequisites
 
-- GitOps Workflow: All cluster changes are version-controlled, auditable, and reversible through Git commits.
-- Automated Synchronization: Detects configuration drift and automatically reconciles cluster state with repository definitions.
-- Visual Management: Web UI provides real-time visibility into application health, sync status, and deployment history.
-- Declarative Everything: Manages not just applications, but also Kubernetes resources, making infrastructure truly code-driven and reproducible.
+Before applying ArgoCD, create the Bitwarden access token secret. External Secrets Operator syncs on startup and will fail permanently without it.
 
-## Initial Configuration
+```bash
+kubectl create namespace external-secrets
 
-The following instructions and steps are for setting up or starting over with on a freshly provisioned talos cluster.
-
-### Install Argo CD
-
-Deploy the configured argocd application using the following commands:
-
-```pwsh
-# cd into the argocd directory
-cd apps\core\argocd
-
-# build the argocd application (this will use a docker container to build the argocd application)
-task build
-
-# apply the argocd application
-kubectl apply -f deployment.yaml
-
-# Get the randomly generated admin password
-kubectl -n core-argocd get secret argocd-initial-admin-secret `
-   -o jsonpath="{.data.password}" | `
-   % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
-
-# Note: this is easier in bash:
-# kubectl -n core-argocd get secret argocd-initial-admin-secret \
-#    -o jsonpath="{.data.password}" | base64 -d
+kubectl create secret generic bitwarden-access-token \
+    --namespace external-secrets \
+    --from-literal=token=<your-bitwarden-sm-access-token>
 ```
 
-### Configure Argo CD
+```powershell
+# PowerShell
+kubectl create namespace external-secrets
 
-Expose Argo cd's UI by port forwarding the argocd server service,
-this is easiest to do using lens:
+kubectl create secret generic bitwarden-access-token `
+    --namespace external-secrets `
+    --from-literal=token=<your-bitwarden-sm-access-token>
+```
 
-![Expose argo cd via port forward](/docs/assets/kube-lens-port-forward.png "Expose argo cd")
+## Step 1 — Build and install ArgoCD
 
-Update the admin user password:
+Run from the **repo root**. The build output lands at `apps/core/argocd/.build/deployment.yaml`.
 
-![Update the admin password](/docs/assets/argocd-update-password.png "update password")
+```bash
+task build
+
+# --server-side required: manifest is ~1.8MB and exceeds client-side annotation limit
+kubectl apply --server-side -f apps/core/argocd/.build/deployment.yaml
+
+# Wait for ArgoCD to be ready
+kubectl rollout status deployment/argocd-server -n core-argocd --timeout=5m
+```
+
+```powershell
+# PowerShell
+task build
+
+kubectl apply --server-side -f apps/core/argocd/.build/deployment.yaml
+
+kubectl rollout status deployment/argocd-server -n core-argocd --timeout=5m
+```
+
+## Step 2 — Bootstrap App-of-Apps
+
+Apply the AppProject first — `root-application.yaml` references it and ArgoCD will reject the Application if the project doesn't exist yet.
+
+```bash
+kubectl apply -f apps/.argocd/appproject.yaml
+kubectl apply -f apps/.argocd/root-application.yaml
+```
+
+ArgoCD will now sync `apps/.argocd/`, which creates the `ApplicationSet` managing all other apps. From here, Git is the source of truth.
+
+## Step 3 — Get initial admin credentials and update password
+
+```bash
+# Get the auto-generated initial admin password
+kubectl -n core-argocd get secret argocd-initial-admin-secret \
+    -o jsonpath="{.data.password}" | base64 -d
+
+# Port-forward the ArgoCD server
+kubectl port-forward svc/argocd-server -n core-argocd 8080:443 &
+
+# Log in and set a strong password
+argocd login localhost:8080 \
+    --username admin \
+    --password <initial-password> \
+    --insecure
+
+argocd account update-password \
+    --current-password <initial-password> \
+    --new-password <strong-password>
+```
+
+```powershell
+# PowerShell
+kubectl -n core-argocd get secret argocd-initial-admin-secret `
+    -o jsonpath="{.data.password}" | `
+    % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+
+kubectl port-forward svc/argocd-server -n core-argocd 8080:443
+
+# In a new terminal
+argocd login localhost:8080 `
+    --username admin `
+    --password <initial-password> `
+    --insecure
+
+argocd account update-password `
+    --current-password <initial-password> `
+    --new-password <strong-password>
+```
+
+> The initial password comes from a Secret auto-deleted after first login in some ArgoCD versions. Set a permanent password before closing the terminal.
+
+## Step 4 — Replace SMB credential placeholders
+
+Before the `external-secrets` app can sync, replace the placeholder UUIDs in `apps/core/external-secrets/smb-creds.yaml` with real Bitwarden Secrets Manager item IDs:
+
+```yaml
+data:
+  - secretKey: username
+    remoteRef:
+      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-USERNAME>" # ← replace
+  - secretKey: password
+    remoteRef:
+      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-PASSWORD>" # ← replace
+```
+
+`task build` will fail until these are replaced (intentional guard). Commit the real UUIDs, then ArgoCD reconciles and the `smb-creds` Secret materializes in `core-secrets`.
 
 ## Troubleshooting
 
-### Deleting the argocd resources
+### Namespace stuck in Terminating
 
-If the namespace is stuck in terminating, it is likely due to the finalizers. You can remove them with the following command:
+ArgoCD finalizers block namespace deletion. Remove them:
 
-```pwsh
+```bash
+kubectl get applications.argoproj.io -n core-argocd -o name | \
+    xargs -I{} kubectl patch {} -n core-argocd \
+    --type=json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
+```
+
+```powershell
 kubectl get applications.argoproj.io -n core-argocd -o name |
 ForEach-Object {
     kubectl patch $_ -n core-argocd --type=json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
 }
 ```
 
+### ArgoCD rejects root-application
+
+If `kubectl apply -f apps/.argocd/root-application.yaml` fails with `project 'homelab' does not exist`:
+
+```bash
+# AppProject must exist first
+kubectl apply -f apps/.argocd/appproject.yaml
+kubectl apply -f apps/.argocd/root-application.yaml
+```
+
 ## References
 
-- [YouTube video - Install Argo CD on Kubernetes cluster | Deploy Application to Kubernetes using Argo CD | Helm Charts](https://www.youtube.com/watch?v=HzNszgkVuaA)
+- [Argo CD Getting Started](https://argo-cd.readthedocs.io/en/stable/getting_started/)
 - [Github - Argo Helm](https://github.com/argoproj/argo-helm)

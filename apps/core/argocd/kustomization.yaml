@@ -5,7 +5,10 @@ namespace: core-argocd
 
 resources:
   - namespace.yaml
-  - github.com/argoproj/argo-cd//manifests/cluster-install?ref=stable
+  - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
+  - httproute.yaml
+  - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.3.8
 
 openapi:
   path: https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json
@@ -13,7 +16,54 @@ openapi:
 patches:
   - path: patch-deployments.yaml
   - path: patch-statefulsets.yaml
+  # Kustomize namespace transformer does not update subjects[].namespace in ClusterRoleBindings.
+  # ArgoCD chart hardcodes namespace: argocd — patch all three to use the actual namespace.
+  - patch: |
+      - op: replace
+        path: /subjects/0/namespace
+        value: core-argocd
+    target:
+      kind: ClusterRoleBinding
+      name: argocd-application-controller
+  - patch: |
+      - op: replace
+        path: /subjects/0/namespace
+        value: core-argocd
+    target:
+      kind: ClusterRoleBinding
+      name: argocd-applicationset-controller
+  - patch: |
+      - op: replace
+        path: /subjects/0/namespace
+        value: core-argocd
+    target:
+      kind: ClusterRoleBinding
+      name: argocd-server
   - path: argocd-cm.yaml
     target:
       kind: ConfigMap
       name: argocd-cm
+  - path: argocd-rbac-cm.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-rbac-cm
+  - path: argocd-cmd-params-cm.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-cmd-params-cm
+  # Grant cluster-wide read/write to all resources.
+  # Minimal-permission approach caused whack-a-mole RBAC failures as ArgoCD's
+  # cluster cache discovery hits every API group. Single-node homelab has no
+  # multi-tenant threat model that warrants the maintenance overhead.
+  - patch: |
+      - op: replace
+        path: /rules
+        value:
+          - apiGroups: ["*"]
+            resources: ["*"]
+            verbs: [get, list, watch, create, update, patch, delete]
+          - nonResourceURLs: ["*"]
+            verbs: [get]
+    target:
+      kind: ClusterRole
+      name: argocd-application-controller

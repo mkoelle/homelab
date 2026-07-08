@@ -40,12 +40,14 @@ checks:
   hostPortSet: warning
   tlsSettingsMissing: warning
   sensitiveContainerEnvVar: danger
-  sensitiveConfigmapContent: danger
-  clusterrolePodExecAttach: danger
-  rolePodExecAttach: danger
-  clusterrolebindingPodExecAttach: danger
-  rolebindingClusterRolePodExecAttach: danger
-  rolebindingRolePodExecAttach: danger
+  # ArgoCD needs pod exec for its UI exec feature; downgraded from danger.
+  clusterrolePodExecAttach: warning
+  rolePodExecAttach: warning
+  clusterrolebindingPodExecAttach: warning
+  rolebindingClusterRolePodExecAttach: warning
+  rolebindingRolePodExecAttach: warning
+  # cilium-config triggers on bootstrap JSON key names — false positive.
+  sensitiveConfigmapContent: warning
   clusterrolebindingClusterAdmin: danger
   rolebindingClusterAdminClusterRole: danger
   rolebindingClusterAdminRole: danger
@@ -53,46 +55,104 @@ checks:
 mutations: [pullPolicyNotAlways]
 
 exemptions:
-  - namespace: kube-system
-    controllerNames:
-      - dns-controller
-      - ebs-csi-controller
-      - ebs-csi-node
-      - kindnet
-      - kops-controller
-      - kube-dns
-      - kube-flannel-ds
-      - kube-proxy
-      - kube-scheduler
-      - vpa-recommender
-    rules:
-      - automountServiceAccountToken
-      - linuxHardening
-      - missingNetworkPolicy
+  # CoreDNS — no service account token needed, no network policy for DNS
   - namespace: kube-system
     controllerNames: [coredns]
-    rules: [automountServiceAccountToken, missingNetworkPolicy]
-  - namespace: kube-system
-    controllerNames: [ebs-csi-controller]
-    rules: [sensitiveContainerEnvVar]
+    rules:
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+
   - namespace: kube-system
     controllerNames: [coredns-autoscaler]
-    rules: [linuxHardening]
-  - namespace: local-path-storage
-    controllerNames: [local-path-provisioner]
     rules:
       - automountServiceAccountToken
       - linuxHardening
+
+  # Cilium — eBPF CNI requires elevated privileges by design; vendor chart, no resource limits set
+  - namespace: kube-system
+    controllerNames:
+      - cilium
+      - cilium-envoy
+      - cilium-operator
+    rules:
+      - runAsRootAllowed
+      - runAsPrivileged
+      - privilegeEscalationAllowed
+      - notReadOnlyRootFilesystem
+      - hostNetworkSet
+      - hostPIDSet
+      - hostPathSet
+      - hostPortSet
+      - dangerousCapabilities
+      - insecureCapabilities
+      - automountServiceAccountToken
       - missingNetworkPolicy
+      - linuxHardening
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - pullPolicyNotAlways # vendor init containers (mount-bpf-fs, config, etc.)
+      - cpuRequestsMissing # vendor chart, no defaults set
+      - cpuLimitsMissing
+      - memoryRequestsMissing
+      - memoryLimitsMissing
+
+  # Cilium observability components — vendor chart, no resource limits or probe tuning
+  - namespace: kube-system
+    controllerNames:
+      - hubble-relay
+      - hubble-ui
+    rules:
+      - cpuRequestsMissing
+      - cpuLimitsMissing
+      - memoryRequestsMissing
+      - memoryLimitsMissing
+      - livenessProbeMissing
+      - readinessProbeMissing
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+      - linuxHardening
+      - notReadOnlyRootFilesystem
+      - insecureCapabilities
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
+
+  # csi-driver-smb — CSI node plugin requires host mounts and kernel privileges; vendor chart
+  - namespace: kube-system
+    controllerNames:
+      - csi-smb-controller
+      - csi-smb-node
+      - csi-smb-node-win
+    rules:
+      - runAsRootAllowed
+      - runAsPrivileged
+      - privilegeEscalationAllowed
+      - hostNetworkSet
+      - notReadOnlyRootFilesystem
+      - hostPathSet
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+      - linuxHardening
+      - insecureCapabilities
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # DaemonSet / single-node
+      - missingPodDisruptionBudget # DaemonSet (N/A) / single-node
+      - pullPolicyNotAlways # vendor init containers
+      - cpuLimitsMissing # vendor chart
+      - readinessProbeMissing # vendor chart
+      - livenessProbeMissing # vendor chart
+      - hostProcess # csi-smb-node-win Windows HostProcess; no Windows nodes in cluster
+
+  # Talos control-plane components
   - namespace: kube-system
     controllerNames:
       - kube-apiserver
-      - kube-proxy
       - kube-scheduler
-      - etcd-manager-events
       - kube-controller-manager
-      - kube-dns
-      - etcd-manager-main
+      - etcd
     rules:
       - hostPortSet
       - hostNetworkSet
@@ -106,155 +166,78 @@ exemptions:
       - runAsPrivileged
       - notReadOnlyRootFilesystem
       - hostPIDSet
-  - namespace: datadog
-    controllerNames: [datadogtoken]
-    rules: [sensitiveConfigmapContent]
-  - namespace: datadog
-    controllerNames: [datadog-cluster-agent-apiserver]
-    rules: [rolebindingClusterAdminRole, rolebindingRolePodExecAttach]
-  - controllerNames: [ingress-nginx-controller]
-    rules: [sensitiveConfigmapContent]
-  - controllerNames:
-      - ingress-nginx-controller
-      - ingress-nginx-default-backend
-      - polaris
-      - rbac-manager
-    rules: [automountServiceAccountToken, missingNetworkPolicy]
-  - controllerNames:
-      - aws-iam-authenticator
-      - aws-load-balancer-controller
-      - docker-registry
-      - external-dns
-      - kube2iam
-      - metrics-server
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+
+  # ArgoCD — manages cluster state, needs broad access; vendor chart
+  - namespace: core-argocd
+    controllerNames:
+      - argocd-server
+      - argocd-repo-server
+      - argocd-application-controller
+      - argocd-dex-server
+      - argocd-redis
+      - argocd-applicationset-controller
+      - argocd-notifications-controller
     rules:
       - automountServiceAccountToken
-      - linuxHardening
       - missingNetworkPolicy
-  - controllerNames: [oauth2-proxy]
-    rules:
-      - automountServiceAccountToken
-      - linuxHardening
-      - missingNetworkPolicy
-      - sensitiveContainerEnvVar
-  - controllerNames: [kube-flannel-ds]
-    rules:
-      - notReadOnlyRootFilesystem
-      - runAsRootAllowed
-      - notReadOnlyRootFilesystem
-      - readinessProbeMissing
-      - livenessProbeMissing
-      - cpuLimitsMissing
-  - controllerNames: [cert-manager]
-    rules:
-      - notReadOnlyRootFilesystem
-      - runAsRootAllowed
-      - readinessProbeMissing
-      - livenessProbeMissing
-      - automountServiceAccountToken
-      - linuxHardening
-      - missingNetworkPolicy
-  - controllerNames: [cluster-autoscaler]
-    rules:
-      - notReadOnlyRootFilesystem
-      - runAsRootAllowed
-      - readinessProbeMissing
-      - automountServiceAccountToken
-      - linuxHardening
-      - missingNetworkPolicy
-  - controllerNames: [vpa]
-    rules:
-      - runAsRootAllowed
-      - readinessProbeMissing
-      - livenessProbeMissing
-      - notReadOnlyRootFilesystem
-  - controllerNames: [datadog]
-    rules:
-      - runAsRootAllowed
-      - readinessProbeMissing
-      - livenessProbeMissing
-      - notReadOnlyRootFilesystem
-      - automountServiceAccountToken
-      - linuxHardening
-      - missingNetworkPolicy
-      - sensitiveContainerEnvVar
-  - controllerNames: [nginx-ingress-controller]
-    rules:
-      - privilegeEscalationAllowed
-      - insecureCapabilities
-      - runAsRootAllowed
-  - controllerNames:
-      - dns-controller
-      - datadog-datadog
-      - kube-flannel-ds
-      - kube2iam
-      - aws-iam-authenticator
-      - datadog
-      - kube2iam
-    rules: [hostNetworkSet]
-  - controllerNames:
-      - aws-iam-authenticator
-      - aws-cluster-autoscaler
-      - kube-state-metrics
-      - dns-controller
-      - external-dns
-      - dnsmasq
-      - autoscaler
-      - kubernetes-dashboard
-      - install-cni
-      - kube2iam
-    rules: [readinessProbeMissing, livenessProbeMissing]
-  - controllerNames:
-      - aws-iam-authenticator
-      - nginx-ingress-default-backend
-      - aws-cluster-autoscaler
-      - kube-state-metrics
-      - dns-controller
-      - external-dns
-      - kubedns
-      - dnsmasq
-      - autoscaler
-      - tiller
-      - kube2iam
-    rules: [runAsRootAllowed]
-  - controllerNames:
-      - aws-iam-authenticator
-      - nginx-ingress-controller
-      - nginx-ingress-default-backend
-      - aws-cluster-autoscaler
-      - kube-state-metrics
-      - dns-controller
-      - external-dns
-      - kubedns
-      - dnsmasq
-      - autoscaler
-      - tiller
-      - kube2iam
-    rules: [notReadOnlyRootFilesystem]
-  - controllerNames:
-      - cert-manager
-      - dns-controller
-      - kubedns
-      - dnsmasq
-      - autoscaler
-      - insights-agent-goldilocks-vpa-install
-      - datadog
-    rules:
-      - cpuRequestsMissing
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor init containers (copyutil, secret-init)
+      - cpuRequestsMissing # vendor chart, no defaults set
       - cpuLimitsMissing
       - memoryRequestsMissing
       - memoryLimitsMissing
-  - controllerNames: [kube2iam, kube-flannel-ds]
-    rules: [runAsPrivileged]
-  - controllerNames: [kube-hunter]
-    rules: [hostPIDSet]
-  - controllerNames:
-      - polaris
-      - kube-hunter
-      - goldilocks
-      - insights-agent-goldilocks-vpa-install
-    rules: [notReadOnlyRootFilesystem]
-  - controllerNames: [insights-agent-goldilocks-controller]
-    rules: [livenessProbeMissing, readinessProbeMissing]
-  - controllerNames: [insights-agent-goldilocks-vpa-install, kube-hunter]
-    rules: [runAsRootAllowed]
+      - readinessProbeMissing # vendor chart
+      - livenessProbeMissing
+
+  # External Secrets Operator — vendor chart
+  - namespace: external-secrets
+    controllerNames:
+      - external-secrets
+      - external-secrets-webhook
+      - external-secrets-cert-controller
+    rules:
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
+      - cpuRequestsMissing # cert-controller: vendor chart, no defaults
+      - cpuLimitsMissing
+      - memoryRequestsMissing
+      - memoryLimitsMissing
+      - readinessProbeMissing # vendor chart
+      - livenessProbeMissing
+
+  # Bitwarden SDK server — vendor chart; no config PVC so writes to container FS
+  - namespace: external-secrets
+    controllerNames:
+      - bitwarden-sdk-server
+    rules:
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor image
+      - notReadOnlyRootFilesystem # vendor image writes to container FS
+
+  # filebrowser — single-node homelab; PDB/topology/priority irrelevant.
+  # notReadOnlyRootFilesystem: writes DB to container FS (no config PVC — pre-existing design gap).
+  # pullPolicyNotAlways: IfNotPresent with pinned tag acceptable for homelab.
+  - namespace: filebrowser
+    controllerNames:
+      - filebrowser
+    rules:
+      - missingPodDisruptionBudget
+      - topologySpreadConstraint
+      - priorityClassNotSet
+      - notReadOnlyRootFilesystem
+      - pullPolicyNotAlways

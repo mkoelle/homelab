@@ -10,15 +10,15 @@ vars:
   # Directories
   APPS_DIR: apps
   BUILD_DIR: .build
-  # Docker images
-  CSPELL_IMAGE: ghcr.io/streetsidesoftware/cspell:latest
-  YAMLFIX_IMAGE: otherguy/yamlfix:latest
-  MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:latest
-  KUBE_LINTER_IMAGE: stackrox/kube-linter:latest
-  PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5
-  POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:10
-  PRETTIER_IMAGE: tmknom/prettier:latest
-  K8S_IMAGE: alpine/k8s:1.31.13
+  # Docker images — pinned to specific versions; Renovate manages updates.
+  CSPELL_IMAGE: ghcr.io/streetsidesoftware/cspell:v10.0.1
+  MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:v0.22.1
+  KUBE_LINTER_IMAGE: stackrox/kube-linter:v0.8.3
+  PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5.24.0
+  POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:v10.2.0
+  TRIVY_IMAGE: aquasec/trivy:0.72.0
+  PRETTIER_IMAGE: tmknom/prettier:3.6.2
+  K8S_IMAGE: alpine/k8s:1.36.2
   # Computed
   KUSTOMIZATION_DIRS:
     sh: |
@@ -26,7 +26,7 @@ vars:
         powershell -Command 'Get-ChildItem . -Recurse -Include kustomization.yaml,kustomization.yml `
           | ForEach-Object { [System.IO.Path]::GetDirectoryName($_.FullName) }'
       else
-        find . -type f \( -name "kustomization.yaml" -o -name "kustomization.yml" \) -exec dirname {}
+        find . -type f \( -name "kustomization.yaml" -o -name "kustomization.yml" \) -exec dirname {} \;
       fi
   CONTAINER_ENGINE:
     sh: |
@@ -59,6 +59,7 @@ tasks:
     desc: Build all resources
     silent: true
     cmds:
+      - task: check-placeholders
       - task: kustomize-build
   validate:
     desc: Validate all resources
@@ -69,6 +70,7 @@ tasks:
       - task: kube-lint
       - task: deprecation-check
       - task: polaris
+      - task: trivy
   clean:
     desc: Clean up build directory
     silent: true
@@ -86,6 +88,18 @@ tasks:
         {{.CSPELL_IMAGE}} \
         --no-progress --color
   # Internal tasks
+  check-placeholders:
+    desc: Fail if placeholder UUIDs remain in manifests
+    internal: true
+    silent: true
+    cmds:
+      - |
+        if grep -rq 'REPLACE-WITH' apps/; then
+          printf "{{.RED}}❌ Placeholder UUIDs found — replace before applying:{{.RESET}}\n"
+          grep -rn 'REPLACE-WITH' apps/
+          exit 1
+        fi
+        printf "✅ No placeholder UUIDs found\n"
   check-docker:
     desc: Check if Docker is running
     internal: true
@@ -97,21 +111,6 @@ tasks:
           printf "\n{{.RED}}❌ {{.CONTAINER_ENGINE}} is not running. Please start {{.CONTAINER_ENGINE}}.{{.RESET}}\n"
           exit 1
         }
-  yaml-fix:
-    internal: true
-    silent: true
-    deps: [check-docker]
-    desc: Fix YAML files
-    cmds:
-      - printf "\n{{.GREEN}}✅ Fixing YAML files...{{.RESET}}\n"
-      - |
-        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
-        -v ".config:/config" \
-        -e YAMLFIX_CONFIG_PATH=/config/yaml_fix.toml \
-        {{.YAMLFIX_IMAGE}} . \
-        --exclude "**/charts/" \
-        --exclude "**/.build/" \
-        # TODO: needs fix; exclusions cause execution to hang; config file is also ignored
   md-fix:
     internal: true
     silent: true
@@ -121,6 +120,7 @@ tasks:
       - printf "\n{{.GREEN}}✅ Fixing markdown files...{{.RESET}}\n"
       - |
         {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        --user 0 \
         {{.MARKDOWNLINT_IMAGE}} \
         '**/*.md' \
         --fix
@@ -133,6 +133,7 @@ tasks:
       - printf "\n{{.GREEN}}📝 Checking YAML syntax...{{.RESET}}\n"
       - |
         {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        --user 0 \
         {{.PRETTIER_IMAGE}} \
         --write --parser=yaml **/*.yaml
   md-lint:
@@ -144,6 +145,7 @@ tasks:
       - printf "\n{{.GREEN}}📝 Checking markdown syntax...{{.RESET}}\n"
       - |
         {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+        --user 0 \
         {{.PRETTIER_IMAGE}} \
         --write --parser=markdown /work/**/*.md
   create-build-dirs:
@@ -189,7 +191,7 @@ tasks:
           kustomize build . --enable-helm \
           > "{{.ITEM}}/{{.BUILD_DIR}}/deployment.yaml" \
           && printf "✅ Built %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to build %s{{.RESET}}\n" "{{.ITEM}}"
+          || { printf "{{.RED}}❌ Failed to build %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   validate-schema:
     desc: Validate against Kubernetes schemas with kubeconform
     internal: true
@@ -203,13 +205,12 @@ tasks:
           {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
           {{.K8S_IMAGE}} \
           kubeconform \
-          -summary \
           -schema-location default \
-          -schema-location https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json \
-          -ignore-missing-schemas \
+          -schema-location 'https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json' \
+          -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
           /work/deployment.yaml \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          && printf "  ✅ %s\n" "{{.ITEM}}" \
+          || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   kube-lint:
     desc: Run security and best practice checks with kube-linter
     internal: true
@@ -220,12 +221,13 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -v "{{.ROOT_DIR}}/.config:/config" -w /work \
           {{.KUBE_LINTER_IMAGE}} \
           lint \
+          --config /config/kube-linter.yaml \
           /work/deployment.yaml \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          && printf "  ✅ %s\n" "{{.ITEM}}" \
+          || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   deprecation-check:
     desc: Check for deprecated Kubernetes APIs with pluto
     internal: true
@@ -240,8 +242,8 @@ tasks:
           {{.PLUTO_IMAGE}} \
           detect \
           /work/deployment.yaml \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          && printf "  ✅ %s\n" "{{.ITEM}}" \
+          || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
   polaris:
     desc: Run security and best practice checks with polaris
     internal: true
@@ -252,13 +254,40 @@ tasks:
       - for:
           var: KUSTOMIZATION_DIRS
         cmd: |-
-          {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
-          -v ".config:/config" \
-          {{.POLARIS_IMAGE}} \
-          polaris audit \
-          --audit-path /work \
-          --config /config/polaris.yaml \
-          --format pretty \
-          --only-show-failed-tests true \
-          && printf "✅ Validated %s\n" "{{.ITEM}}" \
-          || printf "{{.RED}}❌ Failed to validate %s{{.RESET}}\n" "{{.ITEM}}"
+          if command -v polaris >/dev/null 2>&1; then
+            polaris audit \
+            --audit-path "{{.ITEM}}/{{.BUILD_DIR}}" \
+            --config "{{.ROOT_DIR}}/.config/polaris.yaml" \
+            --format pretty \
+            --only-show-failed-tests true \
+            && printf "  ✅ %s\n" "{{.ITEM}}" \
+            || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          else
+            {{.CONTAINER_ENGINE}} run --rm -v "{{.ITEM}}/{{.BUILD_DIR}}:/work" -w /work \
+            -v "{{.ROOT_DIR}}/.config:/config" \
+            {{.POLARIS_IMAGE}} \
+            polaris audit \
+            --audit-path /work \
+            --config /config/polaris.yaml \
+            --format pretty \
+            --only-show-failed-tests true \
+            && printf "  ✅ %s\n" "{{.ITEM}}" \
+            || { printf "{{.RED}}❌ %s{{.RESET}}\n" "{{.ITEM}}"; exit 1; }
+          fi
+  trivy:
+    desc: Scan source manifests for misconfigurations with Trivy
+    silent: true
+    deps: [check-docker]
+    cmds:
+      - printf "\n{{.GREEN}}🔒 Scanning source manifests with Trivy...{{.RESET}}\n"
+      - cmd: |-
+          {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}:/work" -w /work \
+          {{.TRIVY_IMAGE}} \
+          config \
+          --quiet \
+          --severity CRITICAL,HIGH \
+          --exit-code 1 \
+          --skip-dirs "**/.build,**/charts" \
+          apps \
+          && printf "  ✅ apps/\n" \
+          || { printf "{{.RED}}❌ Trivy{{.RESET}}\n"; exit 1; }

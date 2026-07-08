@@ -1,0 +1,15 @@
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: filebrowser-gateway
+  namespace: filebrowser
+spec:
+  endpointSelector:
+    matchLabels:
+      app: filebrowser
+  ingress:
+    # Gateway API proxy: Cilium envoy pods in gateway namespace
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: gateway

@@ -1,0 +1,28 @@
+---
+# ExternalSecret — pulls SMB credentials from Bitwarden Secrets Manager and
+# materializes them as a Kubernetes Secret in core-secrets for the CSI driver.
+#
+# Before applying: add two secrets to Bitwarden Secrets Manager under the homelab
+# project and replace the UUIDs below with their BSM IDs.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: smb-creds
+  namespace: core-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    name: smb-creds
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: "00000000-0000-0000-0000-000000000000"
+    - secretKey: password
+      remoteRef:
+        key: "00000000-0000-0000-0000-000000000000"

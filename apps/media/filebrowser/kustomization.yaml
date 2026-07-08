@@ -8,3 +8,7 @@ resources:
   - pvc-photos.yaml
   - deployment.yaml
   - service.yaml
+  - resourcequota.yaml
+  - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
+  - httproute.yaml

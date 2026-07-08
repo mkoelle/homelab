@@ -1,5 +1,5 @@
 ---
-files: ['**', .*/**]
+files: ["**", .*/**]
 useGitignore: true
 ignorePaths: [.git, .build, charts]
 

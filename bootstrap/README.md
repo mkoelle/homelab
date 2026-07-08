@@ -1,18 +1,37 @@
-# Initial system setup
+# Bootstrap
 
-Start from a bare-metal machine and follow the minimal path below to
-bring up a Kubernetes control plane (Talos), a CNI stack (Cilium), and a GitOps controller (ArgoCD).
-
-This will bootstrap the machine, and control and management will later be handed off to ArgoCD.
+Start from a bare-metal machine and follow these steps in order to bring up the cluster.
 
 ## Steps
 
-1. Install Talos and bootstrap the cluster — see [talos](./talos/README.md) for the full
-  installation and configuration instructions. After this step you should have
-  a running control plane and a `kubeconfig` you can use from the admin
-  machine.
-2. Install Cilium to enable CNI networking — see [cilium](./cilium/README.md) for
-  the installation steps.
-3. Install ArgoCD to enable GitOps workflows — see [argocd](./argocd/README.md) for
-  the installation steps. ArgoCD runs on the cluster created in step 1 and
-  provides the UI and APIs to sync applications from git.
+1. **Talos** — install the OS and bootstrap Kubernetes — [talos/README.md](./talos/README.md)
+   After this step: running control plane, working `kubeconfig`.
+
+2. **Cilium** — install the CNI — [cilium/README.md](./cilium/README.md)
+   Required before ArgoCD: no CNI = no pod scheduling.
+   After this step: pod networking active, L2 LoadBalancer IPs operational.
+
+3. **ArgoCD** — install the GitOps controller and hand off to Git — [argocd/README.md](./argocd/README.md)
+   **Prerequisite:** create the Bitwarden access token Secret before applying (see argocd/README.md).
+   After this step: all apps in `apps/` sync automatically from Git. Manual `kubectl apply` no longer needed.
+
+## Prerequisites on the admin machine
+
+- `talosctl` — version matching the cluster (currently `v1.13.5`)
+- `kubectl`
+- `helm` (v3)
+- `task` (go-task)
+- Docker or Podman (used by `task build`)
+- `argocd` CLI (for password setup in step 3)
+
+## What is and isn't in Git
+
+| File                                | In Git              | Notes                                     |
+| ----------------------------------- | ------------------- | ----------------------------------------- |
+| `bootstrap/talos/patch.yaml`        | yes                 | patch applied during gen config           |
+| `bootstrap/talos/controlplane.yaml` | **no** (gitignored) | contains cluster PKI private keys         |
+| `bootstrap/talos/talosconfig`       | **no** (gitignored) | contains admin client certificate and key |
+| `bootstrap/talos/worker.yaml`       | **no** (gitignored) |                                           |
+| `apps/**/*.yaml`                    | yes                 | all app manifests, managed by ArgoCD      |
+
+Store `controlplane.yaml` and `talosconfig` in Bitwarden. Losing them on disk = no way to manage the Talos node.
