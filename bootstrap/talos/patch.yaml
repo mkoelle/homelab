@@ -7,7 +7,7 @@ machine:
     - motherbox.local
     - 192.168.1.2
   network:
-    hostname: motherbox.local
+    hostname: motherbox
 
 cluster:
   # Disable default CNI to allow installing Cilium
