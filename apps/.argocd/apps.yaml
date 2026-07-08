@@ -51,7 +51,7 @@ spec:
       project: homelab
       source:
         repoURL: https://github.com/mkoelle/homelab
-        targetRevision: feature/agentic-work
+        targetRevision: HEAD
         path: "{{path}}"
       destination:
         server: https://kubernetes.default.svc

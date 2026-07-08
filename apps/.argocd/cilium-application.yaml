@@ -14,7 +14,7 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
-    targetRevision: feature/agentic-work
+    targetRevision: HEAD
     path: apps/core/cilium
   destination:
     server: https://kubernetes.default.svc
