@@ -15,3 +15,4 @@ helmCharts:
     # The driver itself is typically installed in kube-system
     namespace: kube-system
     includeCRDs: true
+    # valuesInline kept minimal; PV source uses IP to avoid DNS dependency
