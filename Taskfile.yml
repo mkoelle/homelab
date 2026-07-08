@@ -1,6 +1,6 @@
 ---
 # https://taskfile.dev
-version: '3'
+version: "3"
 
 vars:
   # Colors
@@ -19,6 +19,7 @@ vars:
   TRIVY_IMAGE: aquasec/trivy:0.72.0
   PRETTIER_IMAGE: tmknom/prettier:3.6.2
   K8S_IMAGE: alpine/k8s:1.36.2
+  ALLOY_IMAGE: grafana/alloy:v1.17.0
   # Computed
   KUSTOMIZATION_DIRS:
     sh: |
@@ -71,6 +72,7 @@ tasks:
       - task: deprecation-check
       - task: polaris
       - task: trivy
+      - task: validate-alloy-config
   clean:
     desc: Clean up build directory
     silent: true
@@ -291,3 +293,22 @@ tasks:
           apps \
           && printf "  ✅ apps/\n" \
           || { printf "{{.RED}}❌ Trivy{{.RESET}}\n"; exit 1; }
+  validate-alloy-config:
+    desc: Validate Grafana Alloy River configuration syntax and semantics
+    internal: true
+    silent: true
+    deps: [check-docker, kustomize-build]
+    cmds:
+      - printf "\n{{.GREEN}}🔒 Validating Alloy River config...{{.RESET}}\n"
+      - |-
+        awk '
+          /^  config\.alloy: \|-$/ { grab=1; next }
+          grab && /^    / { sub(/^    /, ""); print; next }
+          grab { exit }
+        ' apps/core/alloy/{{.BUILD_DIR}}/deployment.yaml > apps/core/alloy/{{.BUILD_DIR}}/config.alloy
+      - |-
+        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}/apps/core/alloy/{{.BUILD_DIR}}:/work" -w /work \
+        {{.ALLOY_IMAGE}} \
+        validate /work/config.alloy \
+        && printf "  ✅ apps/core/alloy\n" \
+        || { printf "{{.RED}}❌ apps/core/alloy Alloy config invalid{{.RESET}}\n"; exit 1; }
