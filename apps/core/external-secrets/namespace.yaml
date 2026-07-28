@@ -6,7 +6,7 @@ metadata:
 
 ---
 # core-secrets is owned by the secrets infrastructure, not by storage.
-# Apps that need secrets (smb-creds, etc.) land here via ExternalSecret.
+# Apps that need secrets (smb-photos-creds, etc.) land here via ExternalSecret.
 apiVersion: v1
 kind: Namespace
 metadata:

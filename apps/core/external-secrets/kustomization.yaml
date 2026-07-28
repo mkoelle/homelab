@@ -7,7 +7,7 @@ resources:
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
   - cluster-secret-store.yaml
-  - smb-creds.yaml
+  - smb-photos-creds.yaml
 
 helmCharts:
   - name: external-secrets
