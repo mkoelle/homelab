@@ -94,9 +94,11 @@ tasks:
     silent: true
     cmds:
       - |
-        if grep -rq 'REPLACE-WITH' apps/; then
+        MATCHES=$(grep -rnE 'REPLACE-WITH|00000000-0000-0000-0000-000000000000' apps/ \
+          --exclude-dir=charts --exclude-dir=.build || true)
+        if [ -n "$MATCHES" ]; then
           printf "{{.RED}}❌ Placeholder UUIDs found — replace before applying:{{.RESET}}\n"
-          grep -rn 'REPLACE-WITH' apps/
+          printf "%s\n" "$MATCHES"
           exit 1
         fi
         printf "✅ No placeholder UUIDs found\n"
