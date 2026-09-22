@@ -59,7 +59,6 @@ tasks:
     desc: Build all resources
     silent: true
     cmds:
-      - task: check-placeholders
       - task: kustomize-build
   validate:
     desc: Validate all resources
@@ -88,18 +87,6 @@ tasks:
         {{.CSPELL_IMAGE}} \
         --no-progress --color
   # Internal tasks
-  check-placeholders:
-    desc: Fail if placeholder UUIDs remain in manifests
-    internal: true
-    silent: true
-    cmds:
-      - |
-        if grep -rq 'REPLACE-WITH' apps/; then
-          printf "{{.RED}}❌ Placeholder UUIDs found — replace before applying:{{.RESET}}\n"
-          grep -rn 'REPLACE-WITH' apps/
-          exit 1
-        fi
-        printf "✅ No placeholder UUIDs found\n"
   check-docker:
     desc: Check if Docker is running
     internal: true

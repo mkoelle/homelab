@@ -8,6 +8,11 @@ machine:
     - 192.168.1.2
   network:
     hostname: motherbox
+  install:
+    diskSelector:
+      wwid: naa.5000000000002705 # Fanxiang S101 480GB SSD (sda)
+    image: factory.talos.dev/installer/7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884:v1.14.1
+    wipe: true
 
 cluster:
   # Disable default CNI to allow installing Cilium
