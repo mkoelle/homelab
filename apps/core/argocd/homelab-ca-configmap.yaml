@@ -1,0 +1,28 @@
+---
+# Public half of this cluster's root CA (apps/core/cert-manager/ca-bootstrap.yaml)
+# -- safe to commit, it's a certificate, not a private key. Mounted into
+# argocd-server (see patch-argocd-server-ca.yaml) so it trusts TLS certs
+# issued by ca-issuer for in-cluster services it talks to directly, e.g.
+# Authelia's OIDC discovery endpoint. Without this: "failed to query provider
+# ... tls: failed to verify certificate: x509: certificate signed by unknown
+# authority" (confirmed live).
+#
+# 10-year root CA (duration: 87600h in ca-bootstrap.yaml) -- stable enough to
+# hardcode; update this file to match if the root is ever rotated.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homelab-ca
+  namespace: core-argocd
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIBbjCCARSgAwIBAgIUKSRZbeLv02GZX5Q8FtzFrf0ern4wCgYIKoZIzj0EAwIw
+    FTETMBEGA1UEAxMKaG9tZWxhYi1jYTAeFw0yNjA5MjIwNjEyMjJaFw0zNjA5MTkw
+    NjEyMjJaMBUxEzARBgNVBAMTCmhvbWVsYWItY2EwWTATBgcqhkjOPQIBBggqhkjO
+    PQMBBwNCAAScaNA7MO7eR4SAanH3Rszml+4G9Bt16/11r/TLkRED4rVvQl8CkiII
+    l20B5aEQVrKJvT4oP0IKLTO5z4qlRCqpo0IwQDAOBgNVHQ8BAf8EBAMCAqQwDwYD
+    VR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUumMGRLU/wRTO6pizBH/cxRGNJMQwCgYI
+    KoZIzj0EAwIDSAAwRQIhAKO0ut+oxV90+9oruzKUP9rk8qddf5LdZeTm828M29s5
+    AiAGVb3SXAzGe1F6d6hToyEL3OeqfSbzGLNf+mljgbpytQ==
+    -----END CERTIFICATE-----

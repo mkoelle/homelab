@@ -9,6 +9,7 @@ resources:
   - cilium-networkpolicy.yaml
   - httproute.yaml
   - oidc-secret.yaml
+  - homelab-ca-configmap.yaml
   - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.5.3
 
 openapi:
@@ -17,6 +18,10 @@ openapi:
 patches:
   - path: patch-deployments.yaml
   - path: patch-statefulsets.yaml
+  - path: patch-argocd-server-ca.yaml
+    target:
+      kind: Deployment
+      name: argocd-server
   # Kustomize namespace transformer does not update subjects[].namespace in ClusterRoleBindings.
   # ArgoCD chart hardcodes namespace: argocd — patch all three to use the actual namespace.
   - patch: |
