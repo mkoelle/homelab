@@ -1,0 +1,11 @@
+---
+# Static StorageClass for the pre-provisioned local PV below.
+# WaitForFirstConsumer is required for `local` volumes -- binding must happen
+# after the pod is scheduled, so the PVC binds to a PV on the same node.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: pocket-id-local
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
