@@ -9,6 +9,10 @@ resources:
   - cilium-networkpolicy.yaml
   - grafana-admin-secret.yaml
   - httproute.yaml
+  - dashboards/node-exporter-full.yaml
+  - dashboards/kubernetes-cluster.yaml
+  - dashboards/argocd.yaml
+  - dashboards/cilium.yaml
 
 helmCharts:
   - name: victoria-metrics-single

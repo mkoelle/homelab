@@ -23,10 +23,15 @@ spec:
             namespace: core-argocd
             wave: "0"
 
-          # Wave 1 — CSI drivers
+          # Wave 1 — CSI drivers, TLS
           - name: storage
             path: apps/core/storage
             namespace: kube-system
+            wave: "1"
+
+          - name: cert-manager
+            path: apps/core/cert-manager
+            namespace: cert-manager
             wave: "1"
 
           # Wave 2 — Cluster services

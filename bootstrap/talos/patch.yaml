@@ -15,16 +15,47 @@ machine:
     wipe: true
 
 cluster:
-  # Disable default CNI to allow installing Cilium
-  network:
-    cni:
-      name: none
-  proxy:
-    disabled: true
-  apiServer:
-    certSANs:
-      - motherbox
-      - motherbox.local
-  # Allows running workload on control-plane nodes.
-  # Needed because of running a single node instance
-  allowSchedulingOnControlPlanes: true
+  # etcd metrics on a dedicated unauthenticated port -- standard Talos pattern
+  # for internal-only Prometheus/Alloy scraping without needing etcd's mTLS
+  # client certs. Restricted at the network layer (CiliumNetworkPolicy), not TLS.
+  etcd:
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381
+
+---
+# Talos 1.14+ document model: cluster.network.cni, cluster.proxy, cluster.apiServer,
+# and cluster.allowSchedulingOnControlPlanes (legacy v1alpha1 fields, valid through
+# 1.13) now conflict with auto-generated KubeNetworkConfig/KubeProxyConfig/
+# KubeFlannelCNIConfig/KubeAPIServerConfig/KubeNodeConfig documents -- ArgoCD-style
+# "attempting to grant/set a field already set elsewhere" errors on apply. Fixed
+# live on 2026-09-21 after multiple failed apply-config attempts; codified here so
+# a fresh `gen config` doesn't hit the same wall. See docs/troubleshooting/ for the
+# full incident writeup if this ever needs re-deriving.
+apiVersion: v1alpha1
+kind: KubeProxyConfig
+enabled: false # Cilium replaces kube-proxy entirely (kubeProxyReplacement: true).
+
+---
+# Disables default CNI so Cilium can install -- presence/absence of this document
+# is what controls whether Flannel deploys in the new document model (setting
+# cluster.network.cni.name: none does NOT suppress it; the document must not exist).
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+$patch: delete
+
+---
+# Talos audit log: secret *access* was logged at Metadata level (request existed,
+# not what it returned) -- can't distinguish a benign read from exfiltration in
+# post-incident forensics. RequestResponse on secrets specifically logs full
+# request+response bodies; Metadata remains the default for everything else.
+apiVersion: v1alpha1
+kind: KubeAuditPolicyConfig
+configuration:
+  apiVersion: audit.k8s.io/v1
+  kind: Policy
+  rules:
+    - level: RequestResponse
+      resources:
+        - group: ""
+          resources: ["secrets"]
+    - level: Metadata

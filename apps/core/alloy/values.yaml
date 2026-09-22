@@ -273,6 +273,56 @@ alloy:
         ]
         forward_to = [prometheus.remote_write.default.receiver]
       }
+
+      // Blackbox probes through the REAL Gateway path (LB IP + Host header),
+      // not a direct Service-to-Service check -- deliberately exercises the
+      // same Envoy/CiliumNetworkPolicy/ingress-identity routing layer that
+      // broke on 2026-09-21 (see docs/troubleshooting/). A direct in-cluster
+      // Service probe would not have caught that outage; this would have.
+      prometheus.exporter.blackbox "probes" {
+        config = `
+        modules:
+          http_filebrowser:
+            prober: http
+            timeout: 5s
+            http:
+              headers:
+                Host: filebrowser.motherbox.local
+          http_argocd:
+            prober: http
+            timeout: 5s
+            http:
+              headers:
+                Host: argocd.motherbox.local
+          http_grafana:
+            prober: http
+            timeout: 5s
+            http:
+              headers:
+                Host: grafana.motherbox.local
+        `
+
+        target {
+          name    = "filebrowser"
+          address = "http://192.168.1.200"
+          module  = "http_filebrowser"
+        }
+        target {
+          name    = "argocd"
+          address = "http://192.168.1.200"
+          module  = "http_argocd"
+        }
+        target {
+          name    = "grafana"
+          address = "http://192.168.1.200"
+          module  = "http_grafana"
+        }
+      }
+
+      prometheus.scrape "blackbox" {
+        targets    = prometheus.exporter.blackbox.probes.targets
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
   resources:
     requests:
       memory: "128Mi"

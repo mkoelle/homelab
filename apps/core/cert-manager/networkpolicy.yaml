@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cert-manager-policy
+  namespace: cert-manager
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # kube-apiserver calls the webhook's validating/mutating endpoints on issue.
+    # Standard NetworkPolicy ipBlock rules don't match Cilium's "kube-apiserver"
+    # entity (see apps/core/argocd/cilium-networkpolicy.yaml for the same note) --
+    # the matching CiliumNetworkPolicy rule is what actually allows this.
+    - from:
+        - podSelector: {}
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - podSelector: {}
