@@ -43,14 +43,14 @@ service:
 
 persistence:
   data:
-    # PVC path intentionally unused: no dynamic provisioner in this cluster yet
-    # (local-path-provisioner is Phase 3, not implemented). Uses a hostPath on
-    # the Talos STATE partition (/var is writable, same place etcd's data
-    # lives) instead. UNVERIFIED: has not yet been live-tested on this node —
-    # if the pod fails to start with a permission/mount error, this is the
-    # first place to look.
-    enabled: false
-    hostPath:
-      enabled: true
-      path: "/var/lib/pocket-id-data"
-      type: "DirectoryOrCreate"
+    # PVC bound to a hand-written `local` PV (volume.yaml), not persistence.data.hostPath:
+    # pod-security "restricted" (this namespace's enforcement level) forbids the
+    # hostPath volume TYPE outright, confirmed live via FailedCreate ("restricted
+    # volume types ... uses restricted volume type hostPath"). A PVC is an
+    # allowed volume type under "restricted" regardless of what backs the PV,
+    # so the same on-disk directory is exposed through a `local` PV instead.
+    # No dynamic provisioner in this cluster (local-path-provisioner is Phase 3,
+    # not implemented) -- volume-init-job.yaml pre-creates the host directory
+    # the static PV points at.
+    enabled: true
+    existingClaim: "pocket-id-data"
