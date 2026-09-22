@@ -133,6 +133,14 @@ alloy:
           source_labels = ["__meta_kubernetes_pod_name"]
           target_label  = "pod"
         }
+        rule {
+          // Cilium's reference Grafana dashboard (dashboards/cilium.yaml) filters
+          // every panel by k8s_app="cilium" -- without this, every query on it
+          // returns empty. Pod's own k8s-app label, hyphen becomes underscore in
+          // the auto-generated meta label per Prometheus/Alloy discovery convention.
+          source_labels = ["__meta_kubernetes_pod_label_k8s_app"]
+          target_label  = "k8s_app"
+        }
       }
 
       prometheus.scrape "pod_metrics" {
