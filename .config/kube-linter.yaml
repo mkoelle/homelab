@@ -23,3 +23,7 @@ checks:
     - no-read-only-root-fs
     # node-exporter needs the host process namespace to see host-level process/mount metrics.
     - host-pid
+    # Authelia's AUTHELIA_*_FILE env vars hold a *path* to a mounted secret file
+    # (the chart's file-based secret indirection), not the secret value itself --
+    # the check can't distinguish that from a raw secret in the env.
+    - env-var-secret

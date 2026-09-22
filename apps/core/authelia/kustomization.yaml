@@ -3,22 +3,23 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # No top-level namespace transformer: every plain resource sets its own
 # metadata.namespace explicitly (see volume-init-job.yaml, which must land in
-# kube-system, not pocket-id). helmCharts below sets its own namespace: field.
+# kube-system, not authelia). helmCharts below sets its own namespace: field.
 
 resources:
   - namespace.yaml
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
-  - externalsecret.yaml
-  - httproute.yaml
   - storageclass.yaml
   - volume.yaml
   - volume-init-job.yaml
+  - secrets.yaml
+  - users-database-secret.yaml
+  - httproute.yaml
 
 helmCharts:
-  - name: pocket-id
-    repo: https://anza-labs.github.io/charts
-    version: 2.2.1
-    releaseName: pocket-id
-    namespace: pocket-id
+  - name: authelia
+    repo: https://charts.authelia.com
+    version: 0.11.22
+    releaseName: authelia
+    namespace: authelia
     valuesFile: values.yaml

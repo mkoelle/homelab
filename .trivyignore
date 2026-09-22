@@ -4,3 +4,11 @@
 # one verb (get) on one resource, bound to one ServiceAccount in one namespace — not a
 # blanket exception.
 KSV-0047
+
+# KSV-0109: apps/core/argocd/argocd-cm.yaml's oidc.config has a `clientSecret`
+# key — Trivy flags the key NAME regardless of value. The value is
+# `$argocd-secret:oidc.authelia.clientSecret`, ArgoCD's own indirection syntax
+# for resolving the real secret from a Secret at runtime (see oidc-secret.yaml,
+# an ExternalSecret with creationPolicy: Merge) — no secret material is
+# actually in this ConfigMap.
+KSV-0109

@@ -34,3 +34,29 @@ resources:
   limits:
     memory: "512Mi"
     cpu: "500m"
+
+# SSO via Authelia. client_id 'grafana' is declared directly in
+# apps/core/authelia/values.yaml's identity_providers.oidc.clients (fully
+# declarative -- no admin-UI client-creation step). Grafana's generic_oauth
+# provider has no issuer-based discovery, so each endpoint is spelled out --
+# these are Authelia's documented conventional paths, NOT yet confirmed live
+# (unlike the PocketID attempt, where the equivalent endpoints were curled
+# from a running instance first) -- verify against
+# https://auth.motherbox.local/.well-known/openid-configuration once deployed
+# and fix here if they don't match.
+env:
+  GF_SERVER_ROOT_URL: "https://grafana.motherbox.local"
+  GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+  GF_AUTH_GENERIC_OAUTH_NAME: "Authelia"
+  GF_AUTH_GENERIC_OAUTH_CLIENT_ID: "grafana"
+  GF_AUTH_GENERIC_OAUTH_SCOPES: "openid profile email groups"
+  GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://auth.motherbox.local/api/oidc/authorization"
+  GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://auth.motherbox.local/api/oidc/token"
+  GF_AUTH_GENERIC_OAUTH_API_URL: "https://auth.motherbox.local/api/oidc/userinfo"
+  GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
+  GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+envValueFrom:
+  GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+    secretKeyRef:
+      name: grafana-oidc
+      key: client-secret

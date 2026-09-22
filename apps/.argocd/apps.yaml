@@ -32,10 +32,15 @@ spec:
             namespace: core-argocd
             wave: "0"
 
-          # Wave 1 — CSI drivers
+          # Wave 1 — CSI drivers, identity provider
           - name: storage
             path: apps/core/storage
             namespace: kube-system
+            wave: "1"
+
+          - name: authelia
+            path: apps/core/authelia
+            namespace: authelia
             wave: "1"
 
           # Wave 2 — Cluster services
@@ -64,11 +69,6 @@ spec:
           - name: filebrowser
             path: apps/media/filebrowser
             namespace: filebrowser
-            wave: "4"
-
-          - name: pocket-id
-            path: apps/core/pocket-id
-            namespace: pocket-id
             wave: "4"
 
   template:

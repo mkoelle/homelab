@@ -4,7 +4,21 @@ metadata:
   name: argocd-cm
   namespace: core-argocd
 data:
+  url: https://argocd.motherbox.local
   kustomize.buildOptions: "--enable-helm"
+  # SSO via Authelia. client_id 'argocd' is declared directly in
+  # apps/core/authelia/values.yaml's identity_providers.oidc.clients (fully
+  # declarative -- no admin-UI client-creation step, unlike PocketID).
+  # clientSecret is indirected through the argocd-secret Secret (see
+  # oidc-secret.yaml, an ExternalSecret with creationPolicy: Merge) -- ArgoCD
+  # resolves $<secret-name>:<key> references from any Secret in this
+  # namespace at runtime, does not need it inline here.
+  oidc.config: |
+    name: Authelia
+    issuer: https://auth.motherbox.local
+    clientID: "argocd"
+    clientSecret: $argocd-secret:oidc.authelia.clientSecret
+    requestedScopes: ["openid", "profile", "email", "groups"]
   # Exclude API groups not managed by this cluster's GitOps manifests.
   # ArgoCD cluster cache sync fails if it cannot list any discovered API group.
   # resource.k8s.io (DRA) and flowcontrol are cluster-internal; snapshot.storage.k8s.io
