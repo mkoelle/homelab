@@ -1,0 +1,26 @@
+---
+# Supplemental to the Alloy chart's own ClusterRole (which grants `nodes/metrics`,
+# not `nodes/proxy`). Kubelet/cadvisor scraping goes through
+# /api/v1/nodes/{name}/proxy/metrics[/cadvisor], which needs `nodes/proxy` get —
+# the same permission kube-prometheus-stack grants its own kubelet-scrape ClusterRole.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alloy-kubelet-proxy
+rules:
+  - apiGroups: [""]
+    resources: ["nodes/proxy"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alloy-kubelet-proxy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: alloy-kubelet-proxy
+subjects:
+  - kind: ServiceAccount
+    name: alloy
+    namespace: alloy

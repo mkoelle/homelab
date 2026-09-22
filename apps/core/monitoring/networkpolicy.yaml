@@ -1,0 +1,37 @@
+---
+# Ingress-only: restricts who can reach Grafana/VictoriaMetrics/vmalert/Alertmanager
+# UIs and APIs. Egress is deliberately left unrestricted here — vmalert queries
+# VictoriaMetrics and notifies Alertmanager, Grafana queries VictoriaMetrics and Loki
+# (a different namespace) — locking egress down safely needs testing against the live
+# cluster. Full default-deny egress for this namespace is tracked as security-branch
+# follow-up (same pattern as docs/planning/plan.md 1b).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-policy
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Intra-namespace: Grafana -> VictoriaMetrics/Alertmanager, vmalert -> VictoriaMetrics/Alertmanager, etc.
+    - from:
+        - podSelector: {}
+    # Gateway API proxy: Cilium envoy pods in gateway namespace, Grafana port only
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Alloy (alloy namespace) remote_write — see apps/core/alloy/values.yaml's
+    # prometheus.remote_write "default" component, port matches vmsingle's server port.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: alloy
+      ports:
+        - protocol: TCP
+          port: 8428

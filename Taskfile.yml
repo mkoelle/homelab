@@ -1,6 +1,6 @@
 ---
 # https://taskfile.dev
-version: '3'
+version: "3"
 
 vars:
   # Colors
@@ -19,6 +19,7 @@ vars:
   TRIVY_IMAGE: aquasec/trivy:0.74.0
   PRETTIER_IMAGE: tmknom/prettier:3.6.2
   K8S_IMAGE: alpine/k8s:1.37.0
+  ALLOY_IMAGE: grafana/alloy:v1.17.0
   # Computed
   KUSTOMIZATION_DIRS:
     sh: |
@@ -59,6 +60,7 @@ tasks:
     desc: Build all resources
     silent: true
     cmds:
+      - task: check-placeholders
       - task: kustomize-build
   validate:
     desc: Validate all resources
@@ -70,6 +72,8 @@ tasks:
       - task: deprecation-check
       - task: polaris
       - task: trivy
+      - task: image-scan
+      - task: validate-alloy-config
   clean:
     desc: Clean up build directory
     silent: true
@@ -87,6 +91,20 @@ tasks:
         {{.CSPELL_IMAGE}} \
         --no-progress --color
   # Internal tasks
+  check-placeholders:
+    desc: Fail if placeholder UUIDs remain in manifests
+    internal: true
+    silent: true
+    cmds:
+      - |
+        MATCHES=$(grep -rnE 'REPLACE-WITH|00000000-0000-0000-0000-000000000000' apps/ \
+          --exclude-dir=charts --exclude-dir=.build || true)
+        if [ -n "$MATCHES" ]; then
+          printf "{{.RED}}❌ Placeholder UUIDs found — replace before applying:{{.RESET}}\n"
+          printf "%s\n" "$MATCHES"
+          exit 1
+        fi
+        printf "✅ No placeholder UUIDs found\n"
   check-docker:
     desc: Check if Docker is running
     internal: true
@@ -278,3 +296,52 @@ tasks:
           apps \
           && printf "  ✅ apps/\n" \
           || { printf "{{.RED}}❌ Trivy{{.RESET}}\n"; exit 1; }
+  image-scan:
+    desc: Report known CVEs in container images referenced by rendered manifests (informational — does not fail the build; most CVEs here are in upstream base images we don't control)
+    internal: true
+    silent: true
+    deps: [check-docker, kustomize-build]
+    cmds:
+      - printf "\n{{.GREEN}}🔍 Scanning container images for known vulnerabilities (report only)...{{.RESET}}\n"
+      - |
+        LOG="{{.ROOT_DIR}}/{{.BUILD_DIR}}/image-scan.log"
+        mkdir -p "$(dirname "$LOG")"
+        : > "$LOG"
+        IMAGES=$(grep -rhoE '^ *image: *"?[^"[:space:]]+"?' {{.APPS_DIR}}/*/*/{{.BUILD_DIR}}/deployment.yaml 2>/dev/null \
+          | sed -E 's/^ *image: *"?//; s/"$//' | grep -viE 'windows' | sort -u)
+        for img in $IMAGES; do
+          OUT=$({{.CONTAINER_ENGINE}} run --rm {{.TRIVY_IMAGE}} image \
+            --quiet \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --exit-code 0 \
+            "$img" 2>&1)
+          { printf "=== %s ===\n" "$img"; printf "%s\n" "$OUT"; } >> "$LOG"
+          if printf "%s\n" "$OUT" | grep -qE '^Total: [1-9]'; then
+            SUMMARY=$(printf "%s\n" "$OUT" | grep "^Total:" | paste -sd '; ' -)
+            printf "  ⚠️  %s — %s\n" "$img" "$SUMMARY"
+          else
+            printf "  ✅ %s\n" "$img"
+          fi
+        done
+        printf "\nFull report: %s\n" "$LOG"
+        exit 0
+  validate-alloy-config:
+    desc: Validate Grafana Alloy River configuration syntax and semantics
+    internal: true
+    silent: true
+    deps: [check-docker, kustomize-build]
+    cmds:
+      - printf "\n{{.GREEN}}🔒 Validating Alloy River config...{{.RESET}}\n"
+      - |-
+        awk '
+          /^  config\.alloy: \|-$/ { grab=1; next }
+          grab && /^    / { sub(/^    /, ""); print; next }
+          grab { exit }
+        ' apps/core/alloy/{{.BUILD_DIR}}/deployment.yaml > apps/core/alloy/{{.BUILD_DIR}}/config.alloy
+      - |-
+        {{.CONTAINER_ENGINE}} run --rm -v "{{.ROOT_DIR}}/apps/core/alloy/{{.BUILD_DIR}}:/work" -w /work \
+        {{.ALLOY_IMAGE}} \
+        validate /work/config.alloy \
+        && printf "  ✅ apps/core/alloy\n" \
+        || { printf "{{.RED}}❌ apps/core/alloy Alloy config invalid{{.RESET}}\n"; exit 1; }

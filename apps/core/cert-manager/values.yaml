@@ -1,0 +1,33 @@
+---
+crds:
+  enabled: true
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "10m"
+  limits:
+    memory: "256Mi"
+    cpu: "250m"
+
+webhook:
+  resources:
+    requests:
+      memory: "32Mi"
+      cpu: "10m"
+    limits:
+      memory: "128Mi"
+      cpu: "150m"
+
+startupapicheck:
+  # Cleaned up automatically instead of lingering as a completed Job forever.
+  ttlSecondsAfterFinished: 300
+
+cainjector:
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "10m"
+    limits:
+      memory: "256Mi"
+      cpu: "150m"

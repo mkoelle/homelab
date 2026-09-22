@@ -1,0 +1,47 @@
+---
+# Two-tier self-signed CA, standard cert-manager bootstrap pattern: a root
+# selfSigned issuer mints one CA certificate, and a second ClusterIssuer signs
+# off that CA -- every cert issued downstream shares ONE common CA you can
+# trust device-wide, instead of trusting each leaf cert individually.
+#
+# Internal sync-waves (relative to this Application, same pattern as
+# apps/core/external-secrets/cluster-secret-store.yaml + smb-photos-creds.yaml):
+# CRDs land at the implicit default wave via the Helm chart, so these start at "1".
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-ca
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  isCA: true
+  commonName: homelab-ca
+  secretName: homelab-ca-secret
+  duration: 87600h # 10y -- root CA, long-lived by design
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca-issuer
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  ca:
+    secretName: homelab-ca-secret

@@ -1,0 +1,12 @@
+---
+server:
+  retentionPeriod: "3d"
+  persistentVolume:
+    enabled: false
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1536Mi"
+      cpu: "1000m"

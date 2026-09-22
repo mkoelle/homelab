@@ -1,0 +1,15 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: motherbox-wildcard-tls
+  namespace: gateway
+spec:
+  secretName: motherbox-wildcard-tls
+  dnsNames:
+    - "*.motherbox.local"
+    - motherbox.local
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

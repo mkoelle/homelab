@@ -1,0 +1,335 @@
+---
+# Grafana Alloy — cluster log shipper (replaces the deprecated Promtail).
+# Uses loki.source.kubernetes (API-based log streaming) instead of hostPath file
+# tailing: no host mount, no privileged securityContext, runs as non-root by default.
+controller:
+  type: daemonset
+  extraEnv:
+    # Used by the "keep only this node's pods" relabel rule below — without it,
+    # every Alloy replica would stream every pod's logs cluster-wide (fine on this
+    # single-node cluster today, but wrong the moment a second node joins).
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+
+global:
+  podSecurityContext:
+    fsGroup: 473
+
+configReloader:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 473
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "10m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+alloy:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 473
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+  configMap:
+    content: |
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          regex         = sys.env("NODE_NAME")
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.loki.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+
+      // ---- Metrics: no ServiceMonitor/PodMonitor CRDs in this cluster (ADR 0007) —
+      // discovery + relabeling replaces them, same shape as the log pipeline above.
+
+      prometheus.remote_write "default" {
+        endpoint {
+          url = "http://vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428/api/v1/write"
+        }
+      }
+
+      // Pod-annotation discovery: cilium-agent, cilium-envoy, cilium-operator, hubble
+      // all set prometheus.io/scrape + prometheus.io/port on the pod directly (no
+      // Service in front) — confirmed against the rendered Cilium chart output.
+      discovery.kubernetes "pods_metrics" {
+        role = "pod"
+      }
+
+      discovery.relabel "pod_metrics" {
+        targets = discovery.kubernetes.pods_metrics.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+          regex         = "true"
+        }
+        rule {
+          action        = "replace"
+          source_labels = ["__meta_kubernetes_pod_ip", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
+          separator     = ":"
+          target_label  = "__address__"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+      }
+
+      prometheus.scrape "pod_metrics" {
+        targets    = discovery.relabel.pod_metrics.output
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // Service-annotation discovery: kube-state-metrics, node-exporter both set
+      // prometheus.io/scrape on the Service (not the pod) — confirmed against the
+      // rendered chart output. role="endpoints" resolves it to the backing pod IP.
+      discovery.kubernetes "services_metrics" {
+        role = "endpoints"
+      }
+
+      discovery.relabel "service_metrics" {
+        targets = discovery.kubernetes.services_metrics.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_service_annotation_prometheus_io_scrape"]
+          regex         = "true"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_service_name"]
+          target_label  = "service"
+        }
+      }
+
+      prometheus.scrape "service_metrics" {
+        targets    = discovery.relabel.service_metrics.output
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // ArgoCD's vendored install manifest sets no prometheus.io annotations, but
+      // every metrics Service names its port "metrics" — verify with
+      // `kubectl get svc -n core-argocd -l app.kubernetes.io/part-of=argocd` if a
+      // target's missing after apply.
+      discovery.kubernetes "argocd" {
+        role = "endpoints"
+        namespaces {
+          names = ["core-argocd"]
+        }
+      }
+
+      discovery.relabel "argocd_metrics" {
+        targets = discovery.kubernetes.argocd.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_endpoint_port_name"]
+          regex         = "metrics"
+        }
+      }
+
+      prometheus.scrape "argocd" {
+        targets    = discovery.relabel.argocd_metrics.output
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // kubelet + cadvisor: proxied through the API server per node. insecure_skip_verify
+      // because kubelet's serving cert isn't guaranteed to chain to the cluster CA.
+      discovery.kubernetes "nodes" {
+        role = "node"
+      }
+
+      discovery.relabel "kubelet" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          target_label = "__address__"
+          replacement  = "kubernetes.default.svc.cluster.local:443"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          regex         = "(.+)"
+          target_label  = "__metrics_path__"
+          replacement   = "/api/v1/nodes/${1}/proxy/metrics"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      prometheus.scrape "kubelet" {
+        targets            = discovery.relabel.kubelet.output
+        scheme             = "https"
+        bearer_token_file  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          ca_file             = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+          insecure_skip_verify = true
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      discovery.relabel "cadvisor" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          target_label = "__address__"
+          replacement  = "kubernetes.default.svc.cluster.local:443"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          regex         = "(.+)"
+          target_label  = "__metrics_path__"
+          replacement   = "/api/v1/nodes/${1}/proxy/metrics/cadvisor"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      prometheus.scrape "cadvisor" {
+        targets            = discovery.relabel.cadvisor.output
+        scheme             = "https"
+        bearer_token_file  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          ca_file             = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+          insecure_skip_verify = true
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // Fixed in-cluster DNS names — kube-apiserver's own /metrics needs the
+      // nonResourceURL RBAC grant (already in Alloy's default ClusterRole); CoreDNS's
+      // Service name/port is Talos-managed, not chart-templated — verify against the
+      // live cluster if this target's missing.
+      prometheus.scrape "kube_apiserver" {
+        targets = [{
+          "__address__" = "kubernetes.default.svc.cluster.local:443",
+          "job"         = "kube-apiserver",
+        }]
+        scheme            = "https"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      prometheus.scrape "static_targets" {
+        targets = [
+          {"__address__" = "kube-dns.kube-system.svc.cluster.local:9153", "job" = "coredns"},
+          {"__address__" = "vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428", "job" = "victoriametrics"},
+          {"__address__" = "vmalert-victoria-metrics-alert-server.monitoring.svc.cluster.local:8880", "job" = "vmalert"},
+          {"__address__" = "vmalert-victoria-metrics-alert-alertmanager.monitoring.svc.cluster.local:9093", "job" = "alertmanager"},
+        ]
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // Blackbox probes through the REAL Gateway path (LB IP + Host header),
+      // not a direct Service-to-Service check -- deliberately exercises the
+      // same Envoy/CiliumNetworkPolicy/ingress-identity routing layer that
+      // broke on 2026-09-21 (see docs/troubleshooting/). A direct in-cluster
+      // Service probe would not have caught that outage; this would have.
+      prometheus.exporter.blackbox "probes" {
+        config = `
+        modules:
+          http_filebrowser:
+            prober: http
+            timeout: 5s
+            http:
+              headers:
+                Host: filebrowser.motherbox.local
+          http_argocd:
+            prober: http
+            timeout: 5s
+            http:
+              headers:
+                Host: argocd.motherbox.local
+          http_grafana:
+            prober: http
+            timeout: 5s
+            http:
+              headers:
+                Host: grafana.motherbox.local
+        `
+
+        target {
+          name    = "filebrowser"
+          address = "http://192.168.1.200"
+          module  = "http_filebrowser"
+        }
+        target {
+          name    = "argocd"
+          address = "http://192.168.1.200"
+          module  = "http_argocd"
+        }
+        target {
+          name    = "grafana"
+          address = "http://192.168.1.200"
+          module  = "http_grafana"
+        }
+      }
+
+      prometheus.scrape "blackbox" {
+        targets    = prometheus.exporter.blackbox.probes.targets
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+serviceMonitor:
+  enabled: false

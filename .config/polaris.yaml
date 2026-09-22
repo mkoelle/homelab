@@ -229,6 +229,94 @@ exemptions:
       - pullPolicyNotAlways # vendor image
       - notReadOnlyRootFilesystem # vendor image writes to container FS
 
+  # VictoriaMetrics stack (ADR 0007) — vendor charts, no operator/CRDs.
+  # missingNetworkPolicy: apps/core/monitoring's NetworkPolicy is deliberately
+  # ingress-only (see comment in that file) — egress lockdown is security-branch
+  # follow-up. runAsRootAllowed/privilegeEscalationAllowed/notReadOnlyRootFilesystem:
+  # none of these charts expose a straightforward non-root securityContext override
+  # without risking breaking vmsingle's writable data dir; revisit if it becomes worth
+  # the per-component tuning.
+  - namespace: monitoring
+    controllerNames:
+      - grafana
+      - kube-state-metrics
+      - vmalert-victoria-metrics-alert-server
+      - vmalert-victoria-metrics-alert-alertmanager
+      - vmsingle-victoria-metrics-single-server
+    rules:
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+      - metadataAndInstanceMismatched # vendor chart labels
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
+      - cpuRequestsMissing # sidecars: vendor chart, no defaults
+      - cpuLimitsMissing
+      - memoryRequestsMissing
+      - memoryLimitsMissing
+      - readinessProbeMissing
+      - livenessProbeMissing
+      - notReadOnlyRootFilesystem
+      - runAsRootAllowed
+      - privilegeEscalationAllowed
+      - insecureCapabilities
+      - linuxHardening
+
+  # node-exporter — DaemonSet needs host network/PID/paths to read host-level metrics;
+  # that's its entire job. Also see kube-linter host-pid exclude.
+  - namespace: monitoring
+    controllerNames:
+      - node-exporter-prometheus-node-exporter
+    rules:
+      - hostNetworkSet
+      - hostPIDSet
+      - hostPathSet
+      - privilegeEscalationAllowed
+      - insecureCapabilities
+      - linuxHardening
+      - runAsRootAllowed
+      - notReadOnlyRootFilesystem
+      - metadataAndInstanceMismatched # vendor chart labels
+      - automountServiceAccountToken
+      - missingNetworkPolicy
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
+
+  # Loki — vendor chart, single-binary mode
+  - namespace: loki
+    controllerNames:
+      - loki
+    rules:
+      - automountServiceAccountToken
+      - missingNetworkPolicy # ingress-only NetworkPolicy is intentional, see apps/core/loki/networkpolicy.yaml
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
+      - cpuRequestsMissing # loki-sc-rules sidecar: vendor chart, no defaults
+      - cpuLimitsMissing
+      - memoryRequestsMissing
+      - memoryLimitsMissing
+      - readinessProbeMissing
+      - livenessProbeMissing
+
+  # Alloy — cluster-wide DaemonSet log shipper (no ingress consumers, so no NetworkPolicy)
+  - namespace: alloy
+    controllerNames:
+      - alloy
+    rules:
+      - automountServiceAccountToken
+      - missingNetworkPolicy # nothing calls into Alloy; no ingress to restrict
+      - topologySpreadConstraint # single-node
+      - missingPodDisruptionBudget # single-node (DaemonSet)
+      - priorityClassNotSet # homelab
+      - pullPolicyNotAlways # vendor images
+      - readinessProbeMissing
+      - livenessProbeMissing
+
   # filebrowser — single-node homelab; PDB/topology/priority irrelevant.
   # notReadOnlyRootFilesystem: writes DB to container FS (no config PVC — pre-existing design gap).
   # pullPolicyNotAlways: IfNotPresent with pinned tag acceptable for homelab.

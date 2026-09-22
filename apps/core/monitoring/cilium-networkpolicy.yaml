@@ -1,0 +1,31 @@
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: monitoring-gateway
+  namespace: monitoring
+spec:
+  endpointSelector: {}
+  ingress:
+    # Intra-namespace
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+    # Gateway API proxy: traffic forwarded by Cilium's Envoy carries the
+    # reserved "ingress" identity, not the "gateway" namespace's pod identity
+    # (envoy runs host-networked in kube-system) -- confirmed via
+    # `cilium-dbg monitor` policy-verdict logs, "remote ID ingress ... deny".
+    - fromEntities:
+        - "ingress"
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+    # Alloy (alloy namespace) remote_write to VictoriaMetrics
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: alloy
+      toPorts:
+        - ports:
+            - port: "8428"
+              protocol: TCP

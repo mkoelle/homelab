@@ -67,25 +67,47 @@ $env:TALOSCONFIG = (Get-Item "talosconfig").FullName
 target="motherbox.local"
 talosctl gen config $target "https://${target}:6443" --config-patch @patch.yaml
 export TALOSCONFIG=$(pwd)/talosconfig
-
-# Remove HostnameConfig document appended by Talos 1.13+ (conflicts with patch hostname)
-line=$(grep -n "^kind: HostnameConfig" controlplane.yaml | cut -d: -f1)
-sed -i '' "$((line-2)),\$d" controlplane.yaml
 ```
 
-**Post-gen required edit:** Talos 1.13+ appends a `HostnameConfig: auto: stable` document to the generated file. This conflicts with `machine.network.hostname` from the patch and causes `apply-config` to fail with:
+**Post-gen required edits.** Talos 1.14 auto-appends two documents that conflict with this repo's patched config, and there's one default value `patch.yaml` cannot override (see below). All three must be fixed by hand after every `gen config` run — `apply-config` will reject the config, or silently keep an unwanted default, otherwise.
 
-```txt
-static hostname is already set in v1alpha1 config
-```
-
-Remove the appended section from `controlplane.yaml` before applying:
+> ⚠️ **Do not delete "from this document to EOF".** Neither appended document is guaranteed to be last — on Talos 1.14, `UnattendedInstallConfig` is *not* the last document, and deleting to EOF silently destroys every `Kube*Config` document after it (including `KubeClusterConfig`, `KubeNodeConfig`, `KubeletConfig` — the ones that make kubelet start at all). Always delete only from the document's own `---` separator to the *next* `---`, never to EOF. This exact mistake cost a multi-hour bootstrap incident on 2026-09-21.
 
 ```bash
-# HostnameConfig is appended at end of file; delete from its --- separator to EOF
-line=$(grep -n "^kind: HostnameConfig" controlplane.yaml | cut -d: -f1)
-sed -i '' "$((line-2)),\$d" controlplane.yaml
+# Remove UnattendedInstallConfig (conflicts with patch.yaml's machine.install block)
+# and HostnameConfig (conflicts with machine.network.hostname) -- bounded deletes only.
+for kind in UnattendedInstallConfig HostnameConfig; do
+  kind_line=$(grep -n "^kind: $kind" controlplane.yaml | cut -d: -f1)
+  [ -z "$kind_line" ] && continue
+  start=$((kind_line - 2))
+  end=$(awk -v s=$((kind_line + 1)) 'NR>=s && /^---$/{print NR; exit}' controlplane.yaml)
+  end=$((end - 1))
+  sed -i '' "${start},${end}d" controlplane.yaml
+done
+
+# Clear the default control-plane NoSchedule taint (KubeNodeConfig) -- needed so
+# this single-node cluster can schedule workloads. patch.yaml cannot express this:
+# config-patch uses RFC7386-style merge, and neither `taints: {}` nor nulling the
+# specific key nor `$patch: replace` clears a map entry within a document (only
+# whole-document `$patch: delete` works) -- confirmed by test-generation, not a guess.
+awk '
+  /^taints:$/ { print "taints: {}"; skip=1; next }
+  skip && /^    /  { next }
+  { skip=0; print }
+' controlplane.yaml > controlplane.yaml.tmp && mv controlplane.yaml.tmp controlplane.yaml
 ```
+
+Each conflict, if left unfixed:
+
+```txt
+# UnattendedInstallConfig present alongside patch.yaml's machine.install block:
+error applying configuration: ... UnattendedInstallConfig config is incompatible with v1alpha1 config (.machine.install)
+
+# HostnameConfig present alongside patch.yaml's machine.network.hostname:
+error applying configuration: ... static hostname is already set in v1alpha1 config
+```
+
+The taint isn't a hard failure — kubelet just won't schedule workloads on the single control-plane node until it's cleared.
 
 > `controlplane.yaml` in this repo is your live cluster config — gitignored, not a template. For a fresh machine, the above generates new PKI. **Store the generated `controlplane.yaml` and `talosconfig` somewhere safe** (e.g., Bitwarden) — losing them = losing cluster access.
 

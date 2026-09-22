@@ -16,6 +16,10 @@ spec:
     - https://helm.cilium.io/
     - https://charts.external-secrets.io
     - https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
+    - https://prometheus-community.github.io/helm-charts
+    - https://grafana.github.io/helm-charts
+    - https://victoriametrics.github.io/helm-charts
+    - https://charts.jetstack.io
   destinations:
     - server: https://kubernetes.default.svc
       namespace: core-argocd
@@ -31,6 +35,14 @@ spec:
       namespace: cilium-secrets
     - server: https://kubernetes.default.svc
       namespace: gateway
+    - server: https://kubernetes.default.svc
+      namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: loki
+    - server: https://kubernetes.default.svc
+      namespace: alloy
+    - server: https://kubernetes.default.svc
+      namespace: cert-manager
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
@@ -68,3 +80,5 @@ spec:
       kind: ValidatingAdmissionPolicy
     - group: admissionregistration.k8s.io
       kind: ValidatingAdmissionPolicyBinding
+    - group: cert-manager.io
+      kind: ClusterIssuer

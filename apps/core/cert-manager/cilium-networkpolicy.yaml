@@ -1,0 +1,18 @@
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: cert-manager-kube-apiserver
+  namespace: cert-manager
+spec:
+  endpointSelector: {}
+  egress:
+    # kube-apiserver entity matches post-DNAT regardless of IP/port (workaround
+    # for kubeProxyReplacement, same as apps/core/argocd/cilium-networkpolicy.yaml).
+    - toEntities:
+        - "kube-apiserver"
+  ingress:
+    # kube-apiserver calling the webhook's admission-review endpoint on cert
+    # issuance -- webhook pod only, matches the chart's own pod label.
+    - fromEntities:
+        - "kube-apiserver"

@@ -18,6 +18,30 @@ spec:
     - fromEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: core-argocd
+    # Gateway API proxy: Cilium envoy pods in gateway namespace
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: gateway
+    # Alloy (alloy namespace) scraping ArgoCD's metrics endpoints — see
+    # apps/core/alloy/values.yaml's "argocd" discovery.kubernetes job. No CRDs in
+    # this cluster (ADR 0007), so Alloy — not a ServiceMonitor — is the scraper.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: alloy
+      toPorts:
+        - ports:
+            - port: "8082"
+              protocol: TCP
+            - port: "8083"
+              protocol: TCP
+            - port: "8084"
+              protocol: TCP
+            - port: "8080"
+              protocol: TCP
+            - port: "9001"
+              protocol: TCP
+            - port: "5558"
+              protocol: TCP
     # Gateway API proxy: traffic forwarded by Cilium's Envoy carries the
     # reserved "ingress" identity, not the "gateway" namespace's pod identity
     # (envoy runs host-networked in kube-system) -- confirmed via

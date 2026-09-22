@@ -1,0 +1,65 @@
+---
+# vmalert (rule evaluation) + bundled Alertmanager (routing/notification) — same chart,
+# see docs/adrs/0007-observability-stack.md for why vmalert exists as a separate
+# component from VictoriaMetrics's storage engine.
+server:
+  datasource:
+    url: http://vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
+  remoteWrite:
+    url: http://vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
+  notifier:
+    url: http://vmalert-victoria-metrics-alert-alertmanager.monitoring.svc.cluster.local:9093
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  # Key alerts from docs/planning/plan.md Phase 3. etcd latency omitted — Talos runs
+  # etcd as a static pod with no scrape target wired here yet.
+  config:
+    alerts:
+      groups:
+        - name: homelab
+          rules:
+            - alert: KubePodCrashLooping
+              expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash-looping"
+            - alert: NodeMemoryHigh
+              expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 80
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Node {{ $labels.instance }} memory usage above 80%"
+            - alert: ArgoCDAppOutOfSync
+              expr: argocd_app_info{sync_status="OutOfSync"} == 1
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "ArgoCD app {{ $labels.name }} OutOfSync for over 10m"
+            - alert: PVCUsageHigh
+              expr: 100 * kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes > 80
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} usage above 80%"
+
+# Alerts are visible in the Alertmanager/Grafana UI only — no receivers wired yet
+# (default "devnull" receiver). Slack/notification routing is Phase 5, see plan.md.
+alertmanager:
+  enabled: true
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
