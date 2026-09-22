@@ -12,10 +12,21 @@ controller:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+  volumes:
+    # readOnlyRootFilesystem: true (below) means Alloy's own default storagePath
+    # (/tmp/alloy, used for its remotecfg cache) has nowhere to write --
+    # confirmed live: "mkdir /tmp/alloy: read-only file system".
+    extra:
+      - name: alloy-storage
+        emptyDir: {}
 
 global:
+  # Chart default omits seccompProfile — required by this namespace's
+  # pod-security.kubernetes.io/enforce: restricted label (namespace.yaml).
   podSecurityContext:
     fsGroup: 473
+    seccompProfile:
+      type: RuntimeDefault
 
 configReloader:
   securityContext:
@@ -41,6 +52,10 @@ alloy:
     readOnlyRootFilesystem: true
     capabilities:
       drop: [ALL]
+  mounts:
+    extra:
+      - name: alloy-storage
+        mountPath: /tmp/alloy
   configMap:
     content: |
       discovery.kubernetes "pods" {
