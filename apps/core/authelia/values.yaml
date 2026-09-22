@@ -74,11 +74,16 @@ secret:
 
 configMap:
   # Multi-cookie-domain session config requires at least one entry.
+  # No default_redirection_url: Authelia derives an implicit authelia_url
+  # (https://auth.motherbox.local) from domain+subdomain, and rejects
+  # default_redirection_url being set to that same value (confirmed live --
+  # "is effectively equal to option 'authelia_url' ... not permitted"). Not
+  # needed anyway: no forward-auth-protected apps in this cluster, and both
+  # OIDC clients (ArgoCD, Grafana) specify their own redirect_uris.
   session:
     cookies:
       - domain: motherbox.local
         subdomain: auth
-        default_redirection_url: https://auth.motherbox.local
 
   # No forward-auth in this cluster (ArgoCD/Grafana use Authelia purely as an
   # OIDC provider, not proxy-auth), so access_control's default_policy never
