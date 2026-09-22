@@ -23,6 +23,22 @@ kubectl create secret generic bitwarden-access-token `
     --from-literal=token=<your-bitwarden-sm-access-token>
 ```
 
+Also create the TLS cert for `bitwarden-sdk-server`. The ESO Bitwarden provider always builds an HTTPS client and fails (`failed to append caBundle`) without one — this isn't optional even though the server is cluster-internal only. Self-signed is fine (see `apps/core/external-secrets/cluster-secret-store.yaml`'s `caProvider`, which trusts this same secret):
+
+```bash
+openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
+    -keyout key.pem -out cert.pem \
+    -subj "/CN=bitwarden-sdk-server.external-secrets.svc.cluster.local" \
+    -addext "subjectAltName=DNS:bitwarden-sdk-server.external-secrets.svc.cluster.local,DNS:bitwarden-sdk-server,DNS:bitwarden-sdk-server.external-secrets.svc"
+
+kubectl create secret generic bitwarden-tls-certs \
+    --namespace external-secrets \
+    --from-file=cert.pem=cert.pem \
+    --from-file=key.pem=key.pem
+
+rm cert.pem key.pem
+```
+
 ## Step 1 — Build and install ArgoCD
 
 Run from the **repo root**. The build output lands at `apps/core/argocd/.build/deployment.yaml`.
