@@ -6,6 +6,7 @@ resources:
   - namespace.yaml
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
+  - bitwarden-tls-cert.yaml
   - cluster-secret-store.yaml
   - smb-photos-creds.yaml
 

@@ -164,6 +164,17 @@ alloy:
           regex         = "true"
         }
         rule {
+          // hubble-metrics gets its own dedicated scrape below, filtered to just
+          // hubble_* metrics -- its port also re-exposes cilium's general process/
+          // build-info metrics, which would otherwise duplicate the pod_metrics
+          // scrape of the same cilium-agent pod under a different job label
+          // (confirmed live: identical cilium_process_cpu_seconds_total values
+          // under job="prometheus.scrape.pod_metrics" and job="...service_metrics").
+          action        = "drop"
+          source_labels = ["__meta_kubernetes_service_name"]
+          regex         = "hubble-metrics"
+        }
+        rule {
           source_labels = ["__meta_kubernetes_namespace"]
           target_label  = "namespace"
         }
@@ -176,6 +187,42 @@ alloy:
       prometheus.scrape "service_metrics" {
         targets    = discovery.relabel.service_metrics.output
         forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // Dedicated hubble-metrics scrape, filtered post-scrape to keep only real
+      // Hubble flow metrics -- the same port also serves cilium's general
+      // process/build-info metrics (already captured via pod_metrics above),
+      // dropped here rather than duplicated.
+      discovery.relabel "hubble_metrics" {
+        targets = discovery.kubernetes.services_metrics.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_service_name"]
+          regex         = "hubble-metrics"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_service_name"]
+          target_label  = "service"
+        }
+      }
+
+      prometheus.relabel "hubble_metrics" {
+        rule {
+          action        = "keep"
+          source_labels = ["__name__"]
+          regex         = "hubble_.*"
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      prometheus.scrape "hubble_metrics" {
+        targets    = discovery.relabel.hubble_metrics.output
+        forward_to = [prometheus.relabel.hubble_metrics.receiver]
       }
 
       // ArgoCD's vendored install manifest sets no prometheus.io annotations, but
@@ -288,11 +335,15 @@ alloy:
       }
 
       prometheus.scrape "static_targets" {
+        // etcd has no backing Service -- Talos exposes it directly on the
+        // node's :2381 (bootstrap/talos/patch.yaml cluster.etcd.extraArgs),
+        // unauthenticated by design, restricted at the network layer.
         targets = [
           {"__address__" = "kube-dns.kube-system.svc.cluster.local:9153", "job" = "coredns"},
           {"__address__" = "vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428", "job" = "victoriametrics"},
           {"__address__" = "vmalert-victoria-metrics-alert-server.monitoring.svc.cluster.local:8880", "job" = "vmalert"},
           {"__address__" = "vmalert-victoria-metrics-alert-alertmanager.monitoring.svc.cluster.local:9093", "job" = "alertmanager"},
+          {"__address__" = "192.168.1.2:2381", "job" = "etcd"},
         ]
         forward_to = [prometheus.remote_write.default.receiver]
       }

@@ -1,0 +1,24 @@
+---
+# Replaces the manually-generated 10-year self-signed cert from the original
+# TLS fix (see docs/troubleshooting/ and bootstrap/argocd/README.md history)
+# with a cert-manager-issued one -- auto-renewal, no manual bootstrap step.
+# Same secret name/keys (tls.crt/tls.key/ca.crt) the ClusterSecretStore's
+# caProvider and bitwarden-sdk-server's image.tls already expect, so no
+# other file needs to change.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: bitwarden-tls-certs
+  namespace: external-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  secretName: bitwarden-tls-certs
+  dnsNames:
+    - bitwarden-sdk-server.external-secrets.svc.cluster.local
+    - bitwarden-sdk-server
+    - bitwarden-sdk-server.external-secrets.svc
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

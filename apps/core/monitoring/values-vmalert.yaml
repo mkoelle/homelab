@@ -68,6 +68,27 @@ server:
                 severity: warning
               annotations:
                 summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} usage above 80%"
+            # etcd latency: previously omitted, no scrape target existed. Unblocked
+            # by bootstrap/talos/patch.yaml exposing :2381 + the Alloy static
+            # target above. p99 WAL fsync is etcd's own standard health signal --
+            # sustained values above ~1s indicate real disk/IO pressure.
+            - alert: EtcdHighFsyncLatency
+              expr: histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket{job="etcd"}[5m])) by (le)) > 1
+              for: 10m
+              labels:
+                severity: critical
+              annotations:
+                summary: "etcd WAL fsync p99 latency above 1s for 10m -- disk/IO pressure"
+            # Blackbox probes (Alloy, prometheus.exporter.blackbox "probes") exist
+            # but nothing alerted on failure until now -- an outage only showed up
+            # if someone happened to look at Grafana.
+            - alert: BlackboxProbeFailed
+              expr: probe_success == 0
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Probe failed: {{ $labels.instance }} ({{ $labels.job }}) unreachable via the real Gateway path for 5m"
 
 # Alerts are visible in the Alertmanager/Grafana UI only — no receivers wired yet
 # (default "devnull" receiver). Slack/notification routing is Phase 5, see plan.md.
