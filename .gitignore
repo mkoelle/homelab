@@ -1,6 +1,7 @@
 controlplane.yaml
 talosconfig
 worker.yaml
+bootstrap/talos/*.bak
 kubeconfig
 .build
 charts
