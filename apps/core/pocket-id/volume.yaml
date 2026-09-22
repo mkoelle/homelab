@@ -5,6 +5,15 @@
 # ... uses restricted volume type hostPath", FailedCreate, pod never scheduled).
 # A `local` PV backs the same directory on disk but is consumed through a PVC,
 # which restricted PSA does allow.
+#
+# Path is nested under /var/lib/kubelet, not bare /var/lib: confirmed live that
+# a plain /var/lib/pocket-id-data (created via a hostPath-mounted init Job, which
+# goes through containerd/CRI and sees the true host root) is invisible to
+# kubelet's own local-volume stat check -- FailedMount "path ... does not exist"
+# persisted 10+ min after the directory demonstrably existed on the real node
+# (confirmed via talosctl). Kubelet's own process only reliably sees paths under
+# its own state tree (/var/lib/kubelet -- confirmed via kubelet's own state files
+# living there), not the bare /var/lib mountpoint.
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -17,7 +26,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: pocket-id-local
   local:
-    path: /var/lib/pocket-id-data
+    path: /var/lib/kubelet/pocket-id-data
   nodeAffinity:
     required:
       nodeSelectorTerms:
