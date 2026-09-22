@@ -66,6 +66,11 @@ spec:
             namespace: filebrowser
             wave: "4"
 
+          - name: pocket-id
+            path: apps/core/pocket-id
+            namespace: pocket-id
+            wave: "4"
+
   template:
     metadata:
       name: "{{name}}"
