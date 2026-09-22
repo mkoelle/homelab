@@ -23,22 +23,9 @@ kubectl create secret generic bitwarden-access-token `
     --from-literal=token=<your-bitwarden-sm-access-token>
 ```
 
-Also create the TLS cert for `bitwarden-sdk-server`. The ESO Bitwarden provider always builds an HTTPS client and fails (`failed to append caBundle`) without one — this isn't optional even though the server is cluster-internal only. Self-signed is fine (see `apps/core/external-secrets/cluster-secret-store.yaml`'s `caProvider`, which trusts this same secret):
+The TLS cert for `bitwarden-sdk-server` (required — the ESO Bitwarden provider always builds an HTTPS client and fails with `failed to append caBundle` without one, even though the server is cluster-internal only) is issued automatically by cert-manager (`apps/core/external-secrets/bitwarden-tls-cert.yaml`, off this cluster's self-signed CA) — no manual step needed.
 
-```bash
-openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
-    -keyout tls.key -out tls.crt \
-    -subj "/CN=bitwarden-sdk-server.external-secrets.svc.cluster.local" \
-    -addext "subjectAltName=DNS:bitwarden-sdk-server.external-secrets.svc.cluster.local,DNS:bitwarden-sdk-server,DNS:bitwarden-sdk-server.external-secrets.svc"
-
-kubectl create secret generic bitwarden-tls-certs \
-    --namespace external-secrets \
-    --from-file=tls.crt=tls.crt \
-    --from-file=tls.key=tls.key \
-    --from-file=ca.crt=tls.crt
-
-rm tls.crt tls.key
-```
+> **First-sync-only caveat:** cert-manager's `argocd-application-controller` can hit the same RBAC-escalation bootstrap paradox as ArgoCD's own `deletecollection` fix (see backlog/troubleshooting docs) — Kubernetes won't let ArgoCD grant a permission (here, `approve`/`sign` on `signers`) it doesn't itself hold yet. If the `cert-manager` Application's first sync fails with a `ClusterRole ... is forbidden: ... attempting to grant RBAC permissions not currently held` error, break it with one direct admin apply: `kubectl apply --server-side --force-conflicts -f apps/core/cert-manager/.build/deployment.yaml`. Every sync after that succeeds normally — this is a one-time bootstrap quirk, not a recurring issue.
 
 ## Step 1 — Build and install ArgoCD
 

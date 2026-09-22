@@ -2,8 +2,9 @@
 # Enable the Bitwarden SDK server sidecar.
 # TLS required — the ESO Bitwarden provider unconditionally builds an HTTPS
 # client and fails ("failed to append caBundle") without it, regardless of
-# network exposure. Self-signed cert in the `bitwarden-tls-certs` Secret
-# (created manually, not in Git — see bootstrap/argocd/README.md).
+# network exposure. Cert issued by cert-manager (bitwarden-tls-cert.yaml)
+# off this cluster's self-signed CA (apps/core/cert-manager/ca-bootstrap.yaml)
+# — auto-renewing, no manual bootstrap step.
 bitwarden-sdk-server:
   enabled: true
   image:
