@@ -31,7 +31,7 @@ spec:
           command:
             - sh
             - -c
-            - mkdir -p /host/var/lib/pocket-id-data && chmod 0770 /host/var/lib/pocket-id-data
+            - mkdir -p /host/var/lib/kubelet/pocket-id-data && chmod 0770 /host/var/lib/kubelet/pocket-id-data
           securityContext:
             # runAsUser 0 is required: mkdir/chmod target a root-owned directory
             # on the host. Explicit rather than default-context, per KSV-0118.
