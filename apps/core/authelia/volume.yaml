@@ -1,0 +1,41 @@
+---
+# `local` PV, not hostPath: pod-security "restricted" allows persistentVolumeClaim
+# as a volume source but flatly forbids hostPath (same issue and fix as
+# apps/core/pocket-id/volume.yaml -- see that file for the full incident
+# history). Path is nested under /var/lib/kubelet, not bare /var/lib: kubelet's
+# own local-volume stat check only reliably sees paths under its own state
+# tree, confirmed live during the pocket-id deployment.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: authelia-data
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: authelia-local
+  local:
+    path: /var/lib/kubelet/authelia-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - motherbox
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: authelia-data
+  namespace: authelia
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: authelia-local
+  resources:
+    requests:
+      storage: 1Gi

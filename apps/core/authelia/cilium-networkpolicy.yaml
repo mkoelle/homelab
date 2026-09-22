@@ -2,8 +2,8 @@
 apiVersion: "cilium.io/v2"
 kind: CiliumNetworkPolicy
 metadata:
-  name: pocket-id-gateway
-  namespace: pocket-id
+  name: authelia-gateway
+  namespace: authelia
 spec:
   endpointSelector: {}
   ingress:
@@ -14,7 +14,18 @@ spec:
         - "ingress"
       toPorts:
         - ports:
-            - port: "1411"
+            - port: "9091"
+              protocol: TCP
+    # ArgoCD/Grafana calling Authelia's token/userinfo endpoints server-side
+    # during the OIDC code exchange (not proxied through the Gateway).
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: core-argocd
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9091"
               protocol: TCP
   egress:
     # kube-apiserver entity matches post-DNAT regardless of IP/port
