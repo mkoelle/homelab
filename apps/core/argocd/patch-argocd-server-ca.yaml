@@ -1,0 +1,45 @@
+---
+# argocd-server makes its own outbound TLS calls for OIDC discovery -- needs
+# to trust ca-issuer-signed certs directly (see homelab-ca-configmap.yaml).
+# SSL_CERT_DIR keeps the default /etc/ssl/certs alongside our own dir: Go's
+# x509 loader replaces rather than extends the default search path once this
+# env var is set, so omitting /etc/ssl/certs here would break trust for every
+# *public* CA too (chart repos, git over https, etc).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+spec:
+  template:
+    spec:
+      # Same standalone-file caveat as the container securityContext below --
+      # the upstream base has no pod-level securityContext at all (it's fetched
+      # remotely, never a local file Trivy could see before this patch existed).
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: homelab-ca
+          configMap:
+            name: homelab-ca
+      containers:
+        - name: argocd-server
+          # Trivy's config scan reads this patch file standalone (not the
+          # merged output) and would otherwise flag a missing securityContext
+          # here -- these values are a no-op restating what the upstream base
+          # already sets (confirmed in the rendered output), not a real change.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: homelab-ca
+              mountPath: /etc/ssl/homelab-ca
+              readOnly: true
+          env:
+            - name: SSL_CERT_DIR
+              value: /etc/ssl/certs:/etc/ssl/homelab-ca
