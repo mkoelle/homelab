@@ -1,0 +1,56 @@
+---
+# id.motherbox.local resolves via the same L2-announced Gateway LB IP as every
+# other app in this repo (see apps/core/gateway/httproute.yaml pattern).
+host: "id.motherbox.local"
+trustProxy: true
+
+database:
+  connectionString: "file:data/pocket-id.db"
+
+# Chart normally generates this Secret from plaintext values.encryptionKey /
+# values.database.connectionString. We supply it externally instead via
+# ExternalSecret (see externalsecret.yaml) so the encryption key never lands
+# in git.
+secret:
+  create: false
+  name: pocket-id-secret
+
+pocketID:
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+podSecurityContext:
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+service:
+  type: ClusterIP
+  port: 80
+
+persistence:
+  data:
+    # PVC path intentionally unused: no dynamic provisioner in this cluster yet
+    # (local-path-provisioner is Phase 3, not implemented). Uses a hostPath on
+    # the Talos STATE partition (/var is writable, same place etcd's data
+    # lives) instead. UNVERIFIED: has not yet been live-tested on this node —
+    # if the pod fails to start with a permission/mount error, this is the
+    # first place to look.
+    enabled: false
+    hostPath:
+      enabled: true
+      path: "/var/lib/pocket-id-data"
+      type: "DirectoryOrCreate"

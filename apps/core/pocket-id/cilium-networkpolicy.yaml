@@ -1,0 +1,23 @@
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: pocket-id-gateway
+  namespace: pocket-id
+spec:
+  endpointSelector: {}
+  ingress:
+    # Gateway API proxy: Envoy-forwarded traffic carries the reserved "ingress"
+    # identity, not a namespace-based pod identity (see
+    # apps/core/monitoring/cilium-networkpolicy.yaml for the same pattern).
+    - fromEntities:
+        - "ingress"
+      toPorts:
+        - ports:
+            - port: "1411"
+              protocol: TCP
+  egress:
+    # kube-apiserver entity matches post-DNAT regardless of IP/port
+    # (kubeProxyReplacement workaround, same as other apps in this repo).
+    - toEntities:
+        - "kube-apiserver"

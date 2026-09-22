@@ -20,6 +20,7 @@ spec:
     - https://grafana.github.io/helm-charts
     - https://victoriametrics.github.io/helm-charts
     - https://charts.jetstack.io
+    - https://anza-labs.github.io/charts
   destinations:
     - server: https://kubernetes.default.svc
       namespace: core-argocd
@@ -43,6 +44,8 @@ spec:
       namespace: alloy
     - server: https://kubernetes.default.svc
       namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: pocket-id
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
