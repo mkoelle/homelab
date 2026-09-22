@@ -4,7 +4,18 @@ metadata:
   name: argocd-cm
   namespace: core-argocd
 data:
+  url: https://argocd.motherbox.local
   kustomize.buildOptions: "--enable-helm"
+  # SSO via PocketID. clientSecret is indirected through the argocd-secret Secret
+  # (see oidc-secret.yaml, an ExternalSecret with creationPolicy: Merge) --
+  # ArgoCD resolves $<secret-name>:<key> references from any Secret in this
+  # namespace at runtime, does not need it inline here.
+  oidc.config: |
+    name: PocketID
+    issuer: https://id.motherbox.local
+    clientID: "<REPLACE-WITH-POCKETID-ARGOCD-CLIENT-ID>"
+    clientSecret: $argocd-secret:oidc.pocketid.clientSecret
+    requestedScopes: ["openid", "profile", "email", "groups"]
   # Exclude API groups not managed by this cluster's GitOps manifests.
   # ArgoCD cluster cache sync fails if it cannot list any discovered API group.
   # resource.k8s.io (DRA) and flowcontrol are cluster-internal; snapshot.storage.k8s.io

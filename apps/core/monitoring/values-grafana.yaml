@@ -34,3 +34,31 @@ resources:
   limits:
     memory: "512Mi"
     cpu: "500m"
+
+# SSO via PocketID. Endpoints confirmed live from PocketID's own
+# /.well-known/openid-configuration -- Grafana's generic_oauth provider has no
+# issuer-based discovery, needs each URL spelled out. client_secret comes from
+# grafana-oidc-secret.yaml (ExternalSecret); client_id is not sensitive, so it
+# stays inline here like ArgoCD's clientID in argocd-cm.yaml.
+#
+# Before applying: create an OIDC client in PocketID's admin UI (Settings ->
+# OIDC Clients) named "Grafana", redirect URI
+# https://grafana.motherbox.local/login/generic_oauth, then:
+#   1. put the client ID below
+#   2. add a Bitwarden SM item with the client secret (see grafana-oidc-secret.yaml)
+env:
+  GF_SERVER_ROOT_URL: "https://grafana.motherbox.local"
+  GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+  GF_AUTH_GENERIC_OAUTH_NAME: "PocketID"
+  GF_AUTH_GENERIC_OAUTH_CLIENT_ID: "<REPLACE-WITH-POCKETID-GRAFANA-CLIENT-ID>"
+  GF_AUTH_GENERIC_OAUTH_SCOPES: "openid profile email groups"
+  GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://id.motherbox.local/authorize"
+  GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://id.motherbox.local/api/oidc/token"
+  GF_AUTH_GENERIC_OAUTH_API_URL: "https://id.motherbox.local/api/oidc/userinfo"
+  GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
+  GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+envValueFrom:
+  GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+    secretKeyRef:
+      name: grafana-oidc
+      key: client-secret
