@@ -27,16 +27,17 @@ Also create the TLS cert for `bitwarden-sdk-server`. The ESO Bitwarden provider 
 
 ```bash
 openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
-    -keyout key.pem -out cert.pem \
+    -keyout tls.key -out tls.crt \
     -subj "/CN=bitwarden-sdk-server.external-secrets.svc.cluster.local" \
     -addext "subjectAltName=DNS:bitwarden-sdk-server.external-secrets.svc.cluster.local,DNS:bitwarden-sdk-server,DNS:bitwarden-sdk-server.external-secrets.svc"
 
 kubectl create secret generic bitwarden-tls-certs \
     --namespace external-secrets \
-    --from-file=cert.pem=cert.pem \
-    --from-file=key.pem=key.pem
+    --from-file=tls.crt=tls.crt \
+    --from-file=tls.key=tls.key \
+    --from-file=ca.crt=tls.crt
 
-rm cert.pem key.pem
+rm tls.crt tls.key
 ```
 
 ## Step 1 — Build and install ArgoCD
