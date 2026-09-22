@@ -72,6 +72,7 @@ tasks:
       - task: deprecation-check
       - task: polaris
       - task: trivy
+      - task: image-scan
       - task: validate-alloy-config
   clean:
     desc: Clean up build directory
@@ -295,6 +296,36 @@ tasks:
           apps \
           && printf "  ✅ apps/\n" \
           || { printf "{{.RED}}❌ Trivy{{.RESET}}\n"; exit 1; }
+  image-scan:
+    desc: Report known CVEs in container images referenced by rendered manifests (informational — does not fail the build; most CVEs here are in upstream base images we don't control)
+    internal: true
+    silent: true
+    deps: [check-docker, kustomize-build]
+    cmds:
+      - printf "\n{{.GREEN}}🔍 Scanning container images for known vulnerabilities (report only)...{{.RESET}}\n"
+      - |
+        LOG="{{.ROOT_DIR}}/{{.BUILD_DIR}}/image-scan.log"
+        mkdir -p "$(dirname "$LOG")"
+        : > "$LOG"
+        IMAGES=$(grep -rhoE '^ *image: *"?[^"[:space:]]+"?' {{.APPS_DIR}}/*/*/{{.BUILD_DIR}}/deployment.yaml 2>/dev/null \
+          | sed -E 's/^ *image: *"?//; s/"$//' | grep -viE 'windows' | sort -u)
+        for img in $IMAGES; do
+          OUT=$({{.CONTAINER_ENGINE}} run --rm {{.TRIVY_IMAGE}} image \
+            --quiet \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --exit-code 0 \
+            "$img" 2>&1)
+          { printf "=== %s ===\n" "$img"; printf "%s\n" "$OUT"; } >> "$LOG"
+          if printf "%s\n" "$OUT" | grep -qE '^Total: [1-9]'; then
+            SUMMARY=$(printf "%s\n" "$OUT" | grep "^Total:" | paste -sd '; ' -)
+            printf "  ⚠️  %s — %s\n" "$img" "$SUMMARY"
+          else
+            printf "  ✅ %s\n" "$img"
+          fi
+        done
+        printf "\nFull report: %s\n" "$LOG"
+        exit 0
   validate-alloy-config:
     desc: Validate Grafana Alloy River configuration syntax and semantics
     internal: true
