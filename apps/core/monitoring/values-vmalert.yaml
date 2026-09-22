@@ -9,6 +9,23 @@ server:
     url: http://vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
   notifier:
     url: http://vmalert-victoria-metrics-alert-alertmanager.monitoring.svc.cluster.local:9093
+  # Chart's securityContext/podSecurityContext default to `enabled: true` with
+  # no actual fields set -- an empty context, which doesn't satisfy this
+  # namespace's pod-security.kubernetes.io/enforce: restricted label.
+  securityContext:
+    enabled: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     requests:
       memory: "64Mi"
@@ -56,6 +73,22 @@ server:
 # (default "devnull" receiver). Slack/notification routing is Phase 5, see plan.md.
 alertmanager:
   enabled: true
+  # Chart defaults BOTH contexts to enabled: false for this sub-chart --
+  # completely unset, unlike server's (empty-but-present) default above.
+  securityContext:
+    enabled: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     requests:
       memory: "64Mi"

@@ -36,11 +36,17 @@ helmCharts:
     namespace: monitoring
     includeCRDs: false
     valuesFile: values-kube-state-metrics.yaml
+  # kube-system, not monitoring: node-exporter needs hostNetwork/hostPID/hostPath
+  # to read host /proc, /sys -- flatly incompatible with the monitoring
+  # namespace's pod-security.kubernetes.io/enforce: restricted label (no values
+  # override can satisfy both; PodSecurity "restricted" forbids these outright).
+  # kube-system already hosts Cilium and csi-driver-smb, the other
+  # host-level-access components in this cluster -- same precedent.
   - name: prometheus-node-exporter
     repo: https://prometheus-community.github.io/helm-charts
     version: 4.57.0
     releaseName: node-exporter
-    namespace: monitoring
+    namespace: kube-system
     includeCRDs: false
     valuesFile: values-node-exporter.yaml
   - name: grafana

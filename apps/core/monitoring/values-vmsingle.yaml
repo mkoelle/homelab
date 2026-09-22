@@ -3,6 +3,25 @@ server:
   retentionPeriod: "3d"
   persistentVolume:
     enabled: false
+  # Chart's securityContext/podSecurityContext default to `enabled: true` with
+  # no actual fields set -- an empty context, which doesn't satisfy this
+  # namespace's pod-security.kubernetes.io/enforce: restricted label. Not
+  # setting readOnlyRootFilesystem (chart default) avoids the "no fallback
+  # emptyDir" trap hit with Loki's chart for its own data directory.
+  securityContext:
+    enabled: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     requests:
       memory: "512Mi"

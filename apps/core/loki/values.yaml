@@ -5,6 +5,16 @@
 deploymentMode: SingleBinary
 
 loki:
+  # Chart default omits seccompProfile — required by this namespace's
+  # pod-security.kubernetes.io/enforce: restricted label (namespace.yaml).
+  podSecurityContext:
+    fsGroup: 10001
+    fsGroupChangePolicy: OnRootMismatch
+    runAsGroup: 10001
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile:
+      type: RuntimeDefault
   auth_enabled: false
   commonConfig:
     replication_factor: 1
@@ -29,6 +39,17 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: false
+  # persistence.enabled: false means no /var/loki mount at all (not an emptyDir
+  # fallback, as originally assumed here) -- confirmed against the chart's own
+  # single-binary/statefulset.yaml, the storage volumeMount is conditional on
+  # persistence.enabled with no else-branch. Without this, Loki can't even
+  # start ("mkdir /var/loki: read-only file system").
+  extraVolumes:
+    - name: data
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: data
+      mountPath: /var/loki
   resources:
     requests:
       memory: "256Mi"
