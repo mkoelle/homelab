@@ -13,28 +13,28 @@ resources:
 helmCharts:
   - name: victoria-metrics-single
     repo: https://victoriametrics.github.io/helm-charts
-    version: 0.42.0
+    version: 0.47.0
     releaseName: vmsingle
     namespace: monitoring
     includeCRDs: false
     valuesFile: values-vmsingle.yaml
   - name: victoria-metrics-alert
     repo: https://victoriametrics.github.io/helm-charts
-    version: 0.44.0
+    version: 0.49.0
     releaseName: vmalert
     namespace: monitoring
     includeCRDs: false
     valuesFile: values-vmalert.yaml
   - name: kube-state-metrics
     repo: https://prometheus-community.github.io/helm-charts
-    version: 7.5.1
+    version: 8.5.0
     releaseName: kube-state-metrics
     namespace: monitoring
     includeCRDs: false
     valuesFile: values-kube-state-metrics.yaml
   - name: prometheus-node-exporter
     repo: https://prometheus-community.github.io/helm-charts
-    version: 4.55.0
+    version: 4.57.0
     releaseName: node-exporter
     namespace: monitoring
     includeCRDs: false

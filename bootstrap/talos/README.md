@@ -4,7 +4,7 @@ Talos OS is a lightweight, immutable operating system built specifically for run
 
 ## Factory Image
 
-**Current schematic** (schematic ID `7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884`, [factory link](https://factory.talos.dev/?arch=amd64&platform=metal&schematic-id=7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884&secureboot=true&target=metal&version=1.13.5)):
+**Current schematic** (schematic ID `7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884`, [factory link](https://factory.talos.dev/?arch=amd64&platform=metal&schematic-id=7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884&secureboot=true&target=metal&version=1.14.1), [PXE URL](https://pxe.factory.talos.dev/pxe/7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884/v1.14.1/metal-amd64-secureboot)):
 
 ```yaml
 customization:
@@ -20,7 +20,7 @@ customization:
 - `intel_iommu=off` — required: Intel Z97 VT-d IOMMU aborts DMA writes to the STATE partition XFS log sector for both NCQ and non-NCQ DMA. Without this, install always fails regardless of NCQ mode. Cannot be set via `extraKernelArgs` in `controlplane.yaml` — SecureBoot UKI ignores it. Must be baked into schematic.
 - `intel-ucode` — Intel microcode updates (Spectre/Meltdown patches for Haswell).
 
-Build the installer at [Talos Image Factory](https://factory.talos.dev) — select `metal`, `amd64`, `SecureBoot`, `v1.13.5`.
+Build the installer at [Talos Image Factory](https://factory.talos.dev) — select `metal`, `amd64`, `SecureBoot`, `v1.14.1`.
 
 > If you change extensions or the Talos version, regenerate the schematic at factory.talos.dev and update the schematic ID here, in `controlplane.yaml` and `worker.yaml` installer images, and in the upgrade command below.
 
@@ -128,7 +128,7 @@ Keep `talosctl` version on the admin machine in sync with the cluster version.
 
 ```powershell
 $target = "motherbox.local"
-$version = "v1.13.5"
+$version = "v1.14.1"
 
 # Upgrade Talos OS
 talosctl upgrade -n $target --image "factory.talos.dev/installer/7538c8ece51ab4ebc4bd5557c4a5e9c886460596656155cd6a7d23356c2c0884:${version}"

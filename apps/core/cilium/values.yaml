@@ -74,3 +74,8 @@ l2announcements:
   enabled: true
 externalIPs:
   enabled: false
+# WireGuard transparent encryption — encrypts all pod-to-pod traffic,
+# including plaintext Bitwarden SDK server calls (see ADR 0005).
+encryption:
+  enabled: true
+  type: wireguard

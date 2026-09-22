@@ -7,12 +7,12 @@ resources:
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
   - cluster-secret-store.yaml
-  - smb-creds.yaml
+  - smb-photos-creds.yaml
 
 helmCharts:
   - name: external-secrets
     repo: https://charts.external-secrets.io
-    version: 2.4.1
+    version: 2.11.0
     releaseName: external-secrets
     namespace: external-secrets
     includeCRDs: true

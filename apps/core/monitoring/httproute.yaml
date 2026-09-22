@@ -6,11 +6,20 @@ metadata:
   namespace: monitoring
 spec:
   parentRefs:
-    - name: homelab
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: homelab
       namespace: gateway
   hostnames:
     - grafana.motherbox.local
   rules:
-    - backendRefs:
-        - name: grafana
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: grafana
           port: 80
+          weight: 1

@@ -11,14 +11,14 @@ vars:
   APPS_DIR: apps
   BUILD_DIR: .build
   # Docker images — pinned to specific versions; Renovate manages updates.
-  CSPELL_IMAGE: ghcr.io/streetsidesoftware/cspell:v10.0.1
-  MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:v0.22.1
+  CSPELL_IMAGE: ghcr.io/streetsidesoftware/cspell:v10.2.2
+  MARKDOWNLINT_IMAGE: davidanson/markdownlint-cli2:v0.23.2
   KUBE_LINTER_IMAGE: stackrox/kube-linter:v0.8.3
-  PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5.24.0
-  POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:v10.2.0
-  TRIVY_IMAGE: aquasec/trivy:0.72.0
+  PLUTO_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/pluto:v5.24.4
+  POLARIS_IMAGE: us-docker.pkg.dev/fairwinds-ops/oss/polaris:v10.2.5
+  TRIVY_IMAGE: aquasec/trivy:0.74.0
   PRETTIER_IMAGE: tmknom/prettier:3.6.2
-  K8S_IMAGE: alpine/k8s:1.36.2
+  K8S_IMAGE: alpine/k8s:1.37.0
   ALLOY_IMAGE: grafana/alloy:v1.17.0
   # Computed
   KUSTOMIZATION_DIRS:
@@ -96,9 +96,11 @@ tasks:
     silent: true
     cmds:
       - |
-        if grep -rq 'REPLACE-WITH' apps/; then
+        MATCHES=$(grep -rnE 'REPLACE-WITH|00000000-0000-0000-0000-000000000000' apps/ \
+          --exclude-dir=charts --exclude-dir=.build || true)
+        if [ -n "$MATCHES" ]; then
           printf "{{.RED}}❌ Placeholder UUIDs found — replace before applying:{{.RESET}}\n"
-          grep -rn 'REPLACE-WITH' apps/
+          printf "%s\n" "$MATCHES"
           exit 1
         fi
         printf "✅ No placeholder UUIDs found\n"

@@ -8,7 +8,7 @@ resources:
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
   - httproute.yaml
-  - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.3.8
+  - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.5.3
 
 openapi:
   path: https://raw.githubusercontent.com/argoproj/argo-schema-generator/main/schema/argo_all_k8s_kustomize_schema.json
@@ -61,7 +61,7 @@ patches:
         value:
           - apiGroups: ["*"]
             resources: ["*"]
-            verbs: [get, list, watch, create, update, patch, delete]
+            verbs: [get, list, watch, create, update, patch, delete, deletecollection]
           - nonResourceURLs: ["*"]
             verbs: [get]
     target:

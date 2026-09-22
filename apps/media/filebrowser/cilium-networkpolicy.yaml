@@ -9,7 +9,9 @@ spec:
     matchLabels:
       app: filebrowser
   ingress:
-    # Gateway API proxy: Cilium envoy pods in gateway namespace
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: gateway
+    # Gateway API proxy: traffic forwarded by Cilium's Envoy carries the
+    # reserved "ingress" identity, not the "gateway" namespace's pod identity
+    # (envoy runs host-networked in kube-system) -- confirmed via
+    # `cilium-dbg monitor` policy-verdict logs, "remote ID ingress ... deny".
+    - fromEntities:
+        - "ingress"
