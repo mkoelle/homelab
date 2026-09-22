@@ -6,11 +6,20 @@ metadata:
   namespace: filebrowser
 spec:
   parentRefs:
-    - name: homelab
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: homelab
       namespace: gateway
   hostnames:
     - filebrowser.motherbox.local
   rules:
-    - backendRefs:
-        - name: filebrowser
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: filebrowser
           port: 80
+          weight: 1
