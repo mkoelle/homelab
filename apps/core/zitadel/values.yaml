@@ -34,6 +34,14 @@ zitadel:
   # to id.hl.mkoelle.com's public Let's Encrypt cert.
   dbSslCaCrtSecret: zitadel-db-ca
 
+  # Client certs for mTLS -- required because the Bitnami postgresql
+  # subchart's bootstrap treats tls.certCAFilename (below) as "enable mutual
+  # TLS", writing pg_hba.conf as `hostssl all all 0.0.0.0/0 cert`. Without
+  # these, every DB connection is rejected with "connection requires a valid
+  # client certificate" regardless of password. See postgres-cert.yaml.
+  dbSslAdminCrtSecret: zitadel-postgres-admin-tls
+  dbSslUserCrtSecret: zitadel-postgres-user-tls
+
   configmapConfig:
     ExternalDomain: id.hl.mkoelle.com
     ExternalPort: 443
