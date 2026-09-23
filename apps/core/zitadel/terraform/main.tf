@@ -77,6 +77,44 @@ resource "zitadel_org_idp_google" "default" {
   # dropped, not renamed; presumably added in a later provider version.
 }
 
+# Creating the Google IDP above does NOT activate it -- Zitadel needs a
+# login policy that explicitly lists it. Without this resource, Google
+# Sign-In is fully configured but never appears on the login screen.
+#
+# Defaults chosen for this single-admin homelab; revisit if the threat
+# model changes (e.g. adding more users):
+#   - allow_register: false -- this org has exactly one intended user
+#     (FirstInstance's human admin); no reason to let anyone self-register.
+#   - force_mfa: false -- kept low-friction to match FirstInstance's
+#     PasswordChangeRequired: false. Reconsider once WebAuthn/OTP is
+#     actually set up for the admin account.
+#   - ignore_unknown_usernames: true -- don't leak which usernames exist
+#     on a failed login attempt.
+#   - passwordless_type: ALLOWED (not forced) -- lets WebAuthn be used if
+#     ever configured, without requiring it.
+resource "zitadel_login_policy" "default" {
+  org_id = local.org_id
+
+  user_login         = true
+  allow_register     = false
+  allow_external_idp = true
+  idps               = [zitadel_org_idp_google.default.id]
+
+  force_mfa                = false
+  force_mfa_local_only     = false
+  passwordless_type        = "PASSWORDLESS_TYPE_ALLOWED"
+  hide_password_reset      = false
+  ignore_unknown_usernames = true
+
+  default_redirect_uri = "https://id.hl.mkoelle.com/ui/console"
+
+  password_check_lifetime       = "240h0m0s"
+  external_login_check_lifetime = "240h0m0s"
+  multi_factor_check_lifetime   = "24h0m0s"
+  mfa_init_skip_lifetime        = "720h0m0s"
+  second_factor_check_lifetime  = "24h0m0s"
+}
+
 # Zitadel generates both client_id and client_secret server-side on
 # creation -- unlike Authelia, there's no way to pin client_id to a literal
 # string like "argocd". Both are Read-Only/computed attributes. These

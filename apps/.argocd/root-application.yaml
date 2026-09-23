@@ -10,7 +10,10 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
-    targetRevision: HEAD
+    # TEMPORARY: root is self-managing (see git history) -- revert to HEAD
+    # together with apps.yaml and cilium-application.yaml once this branch's
+    # zitadel_login_policy fix is merged.
+    targetRevision: feat/zitadel-google-login-policy
     path: apps/.argocd
   destination:
     server: https://kubernetes.default.svc
