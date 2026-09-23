@@ -72,9 +72,16 @@ resource "zitadel_org_idp_google" "default" {
   is_creation_allowed = true
   is_auto_creation    = true
   is_auto_update      = true
-  # auto_linking doesn't exist on this resource at the pinned provider
-  # v1.2.0 (confirmed against its docs/resources/org_idp_google.md) --
-  # dropped, not renamed; presumably added in a later provider version.
+  # The whole reason for the provider.tf 1.2.0 -> 2.12.8 bump: without
+  # this, a Google login for an email that already has a local ZITADEL
+  # account (created separately, not via this IDP) fails outright with
+  # "Errors.User.AlreadyExists" instead of offering to link the two --
+  # confirmed live. EMAIL, not USERNAME: matches on the verified email
+  # address Google returns, which is what we actually want here (the
+  # existing FirstInstance admin account's username is also its email,
+  # but that's this homelab's convention, not something to rely on for
+  # every future user).
+  auto_linking = "AUTO_LINKING_OPTION_EMAIL"
 }
 
 # Creating the Google IDP above does NOT activate it -- Zitadel needs a
