@@ -102,3 +102,26 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec: {}
+---
+# Same perpetual-OutOfSync cosmetic issue as gateway.yaml's certificateRefs
+# fix -- the chart's own httproute_login.yaml template only sets
+# backendRefs[].name/port, relying on Gateway API server-side defaulting
+# for group/kind that ArgoCD's diff doesn't account for. Spelled out
+# explicitly to match what's actually stored; no behavior change.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: zitadel-login
+  namespace: zitadel
+spec:
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /ui/v2/login
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: zitadel-login
+          port: 3000
+          weight: 1
