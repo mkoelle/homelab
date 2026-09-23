@@ -3,13 +3,28 @@
 # Applied by terraform-job.yaml as an ArgoCD PostSync hook, re-run whenever
 # these .tf files change (see kustomization.yaml's configMapGenerator).
 #
-# org_id is omitted everywhere below: the provider docs confirm it "defaults
-# to the organization of the authenticated user/service account" -- the
-# terraform-runner machine user only exists in org "homelab" (created by
-# FirstInstance), so every resource here lands there without needing a
-# zitadel_org data source lookup.
+# org_id: DO NOT omit this on any resource below, despite the provider docs'
+# claim that it "defaults to the organization of the authenticated user/
+# service account". That default is resolved server-side at CREATE time and
+# then persisted into state -- but on every subsequent plan, our own HCL
+# (which never set org_id) is compared against state's now-concrete value,
+# reads as a diff, and since org_id is ForceNew, silently destroys and
+# recreates every resource on every single apply, forever. Confirmed live:
+# this is why Grafana/ArgoCD's OIDC client_id kept rotating out from under
+# them after each sync, repeatedly breaking SSO that had just been
+# confirmed working. Look the org up explicitly instead, so config and
+# state agree on a real, stable value from the start.
+data "zitadel_orgs" "homelab" {
+  name        = "homelab"
+  name_method = "TEXT_QUERY_METHOD_EQUALS"
+}
+
+locals {
+  org_id = tolist(data.zitadel_orgs.homelab.ids)[0]
+}
 
 resource "zitadel_project" "homelab" {
+  org_id                 = local.org_id
   name                   = "homelab"
   project_role_assertion = false
   project_role_check     = false
@@ -17,6 +32,7 @@ resource "zitadel_project" "homelab" {
 }
 
 resource "zitadel_application_oidc" "argocd" {
+  org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "ArgoCD"
   redirect_uris  = ["https://argocd.motherbox.local/auth/callback"]
@@ -31,6 +47,7 @@ resource "zitadel_application_oidc" "argocd" {
 }
 
 resource "zitadel_application_oidc" "grafana" {
+  org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "Grafana"
   redirect_uris  = ["https://grafana.motherbox.local/login/generic_oauth"]
@@ -45,6 +62,7 @@ resource "zitadel_application_oidc" "grafana" {
 }
 
 resource "zitadel_org_idp_google" "default" {
+  org_id        = local.org_id
   name          = "Google"
   client_id     = trimspace(file("/var/run/secrets/google-oauth/client-id"))
   client_secret = trimspace(file("/var/run/secrets/google-oauth/client-secret"))

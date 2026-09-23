@@ -1,6 +1,19 @@
 ---
 # Standalone Application — not in the ApplicationSet — because Cilium requires
-# ignoreDifferences for TLS secrets it manages itself (cilium-ca, hubble-relay-client-certs).
+# ignoreDifferences for TLS secrets it manages itself (cilium-ca,
+# hubble-relay-client-certs, hubble-server-certs). hubble.tls.auto.method
+# defaults to "helm": Helm's genCA/genSignedCert functions generate a fresh
+# random CA on every single chart render, not just once. cilium-ca and
+# hubble-relay-client-certs were already ignoreDifferences-protected (frozen
+# at their first-ever render, consistently signed by the same CA), but
+# hubble-server-certs wasn't -- every subsequent sync re-rendered and
+# re-applied it with a brand-new, unrelated random CA, permanently
+# mismatching what hubble-relay trusts. Confirmed by rendering the chart
+# twice in a row with identical values and diffing the output. Caused
+# hubble-relay to crashloop for 35h+ with "certificate signed by unknown
+# authority" before this was found and both the live secret was manually
+# re-signed against the real (frozen) cilium-ca, and this ignore rule added
+# to stop it recurring on the next sync.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -27,6 +40,12 @@ spec:
         - /data/ca.key
     - kind: Secret
       name: hubble-relay-client-certs
+      jsonPointers:
+        - /data/ca.crt
+        - /data/tls.crt
+        - /data/tls.key
+    - kind: Secret
+      name: hubble-server-certs
       jsonPointers:
         - /data/ca.crt
         - /data/tls.crt
