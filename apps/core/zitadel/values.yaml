@@ -41,8 +41,15 @@ zitadel:
     TLS:
       Enabled: false # TLS terminates at the Gateway, same as Authelia did
 
+    # "Postgres" must be exactly this case: the chart's zitadel.dbEnv helper
+    # (_helpers.tpl) does `dig "Postgres" "Host" ...` against this map to
+    # decide whether to auto-inject a DSN for the bundled subchart. That dig
+    # is case-sensitive -- a lowercase "postgres" here silently misses it, so
+    # the chart assumes no Host is set and auto-injects its own DSN using the
+    # postgresql.auth.postgresPassword quickstart placeholder ("zitadel"),
+    # which doesn't match the real password from zitadel-postgres-creds.
     Database:
-      postgres:
+      Postgres:
         Host: zitadel-postgresql
         Port: 5432
         Database: zitadel
