@@ -1,0 +1,89 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zitadel-terraform
+  namespace: zitadel
+---
+# Terraform's kubernetes backend (provider.tf) needs secrets + leases in its
+# own namespace for state storage and locking.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-state
+  namespace: zitadel
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "create", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-state
+  namespace: zitadel
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-state
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel
+---
+# main.tf's kubernetes_secret.argocd_oidc writes the Zitadel-generated ArgoCD
+# client secret directly into core-argocd -- narrowest permission that still
+# allows `create` (RBAC can't resourceName-scope create; get/update/patch are
+# scoped in practice by the Terraform resource only ever touching this one
+# name).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: core-argocd
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: core-argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel
+---
+# Same, for main.tf's kubernetes_secret.grafana_oidc in ns monitoring.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: monitoring
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel

@@ -2,21 +2,21 @@
 apiVersion: "cilium.io/v2"
 kind: CiliumNetworkPolicy
 metadata:
-  name: authelia-gateway
-  namespace: authelia
+  name: zitadel-gateway
+  namespace: zitadel
 spec:
   endpointSelector: {}
   ingress:
-    # Gateway API proxy: Envoy-forwarded traffic carries the reserved "ingress"
-    # identity, not a namespace-based pod identity (see
-    # apps/core/monitoring/cilium-networkpolicy.yaml for the same pattern).
+    # Gateway API proxy: Envoy-forwarded traffic carries the reserved
+    # "ingress" identity, not a namespace-based pod identity (same pattern as
+    # apps/core/authelia/cilium-networkpolicy.yaml).
     - fromEntities:
         - "ingress"
       toPorts:
         - ports:
-            - port: "9091"
+            - port: "8080"
               protocol: TCP
-    # ArgoCD/Grafana calling Authelia's token/userinfo endpoints server-side
+    # ArgoCD/Grafana calling Zitadel's token/userinfo endpoints server-side
     # during the OIDC code exchange (not proxied through the Gateway).
     - fromEndpoints:
         - matchLabels:
@@ -25,10 +25,18 @@ spec:
             k8s:io.kubernetes.pod.namespace: monitoring
       toPorts:
         - ports:
-            - port: "9091"
+            - port: "8080"
               protocol: TCP
   egress:
     # kube-apiserver entity matches post-DNAT regardless of IP/port
     # (kubeProxyReplacement workaround, same as other apps in this repo).
     - toEntities:
         - "kube-apiserver"
+    # Outbound to Google for the "Sign in with Google" IDP federation
+    # (accounts.google.com, oauth2.googleapis.com) and Let's Encrypt/ACME.
+    - toEntities:
+        - "world"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

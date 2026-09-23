@@ -31,3 +31,24 @@ spec:
           selector:
             matchLabels:
               gateway-access: "true"
+    # Separate listener, same port 443 (SNI-distinguished): *.hl.mkoelle.com
+    # is the reserved subdomain for homelab apps needing a real
+    # publicly-trusted cert (Google's OAuth console rejects redirect URIs on
+    # .local -- see hl-mkoelle-com-cert.yaml), so it can't share the wildcard
+    # listener's self-signed-CA cert above. Wildcard hostname here too: any
+    # future app.hl.mkoelle.com HTTPRoute matches this same listener, no new
+    # listener needed per app.
+    - name: https-hl
+      hostname: "*.hl.mkoelle.com"
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: hl-mkoelle-com-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"

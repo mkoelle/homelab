@@ -1,0 +1,107 @@
+---
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false # exposed via Gateway API HTTPRoute instead, see httproute.yaml
+
+zitadel:
+  masterkeySecretName: zitadel-masterkey
+
+  # Merged with configmapConfig at startup -- see secrets.yaml's
+  # zitadel-secret-config for what's actually in it (DB passwords, bootstrap
+  # admin password). Never put those in configmapConfig below: it renders to
+  # a plain ConfigMap.
+  configSecretName: zitadel-secret-config
+
+  # Root CA for verifying the Postgres server's cert (postgres-cert.yaml,
+  # issued by the internal ca-issuer) -- sslmode: verify-ca below, unrelated
+  # to id.hl.mkoelle.com's public Let's Encrypt cert.
+  dbSslCaCrtSecret: zitadel-db-ca
+
+  configmapConfig:
+    ExternalDomain: id.hl.mkoelle.com
+    ExternalPort: 443
+    ExternalSecure: true
+    TLS:
+      Enabled: false # TLS terminates at the Gateway, same as Authelia did
+
+    Database:
+      postgres:
+        Host: zitadel-postgresql
+        Port: 5432
+        Database: zitadel
+        User:
+          Username: zitadel
+          SSL:
+            Mode: verify-ca
+        Admin:
+          Username: postgres
+          SSL:
+            Mode: verify-ca
+
+    FirstInstance:
+      Org:
+        Name: homelab
+        Human:
+          UserName: mkoelle@gmail.com
+          FirstName: Mark
+          LastName: Koelle
+          Email:
+            Address: mkoelle@gmail.com
+            Verified: true
+          PasswordChangeRequired: false
+        Machine:
+          Machine:
+            Username: terraform-runner
+            Name: Terraform Reconciler
+          MachineKey:
+            ExpirationDate: "2029-01-01T00:00:00Z"
+            Type: 1
+          # Chart writes the generated PAT to Secret "terraform-runner-pat"
+          # (key "pat") in this namespace -- see terraform/terraform-job.yaml,
+          # which reads it directly. No Bitwarden round-trip: the chart
+          # generates this value itself, Terraform never needs to know it in
+          # advance (see plan's "Bootstrap ordering" note for why this
+          # differs from the original assumption).
+          Pat:
+            ExpirationDate: "2029-01-01T00:00:00Z"
+
+# Bundled Postgres -- lowest-new-surface option, no separate DB app/operator
+# (repo has zero existing Postgres precedent). Production guidance from
+# upstream is to use an external DB, but this is a single-node homelab.
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: zitadel-postgres-creds
+    username: zitadel
+    database: zitadel
+  tls:
+    enabled: true
+    certificatesSecret: zitadel-postgres-tls
+    certFilename: tls.crt
+    certKeyFilename: tls.key
+    certCAFilename: ca.crt
+  # This chart version's vendored Bitnami postgresql subchart defaults both
+  # to :latest (confirmed in the vendored charts/ cache -- kube-linter's
+  # latest-tag check catches it). Bitnami stopped publishing versioned tags
+  # on the free Docker Hub repo (only digest tags + :latest remain, confirmed
+  # live) -- pin by digest instead, which is both reproducible and passes
+  # kube-linter's latest-tag check (no ":latest" in the reference). Re-resolve
+  # via `docker buildx imagetools inspect bitnami/postgresql:latest` /
+  # `...os-shell:latest` periodically; Bitnami doesn't backport CVE fixes to
+  # old digests the way a moving tag would get them.
+  image:
+    tag: latest
+    digest: sha256:7d77a46bbf200709237318c27dec0eaeae2520e403dd18fdebde2be7a6b04993
+  volumePermissions:
+    image:
+      tag: latest
+      digest: sha256:307ffbb10fe3b41ee00ff14bce903f00b7debf02bdd4bb50a1eb310f7b878064 # also the image the tls.enabled copy-certs initContainer uses
+  primary:
+    persistence:
+      enabled: true
+      existingClaim: zitadel-postgres-data

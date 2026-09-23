@@ -6,18 +6,25 @@ metadata:
 data:
   url: https://argocd.motherbox.local
   kustomize.buildOptions: "--enable-helm"
-  # SSO via Authelia. client_id 'argocd' is declared directly in
-  # apps/core/authelia/values.yaml's identity_providers.oidc.clients (fully
-  # declarative -- no admin-UI client-creation step, unlike PocketID).
-  # clientSecret is indirected through the argocd-secret Secret (see
-  # oidc-secret.yaml, an ExternalSecret with creationPolicy: Merge) -- ArgoCD
-  # resolves $<secret-name>:<key> references from any Secret in this
-  # namespace at runtime, does not need it inline here.
+  # SSO via Zitadel. client_id/OIDC app are declared in
+  # apps/core/zitadel/terraform/main.tf (zitadel_application_oidc.argocd) --
+  # Zitadel generates client_secret server-side, and that same Terraform
+  # writes it straight into Secret zitadel-argocd-oidc-secret in this
+  # namespace (no Bitwarden round-trip, no risk of the two sides
+  # disagreeing). ArgoCD resolves $<secret-name>:<key> references from any
+  # Secret in this namespace at runtime, does not need it inline here.
+  # clientID via the same indirection is unavoidable here (Zitadel generates
+  # it server-side too, unlike Authelia's literal 'argocd' string) --
+  # ArgoCD's docs describe $secret:key substitution generically across
+  # argocd-cm values, not just clientSecret specifically, but this hasn't
+  # been confirmed live yet. If clientID doesn't resolve, fall back to a
+  # kustomize replacement patching the literal ID in after `terraform apply`
+  # (see main.tf's client_id output).
   oidc.config: |
-    name: Authelia
-    issuer: https://auth.motherbox.local
-    clientID: "argocd"
-    clientSecret: $argocd-secret:oidc.authelia.clientSecret
+    name: Zitadel
+    issuer: https://id.hl.mkoelle.com
+    clientID: $zitadel-argocd-oidc-secret:clientId
+    clientSecret: $zitadel-argocd-oidc-secret:clientSecret
     requestedScopes: ["openid", "profile", "email", "groups"]
   # Exclude API groups not managed by this cluster's GitOps manifests.
   # ArgoCD cluster cache sync fails if it cannot list any discovered API group.

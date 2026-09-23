@@ -8,7 +8,6 @@ resources:
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
   - httproute.yaml
-  - oidc-secret.yaml
   - homelab-ca-configmap.yaml
   - github.com/argoproj/argo-cd//manifests/cluster-install?ref=v3.5.3
 

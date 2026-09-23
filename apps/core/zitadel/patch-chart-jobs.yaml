@@ -1,0 +1,36 @@
+---
+# Post-render patches for the vendored charts' own Jobs/PDB -- same pattern
+# as apps/core/argocd/patch-deployments.yaml etc. patching upstream chart
+# output. Neither the zitadel chart nor the bundled Bitnami postgresql
+# subchart expose values for these fields.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zitadel-setup
+  namespace: zitadel
+spec:
+  ttlSecondsAfterFinished: 300
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zitadel-init
+  namespace: zitadel
+spec:
+  ttlSecondsAfterFinished: 300
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zitadel-cleanup
+  namespace: zitadel
+spec:
+  ttlSecondsAfterFinished: 300
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: zitadel-postgresql
+  namespace: zitadel
+spec:
+  unhealthyPodEvictionPolicy: AlwaysAllow

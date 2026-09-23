@@ -1,0 +1,17 @@
+---
+# Static StorageClass for the pre-provisioned local PV below -- same pattern
+# as apps/core/authelia/storageclass.yaml. WaitForFirstConsumer is required
+# for `local` volumes -- binding must happen after the pod is scheduled, so
+# the PVC binds to a PV on the same node.
+#
+# Postgres deliberately does NOT live on the shared SMB StorageClass
+# (apps/core/storage/): SMB/CIFS doesn't reliably support Postgres's
+# fsync/WAL locking semantics (see docs/adrs/0004-smb-storage-for-all-workloads.md).
+# Durability is handled instead by postgres-backup-cronjob.yaml dumping to SMB.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zitadel-postgres-local
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain

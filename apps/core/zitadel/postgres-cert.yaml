@@ -1,0 +1,17 @@
+---
+# Server cert for the bundled Postgres subchart, issued by the internal
+# ca-issuer (self-signed homelab CA -- not the public Let's Encrypt one used
+# for id.hl.mkoelle.com). Zitadel's DB client verifies this via
+# homelab-ca-secret.yaml's dbSslCaCrtSecret mount (sslmode=verify-ca).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zitadel-postgres-tls
+  namespace: zitadel
+spec:
+  secretName: zitadel-postgres-tls
+  dnsNames:
+    - zitadel-postgresql.zitadel.svc.cluster.local
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
