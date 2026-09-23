@@ -26,7 +26,12 @@ provider "zitadel" {
   # block and written to Secret "terraform-runner-pat" (key "pat") -- mounted
   # into this Job by terraform-job.yaml. Never sourced from Bitwarden: Zitadel
   # generates it itself, so there's nothing to pre-declare.
-  access_token = trimspace(file("/var/run/secrets/zitadel/pat"))
+  #
+  # `token` (not `access_token`, which doesn't exist in this provider
+  # version -- confirmed against the v1.2.0 source, pinned above) takes a
+  # *file path*; the provider reads and trims it itself. Passing file()
+  # content directly, as this used to, fails with "Unsupported argument".
+  token = "/var/run/secrets/zitadel/pat"
 }
 
 provider "kubernetes" {
