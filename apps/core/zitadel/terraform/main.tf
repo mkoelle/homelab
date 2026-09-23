@@ -54,7 +54,9 @@ resource "zitadel_org_idp_google" "default" {
   is_creation_allowed = true
   is_auto_creation    = true
   is_auto_update      = true
-  auto_linking        = "AUTO_LINKING_OPTION_EMAIL"
+  # auto_linking doesn't exist on this resource at the pinned provider
+  # v1.2.0 (confirmed against its docs/resources/org_idp_google.md) --
+  # dropped, not renamed; presumably added in a later provider version.
 }
 
 # Zitadel generates both client_id and client_secret server-side on
