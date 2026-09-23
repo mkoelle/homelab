@@ -61,8 +61,14 @@ resource "zitadel_application_oidc" "grafana" {
   access_token_type = "OIDC_TOKEN_TYPE_BEARER"
 }
 
-resource "zitadel_org_idp_google" "default" {
-  org_id        = local.org_id
+# Instance-scoped Google IDP -- the only Google IDP object in this config.
+# Org login policies can select instance-owned IDPs directly (confirmed live:
+# the org's own Identity Providers settings page lists this instance IDP as
+# available to it, alongside any org-owned ones), so there's no need for a
+# second, org-owned zitadel_org_idp_google registered against the same
+# Google OAuth client. One registration, referenced by both login policies
+# below.
+resource "zitadel_idp_google" "default" {
   name          = "Google"
   client_id     = trimspace(file("/var/run/secrets/google-oauth/client-id"))
   client_secret = trimspace(file("/var/run/secrets/google-oauth/client-secret"))
@@ -72,26 +78,20 @@ resource "zitadel_org_idp_google" "default" {
   is_creation_allowed = true
   is_auto_creation    = true
   is_auto_update      = true
-  # The whole reason for the provider.tf 1.2.0 -> 2.12.8 bump: without
-  # this, a Google login for an email that already has a local ZITADEL
-  # account (created separately, not via this IDP) fails outright with
-  # "Errors.User.AlreadyExists" instead of offering to link the two --
-  # confirmed live. EMAIL, not USERNAME: matches on the verified email
-  # address Google returns, which is what we actually want here (the
-  # existing FirstInstance admin account's username is also its email,
-  # but that's this homelab's convention, not something to rely on for
-  # every future user).
-  auto_linking = "AUTO_LINKING_OPTION_EMAIL"
+  auto_linking        = "AUTO_LINKING_OPTION_EMAIL"
 }
 
-# Creating the Google IDP above does NOT activate it -- Zitadel needs a
-# login policy that explicitly lists it. Without this resource, Google
-# Sign-In is fully configured but never appears on the login screen.
+# Registering zitadel_idp_google above does NOT activate it anywhere --
+# Zitadel needs a login policy that explicitly lists it, one per scope that
+# should show it. This one covers the instance/IAM login screen (admin
+# logins, no org context); zitadel_login_policy below covers the homelab
+# org's own login screen. Both reference the same zitadel_idp_google.default
+# id. Zitadel provisions a default_login_policy singleton on install; this
+# resource just takes it over declaratively.
 #
 # Defaults chosen for this single-admin homelab; revisit if the threat
 # model changes (e.g. adding more users):
-#   - allow_register: false -- this org has exactly one intended user
-#     (FirstInstance's human admin); no reason to let anyone self-register.
+#   - allow_register: false -- no reason to let anyone self-register.
 #   - force_mfa: false -- kept low-friction to match FirstInstance's
 #     PasswordChangeRequired: false. Reconsider once WebAuthn/OTP is
 #     actually set up for the admin account.
@@ -99,13 +99,11 @@ resource "zitadel_org_idp_google" "default" {
 #     on a failed login attempt.
 #   - passwordless_type: ALLOWED (not forced) -- lets WebAuthn be used if
 #     ever configured, without requiring it.
-resource "zitadel_login_policy" "default" {
-  org_id = local.org_id
-
+resource "zitadel_default_login_policy" "default" {
   user_login         = true
   allow_register     = false
   allow_external_idp = true
-  idps               = [zitadel_org_idp_google.default.id]
+  idps               = [zitadel_idp_google.default.id]
 
   force_mfa                = false
   force_mfa_local_only     = false
@@ -122,31 +120,11 @@ resource "zitadel_login_policy" "default" {
   second_factor_check_lifetime  = "24h0m0s"
 }
 
-# Instance-scoped counterpart to zitadel_org_idp_google above. The org-level
-# IDP only appears under Organization Settings > Identity Providers and only
-# lets the org's own users sign in with Google -- it does NOT cover IAM/
-# instance admin logins, which check Instance Settings > Identity Providers
-# instead. Same Google OAuth client, just registered a second time at
-# instance scope so "mkoelle@gmail.com" can also be used for admin logins.
-resource "zitadel_idp_google" "default" {
-  name          = "Google"
-  client_id     = trimspace(file("/var/run/secrets/google-oauth/client-id"))
-  client_secret = trimspace(file("/var/run/secrets/google-oauth/client-secret"))
-  scopes        = ["openid", "profile", "email"]
+# Org-scoped counterpart, same reasoning as above, same Google IDP id --
+# covers the homelab org's own login screen.
+resource "zitadel_login_policy" "default" {
+  org_id = local.org_id
 
-  is_linking_allowed  = true
-  is_creation_allowed = true
-  is_auto_creation    = true
-  is_auto_update      = true
-  auto_linking        = "AUTO_LINKING_OPTION_EMAIL"
-}
-
-# Mirrors zitadel_login_policy above but at instance scope -- without this,
-# registering zitadel_idp_google alone still won't show Google on the
-# instance-level login screen. Zitadel provisions a default_login_policy
-# singleton on install; this resource just takes it over declaratively
-# (same reasoning/defaults as the org policy above -- see those comments).
-resource "zitadel_default_login_policy" "default" {
   user_login         = true
   allow_register     = false
   allow_external_idp = true
