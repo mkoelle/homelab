@@ -61,8 +61,14 @@ resource "zitadel_application_oidc" "grafana" {
   access_token_type = "OIDC_TOKEN_TYPE_BEARER"
 }
 
-resource "zitadel_org_idp_google" "default" {
-  org_id        = local.org_id
+# Instance-scoped Google IDP -- the only Google IDP object in this config.
+# Org login policies can select instance-owned IDPs directly (confirmed live:
+# the org's own Identity Providers settings page lists this instance IDP as
+# available to it, alongside any org-owned ones), so there's no need for a
+# second, org-owned zitadel_org_idp_google registered against the same
+# Google OAuth client. One registration, referenced by both login policies
+# below.
+resource "zitadel_idp_google" "default" {
   name          = "Google"
   client_id     = trimspace(file("/var/run/secrets/google-oauth/client-id"))
   client_secret = trimspace(file("/var/run/secrets/google-oauth/client-secret"))
@@ -72,9 +78,71 @@ resource "zitadel_org_idp_google" "default" {
   is_creation_allowed = true
   is_auto_creation    = true
   is_auto_update      = true
-  # auto_linking doesn't exist on this resource at the pinned provider
-  # v1.2.0 (confirmed against its docs/resources/org_idp_google.md) --
-  # dropped, not renamed; presumably added in a later provider version.
+  auto_linking        = "AUTO_LINKING_OPTION_EMAIL"
+}
+
+# Registering zitadel_idp_google above does NOT activate it anywhere --
+# Zitadel needs a login policy that explicitly lists it, one per scope that
+# should show it. This one covers the instance/IAM login screen (admin
+# logins, no org context); zitadel_login_policy below covers the homelab
+# org's own login screen. Both reference the same zitadel_idp_google.default
+# id. Zitadel provisions a default_login_policy singleton on install; this
+# resource just takes it over declaratively.
+#
+# Defaults chosen for this single-admin homelab; revisit if the threat
+# model changes (e.g. adding more users):
+#   - allow_register: false -- no reason to let anyone self-register.
+#   - force_mfa: false -- kept low-friction to match FirstInstance's
+#     PasswordChangeRequired: false. Reconsider once WebAuthn/OTP is
+#     actually set up for the admin account.
+#   - ignore_unknown_usernames: true -- don't leak which usernames exist
+#     on a failed login attempt.
+#   - passwordless_type: ALLOWED (not forced) -- lets WebAuthn be used if
+#     ever configured, without requiring it.
+resource "zitadel_default_login_policy" "default" {
+  user_login         = true
+  allow_register     = false
+  allow_external_idp = true
+  idps               = [zitadel_idp_google.default.id]
+
+  force_mfa                = false
+  force_mfa_local_only     = false
+  passwordless_type        = "PASSWORDLESS_TYPE_ALLOWED"
+  hide_password_reset      = false
+  ignore_unknown_usernames = true
+
+  default_redirect_uri = "https://id.hl.mkoelle.com/ui/console"
+
+  password_check_lifetime       = "240h0m0s"
+  external_login_check_lifetime = "240h0m0s"
+  multi_factor_check_lifetime   = "24h0m0s"
+  mfa_init_skip_lifetime        = "720h0m0s"
+  second_factor_check_lifetime  = "24h0m0s"
+}
+
+# Org-scoped counterpart, same reasoning as above, same Google IDP id --
+# covers the homelab org's own login screen.
+resource "zitadel_login_policy" "default" {
+  org_id = local.org_id
+
+  user_login         = true
+  allow_register     = false
+  allow_external_idp = true
+  idps               = [zitadel_idp_google.default.id]
+
+  force_mfa                = false
+  force_mfa_local_only     = false
+  passwordless_type        = "PASSWORDLESS_TYPE_ALLOWED"
+  hide_password_reset      = false
+  ignore_unknown_usernames = true
+
+  default_redirect_uri = "https://id.hl.mkoelle.com/ui/console"
+
+  password_check_lifetime       = "240h0m0s"
+  external_login_check_lifetime = "240h0m0s"
+  multi_factor_check_lifetime   = "24h0m0s"
+  mfa_init_skip_lifetime        = "720h0m0s"
+  second_factor_check_lifetime  = "24h0m0s"
 }
 
 # Zitadel generates both client_id and client_secret server-side on

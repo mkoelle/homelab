@@ -2,7 +2,18 @@ terraform {
   required_providers {
     zitadel = {
       source  = "zitadel/zitadel"
-      version = "1.2.0"
+      # 1.2.0 -> 2.12.8: gets us auto_linking on zitadel_org_idp_google
+      # (see main.tf), the whole reason for this bump. Deliberately NOT
+      # 3.x: v3.0.0 makes user-provided secrets (client_secret here)
+      # write-only, which needs Terraform CLI >= 1.11 (terraform-job.yaml
+      # pins hashicorp/terraform:1.9.8) and a different HCL syntax
+      # (separate _wo/_version attributes) -- out of scope for what this
+      # bump is actually for. Verified every resource/data source this repo
+      # uses (project, application_oidc, org_idp_google, login_policy,
+      # orgs) against the v2.12.8 docs first: all fields we set are
+      # unchanged: names, types, and required/optional status all match
+      # exactly. Only genuinely new thing is auto_linking itself.
+      version = "2.12.8"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
@@ -28,13 +39,12 @@ provider "zitadel" {
   # Job by terraform-job.yaml. Never sourced from Bitwarden: Zitadel
   # generates it itself, so there's nothing to pre-declare.
   #
-  # NOT the sibling terraform-runner-pat Secret: `token` here doesn't take
-  # a raw bearer token at this pinned v1.2.0 -- confirmed against
-  # zitadel/helper/client.go at that tag, it routes through
-  # middleware.JWTProfileFromPath, i.e. it wants this JWT Profile JSON key
-  # file, not a PAT. `access_token` (a real raw-bearer-token argument)
-  # doesn't exist until a later provider major version.
-  token = "/var/run/secrets/zitadel/terraform-runner.json"
+  # NOT the sibling terraform-runner-pat Secret: this wants a JWT Profile
+  # key file (private key + user ID), not a raw bearer token -- confirmed
+  # against the provider source when this was `token` (now the deprecated
+  # name for the same argument at v2.12.8; jwt_profile_file is the
+  # current name with identical semantics, so just renamed here).
+  jwt_profile_file = "/var/run/secrets/zitadel/terraform-runner.json"
 }
 
 provider "kubernetes" {
