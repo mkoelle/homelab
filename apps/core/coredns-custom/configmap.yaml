@@ -15,25 +15,3 @@ data:
         fallthrough
       }
     }
-  # *.hl.mkoelle.com is the reserved subdomain for homelab apps that need a
-  # real Let's Encrypt cert (see apps/core/gateway/hl-mkoelle-com-cert.yaml)
-  # -- started with id.hl.mkoelle.com (Zitadel) since Google's OAuth console
-  # rejects redirect URIs on .local. No public A record is ever published for
-  # anything under this subdomain -- only the transient ACME DNS-01 TXT
-  # record. This override is what makes any hl.mkoelle.com name resolve at
-  # all, for browsers on the LAN and for in-cluster callers (ArgoCD, Grafana,
-  # the Terraform reconciler) alike. Public DNS for these names stays
-  # NXDOMAIN. Add one `hosts` line per hostname as new apps land here --
-  # CoreDNS's hosts plugin matches literal names, not wildcards.
-  #
-  # REPLACE-WITH-GATEWAY-LB-IP: the Cilium-assigned LoadBalancer IP for the
-  # `homelab` Gateway's Service (`kubectl get svc -n gateway -o wide`), from
-  # the 192.168.1.200-254 pool (apps/core/cilium/lb-ip-pool.yaml). Same IP
-  # every *.motherbox.local hostname already resolves to externally.
-  hl-mkoelle-com.server: |
-    hl.mkoelle.com:53 {
-      hosts {
-        REPLACE-WITH-GATEWAY-LB-IP id.hl.mkoelle.com
-        fallthrough
-      }
-    }
