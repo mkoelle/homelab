@@ -6,7 +6,10 @@ metadata:
   namespace: zitadel
 ---
 # Terraform's kubernetes backend (provider.tf) needs secrets + leases in its
-# own namespace for state storage and locking.
+# own namespace for state storage and locking. "list" is required at init --
+# the backend finds its state secret via a label selector LIST before
+# deciding get-vs-create, not by name directly (confirmed via the actual
+# failure: "cannot list resource \"secrets\"").
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -15,7 +18,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "create", "update", "delete"]
+    verbs: ["get", "list", "create", "update", "delete"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "create", "update", "delete"]
