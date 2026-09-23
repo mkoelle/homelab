@@ -20,6 +20,16 @@ spec:
             namespace: cert-manager
             wave: "-2"
 
+          # coredns-custom: LAN-only DNS override for *.hl.mkoelle.com (see
+          # its configmap.yaml). Needs to land before anything that resolves
+          # id.hl.mkoelle.com in-cluster (Zitadel's Terraform reconciler,
+          # ArgoCD/Grafana OIDC issuer lookups) -- same wave as cert-manager,
+          # no dependency between the two.
+          - name: coredns-custom
+            path: apps/core/coredns-custom
+            namespace: kube-system
+            wave: "-2"
+
           # Wave -1 — Secrets infrastructure (must precede all apps that consume secrets)
           - name: external-secrets
             path: apps/core/external-secrets

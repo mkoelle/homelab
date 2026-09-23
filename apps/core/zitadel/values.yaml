@@ -1,6 +1,18 @@
 ---
 replicaCount: 1
 
+# Chart's default securityContext (runAsNonRoot, runAsUser, readOnlyRootFilesystem,
+# privileged) is missing the fields the "restricted" PodSecurity level on this
+# namespace also requires -- without these, the zitadel-init/setup/cleanup Jobs'
+# pods are rejected outright (FailedCreate) and the Argo CD sync hangs forever
+# waiting for the init hook. Merges with chart defaults, doesn't replace them.
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+  seccompProfile:
+    type: RuntimeDefault
+
 service:
   type: ClusterIP
   port: 8080
