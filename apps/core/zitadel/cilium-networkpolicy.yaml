@@ -9,12 +9,18 @@ spec:
   ingress:
     # Gateway API proxy: Envoy-forwarded traffic carries the reserved
     # "ingress" identity, not a namespace-based pod identity (same pattern as
-    # apps/core/authelia/cilium-networkpolicy.yaml).
+    # apps/core/authelia/cilium-networkpolicy.yaml). Port 3000 is the Login
+    # UI (zitadel-login, see httproute via values.yaml's login.gateway.
+    # httpRoute) -- without it, Envoy's traffic to that backend is silently
+    # dropped and the Gateway returns 503, even though the pod itself is
+    # healthy and reachable directly via its Service.
     - fromEntities:
         - "ingress"
       toPorts:
         - ports:
             - port: "8080"
+              protocol: TCP
+            - port: "3000"
               protocol: TCP
     # ArgoCD/Grafana calling Zitadel's token/userinfo endpoints server-side
     # during the OIDC code exchange (not proxied through the Gateway).

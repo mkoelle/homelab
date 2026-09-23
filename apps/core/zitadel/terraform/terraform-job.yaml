@@ -69,7 +69,7 @@ spec:
               mountPath: /workspace
             - name: tmp
               mountPath: /tmp
-            - name: zitadel-pat
+            - name: zitadel-jwt
               mountPath: /var/run/secrets/zitadel
               readOnly: true
             - name: google-oauth
@@ -84,10 +84,17 @@ spec:
         - name: tmp
           emptyDir: {}
         # Auto-created by the zitadel chart's setup Job -- see
-        # values.yaml's FirstInstance.Org.Machine.Pat.
-        - name: zitadel-pat
+        # values.yaml's FirstInstance.Org.Machine.MachineKey. NOT the
+        # sibling terraform-runner-pat Secret: the zitadel provider at the
+        # pinned v1.2.0 has no raw-bearer-token argument at all -- `token`
+        # (confirmed against zitadel/helper/client.go at that tag) routes
+        # through middleware.JWTProfileFromPath, i.e. it wants this JWT
+        # Profile machine-key JSON, not a PAT. Passing the PAT there fails
+        # with "invalid character 'e' looking for beginning of value" (json
+        # parsing plain-text PAT content). See provider.tf.
+        - name: zitadel-jwt
           secret:
-            secretName: terraform-runner-pat
+            secretName: terraform-runner
         - name: google-oauth
           secret:
             secretName: google-oauth-client-secret

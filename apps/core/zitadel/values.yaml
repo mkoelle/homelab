@@ -20,6 +20,25 @@ service:
 ingress:
   enabled: false # exposed via Gateway API HTTPRoute instead, see httproute.yaml
 
+login:
+  gateway:
+    httpRoute:
+      # httproute.yaml only routes to the main `zitadel` API service, not
+      # this one -- the actual login form UI (default path /ui/v2/login)
+      # had no route at all, so both browsing id.hl.mkoelle.com/ directly
+      # and any OIDC authorize redirect into the login UI hit the API
+      # server instead and got its gRPC-gateway {"code":5,"message":"Not
+      # Found"} (NOT_FOUND), since the API has no handler for UI paths.
+      # hostnames/paths default correctly (ExternalDomain, /ui/v2/login) --
+      # only parentRefs needs to match httproute.yaml's Gateway attachment.
+      enabled: true
+      parentRefs:
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: homelab
+          namespace: gateway
+          sectionName: https-hl
+
 zitadel:
   masterkeySecretName: zitadel-masterkey
 
