@@ -27,9 +27,15 @@ resources:
 # Content-hash suffix on the generated ConfigMap is what makes
 # terraform-job.yaml's PostSync hook re-run exactly when these .tf files
 # change (kustomize's nameReference transformer updates the Job's
-# volumes[].configMap.name to match automatically).
+# volumes[].configMap.name to match automatically) -- but only if this
+# generator's namespace matches the consuming Job's. terraform-job.yaml sets
+# `namespace: zitadel` explicitly (this kustomization has no top-level
+# namespace transformer); without a matching namespace here, nameReference
+# silently skips the rewrite and the Job mounts the unsuffixed name, which
+# doesn't exist (confirmed via a minimal kustomize repro).
 configMapGenerator:
   - name: zitadel-terraform-files
+    namespace: zitadel
     files:
       - terraform/provider.tf
       - terraform/main.tf
