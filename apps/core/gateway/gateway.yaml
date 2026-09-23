@@ -24,7 +24,9 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: motherbox-wildcard-tls
+          - group: ""
+            kind: Secret
+            name: motherbox-wildcard-tls
       allowedRoutes:
         namespaces:
           from: Selector
@@ -45,7 +47,9 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: hl-mkoelle-com-tls
+          - group: ""
+            kind: Secret
+            name: hl-mkoelle-com-tls
       allowedRoutes:
         namespaces:
           from: Selector
