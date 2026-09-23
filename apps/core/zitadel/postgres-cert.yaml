@@ -15,3 +15,37 @@ spec:
   issuerRef:
     name: ca-issuer
     kind: ClusterIssuer
+---
+# Client certs for mTLS to the same Postgres. The Bitnami subchart's bootstrap
+# entrypoint treats tls.certCAFilename being set as "enable mutual TLS" -- it
+# writes pg_hba.conf as `hostssl all all 0.0.0.0/0 cert`, which authenticates
+# purely off the client cert's CommonName matching the connecting role (no
+# password checked at all for hostssl connections once a valid cert is
+# presented). CommonName must be exactly the Postgres role name.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zitadel-postgres-admin-tls
+  namespace: zitadel
+spec:
+  secretName: zitadel-postgres-admin-tls
+  commonName: postgres
+  usages:
+    - client auth
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zitadel-postgres-user-tls
+  namespace: zitadel
+spec:
+  secretName: zitadel-postgres-user-tls
+  commonName: zitadel
+  usages:
+    - client auth
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
