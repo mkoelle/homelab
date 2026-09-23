@@ -1,13 +1,43 @@
 ---
-# Post-render patches for the vendored charts' own Jobs/PDB -- same pattern
-# as apps/core/argocd/patch-deployments.yaml etc. patching upstream chart
-# output. Neither the zitadel chart nor the bundled Bitnami postgresql
-# subchart expose values for these fields.
+# Post-render patches for the vendored charts' own Jobs/Deployments/PDB --
+# same pattern as apps/core/argocd/patch-deployments.yaml etc. patching
+# upstream chart output. Neither the zitadel chart nor the bundled Bitnami
+# postgresql subchart expose values for these fields.
+#
+# zitadel-init/zitadel-setup: the chart ships these as Helm pre-install/
+# pre-upgrade hooks (helm.sh/hook, weight 1 and 2). Argo CD honors that
+# annotation and treats them as PreSync hooks -- which run to completion
+# BEFORE Argo applies *any* normal sync-wave resource, including the
+# bundled Postgres StatefulSet these Jobs connect to. Since postgresql.
+# enabled: true puts Postgres in the *same* app/release as the Jobs that
+# need it running, that's a hard deadlock: the init Job waits (up to
+# AWAITINITIALCONN's 5m) for a Postgres Argo won't create until the Job
+# it's blocking succeeds. (A separately-managed/external Postgres, which
+# is upstream's actual production guidance -- see values.yaml's postgresql
+# comment -- wouldn't hit this, since it lives outside this Sync phase
+# entirely.)
+#
+# Fix: strip the helm.sh/hook* annotations so these Jobs become ordinary
+# sync-wave resources, and let wave-boundary health-gating (Argo already
+# waits for a wave's resources -- StatefulSets and Jobs included -- to go
+# Healthy before starting the next wave) do what the hook ordering was
+# trying to do. Postgres + secrets stay at the implicit default wave "0";
+# zitadel-init is wave "1" (after Postgres is Ready), zitadel-setup wave
+# "2" (after init Completes), and the zitadel/zitadel-login Deployments
+# below are wave "3" (after setup Completes -- they need the DB schema/
+# masterkey/admin bootstrap setup performs). zitadel-cleanup is left as a
+# post-delete hook: that phase only fires on Application deletion, never
+# gates a normal Sync, so it doesn't have this problem.
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: zitadel-setup
   namespace: zitadel
+  annotations:
+    helm.sh/hook: null
+    helm.sh/hook-delete-policy: null
+    helm.sh/hook-weight: null
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   ttlSecondsAfterFinished: 300
 ---
@@ -16,6 +46,11 @@ kind: Job
 metadata:
   name: zitadel-init
   namespace: zitadel
+  annotations:
+    helm.sh/hook: null
+    helm.sh/hook-delete-policy: null
+    helm.sh/hook-weight: null
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   ttlSecondsAfterFinished: 300
 ---
@@ -34,3 +69,26 @@ metadata:
   namespace: zitadel
 spec:
   unhealthyPodEvictionPolicy: AlwaysAllow
+---
+# zitadel/zitadel-login Deployments: no sync-wave by default (implicit
+# wave "0", same as Postgres and the secrets). Need them explicitly after
+# zitadel-setup (wave "2") now that setup no longer blocks the Sync phase
+# via a hook -- otherwise they'd start alongside Postgres, before the DB
+# schema and masterkey setup actually creates exist.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zitadel
+  namespace: zitadel
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zitadel-login
+  namespace: zitadel
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec: {}
