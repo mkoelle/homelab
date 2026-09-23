@@ -28,6 +28,18 @@
 # masterkey/admin bootstrap setup performs). zitadel-cleanup is left as a
 # post-delete hook: that phase only fires on Application deletion, never
 # gates a normal Sync, so it doesn't have this problem.
+#
+# Deliberately NOT setting ttlSecondsAfterFinished on zitadel-init/
+# zitadel-setup (chart has no default for it either -- these patches used to
+# add one, removed here): as plain sync-wave resources under this repo's
+# selfHeal: true, a Job that TTL-cleans itself away reads as "missing" on
+# the next drift check and gets silently recreated -- and Kubernetes Jobs
+# re-run their pod from scratch on every recreation, so a one-shot DB-init
+# Job would keep re-executing indefinitely, roughly every resync interval,
+# forever. Letting the completed Job persist keeps it permanently
+# Synced+Healthy with nothing to reconcile, so it only ever runs once. A
+# real re-run (e.g. after a values.yaml change to these Jobs) is a manual
+# `kubectl delete job` -- consistent with Jobs being immutable anyway.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -38,8 +50,7 @@ metadata:
     helm.sh/hook-delete-policy: null
     helm.sh/hook-weight: null
     argocd.argoproj.io/sync-wave: "2"
-spec:
-  ttlSecondsAfterFinished: 300
+    ignore-check.kube-linter.io/job-ttl-seconds-after-finished: "Deliberately no TTL -- see comment above; selfHeal would otherwise rerun this one-shot Job forever"
 ---
 apiVersion: batch/v1
 kind: Job
@@ -51,8 +62,7 @@ metadata:
     helm.sh/hook-delete-policy: null
     helm.sh/hook-weight: null
     argocd.argoproj.io/sync-wave: "1"
-spec:
-  ttlSecondsAfterFinished: 300
+    ignore-check.kube-linter.io/job-ttl-seconds-after-finished: "Deliberately no TTL -- see comment above; selfHeal would otherwise rerun this one-shot Job forever"
 ---
 apiVersion: batch/v1
 kind: Job
