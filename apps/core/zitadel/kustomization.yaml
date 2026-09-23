@@ -1,0 +1,46 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# No top-level namespace transformer: several resources set their own
+# metadata.namespace explicitly (volume-init-job.yaml -> kube-system,
+# route53-dns01-secret.yaml -> cert-manager, terraform/rbac.yaml's
+# cross-namespace Roles -> core-argocd/monitoring), same reasoning as
+# apps/core/authelia/kustomization.yaml. helmCharts below sets its own
+# namespace: field.
+
+resources:
+  - namespace.yaml
+  - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
+  - storageclass.yaml
+  - volume.yaml
+  - volume-init-job.yaml
+  - postgres-cert.yaml
+  - homelab-ca-secret.yaml
+  - route53-dns01-issuer.yaml
+  - route53-dns01-secret.yaml
+  - secrets.yaml
+  - httproute.yaml
+  - terraform/rbac.yaml
+  - terraform/terraform-job.yaml
+
+# Content-hash suffix on the generated ConfigMap is what makes
+# terraform-job.yaml's PostSync hook re-run exactly when these .tf files
+# change (kustomize's nameReference transformer updates the Job's
+# volumes[].configMap.name to match automatically).
+configMapGenerator:
+  - name: zitadel-terraform-files
+    files:
+      - terraform/provider.tf
+      - terraform/main.tf
+
+helmCharts:
+  - name: zitadel
+    repo: https://charts.zitadel.com
+    version: 10.0.6
+    releaseName: zitadel
+    namespace: zitadel
+    valuesFile: values.yaml
+
+patches:
+  - path: patch-chart-jobs.yaml

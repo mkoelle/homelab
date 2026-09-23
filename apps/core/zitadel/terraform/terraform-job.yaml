@@ -1,0 +1,93 @@
+---
+# This repo's first PostSync hook. Runs after the zitadel Helm release syncs,
+# waits for the app to actually answer healthz (PostSync only guarantees
+# resources were applied, not that Zitadel finished DB migration/startup),
+# then applies main.tf. hook-delete-policy replaces the Job each sync --
+# combined with configMapGenerator's content-hash suffix on the .tf files
+# ConfigMap (kustomization.yaml), this re-runs exactly when .tf content
+# changes, not on every unrelated sync.
+#
+# No CA-trust mount needed for id.hl.mkoelle.com or Google's APIs -- both serve
+# publicly-trusted certs (Let's Encrypt / Google's own), unlike Authelia's
+# internal ca-issuer cert this replaces.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zitadel-terraform-apply
+  namespace: zitadel
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: zitadel-terraform
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: terraform
+          image: hashicorp/terraform:1.9.8
+          env:
+            - name: HOME
+              value: /workspace
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              mkdir -p /workspace
+              cp /tf-src/*.tf /workspace/
+              cd /workspace
+
+              echo "waiting for https://id.hl.mkoelle.com/debug/healthz ..."
+              until wget -q -O /dev/null https://id.hl.mkoelle.com/debug/healthz; do
+                sleep 5
+              done
+              echo "zitadel is healthy, applying terraform"
+
+              terraform init
+              terraform apply -auto-approve
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tf-src
+              mountPath: /tf-src
+              readOnly: true
+            - name: workspace
+              mountPath: /workspace
+            - name: tmp
+              mountPath: /tmp
+            - name: zitadel-pat
+              mountPath: /var/run/secrets/zitadel
+              readOnly: true
+            - name: google-oauth
+              mountPath: /var/run/secrets/google-oauth
+              readOnly: true
+      volumes:
+        - name: tf-src
+          configMap:
+            name: zitadel-terraform-files
+        - name: workspace
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        # Auto-created by the zitadel chart's setup Job -- see
+        # values.yaml's FirstInstance.Org.Machine.Pat.
+        - name: zitadel-pat
+          secret:
+            secretName: terraform-runner-pat
+        - name: google-oauth
+          secret:
+            secretName: google-oauth-client-secret

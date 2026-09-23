@@ -7,3 +7,4 @@ resources:
   - namespace.yaml
   - gateway.yaml
   - wildcard-cert.yaml
+  - hl-mkoelle-com-cert.yaml

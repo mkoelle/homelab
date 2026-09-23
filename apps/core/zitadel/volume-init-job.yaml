@@ -1,10 +1,10 @@
 ---
 # One-time host-directory creation for volume.yaml's `local` PV -- same
-# pattern and same reasoning as apps/core/pocket-id/volume-init-job.yaml.
+# pattern as apps/core/authelia/volume-init-job.yaml.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: authelia-data-dir-init
+  name: zitadel-postgres-data-dir-init
   namespace: kube-system
   annotations:
     argocd.argoproj.io/hook: PreSync
@@ -25,7 +25,7 @@ spec:
           command:
             - sh
             - -c
-            - mkdir -p /host/var/lib/kubelet/authelia-data && chmod 0770 /host/var/lib/kubelet/authelia-data
+            - mkdir -p /host/var/lib/kubelet/zitadel-postgres-data && chmod 0770 /host/var/lib/kubelet/zitadel-postgres-data
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false

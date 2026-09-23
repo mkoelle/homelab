@@ -38,9 +38,9 @@ spec:
             namespace: kube-system
             wave: "1"
 
-          - name: authelia
-            path: apps/core/authelia
-            namespace: authelia
+          - name: zitadel
+            path: apps/core/zitadel
+            namespace: zitadel
             wave: "1"
 
           # Wave 2 — Cluster services

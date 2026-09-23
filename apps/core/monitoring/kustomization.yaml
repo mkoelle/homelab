@@ -8,7 +8,6 @@ resources:
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
   - grafana-admin-secret.yaml
-  - grafana-oidc-secret.yaml
   - httproute.yaml
   - dashboards/node-exporter-full.yaml
   - dashboards/kubernetes-cluster.yaml

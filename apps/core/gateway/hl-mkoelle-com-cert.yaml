@@ -1,0 +1,23 @@
+---
+# Publicly-trusted wildcard cert for the *.hl.mkoelle.com subdomain --
+# reserved for future homelab apps exposed with real public trust (started
+# with Zitadel at id.hl.mkoelle.com, since Google's OAuth console rejects
+# redirect URIs on .local). Wildcard, not per-hostname: DNS-01 makes this free
+# (no extra validation cost per name), so any future app under this subdomain
+# just needs a new HTTPRoute -- no new Certificate, no new cert-manager work.
+# Issued by letsencrypt-route53 (created in the zitadel app at wave 1 --
+# gateway is wave 2, so ordering is safe).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hl-mkoelle-com-tls
+  namespace: gateway
+spec:
+  secretName: hl-mkoelle-com-tls
+  dnsNames:
+    - "*.hl.mkoelle.com"
+    - hl.mkoelle.com
+  issuerRef:
+    name: letsencrypt-route53
+    kind: ClusterIssuer
+    group: cert-manager.io
