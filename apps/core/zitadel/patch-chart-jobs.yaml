@@ -50,6 +50,7 @@ metadata:
     helm.sh/hook-delete-policy: null
     helm.sh/hook-weight: null
     argocd.argoproj.io/sync-wave: "2"
+    ignore-check.kube-linter.io/job-ttl-seconds-after-finished: "Deliberately no TTL -- see comment above; selfHeal would otherwise rerun this one-shot Job forever"
 ---
 apiVersion: batch/v1
 kind: Job
@@ -61,6 +62,7 @@ metadata:
     helm.sh/hook-delete-policy: null
     helm.sh/hook-weight: null
     argocd.argoproj.io/sync-wave: "1"
+    ignore-check.kube-linter.io/job-ttl-seconds-after-finished: "Deliberately no TTL -- see comment above; selfHeal would otherwise rerun this one-shot Job forever"
 ---
 apiVersion: batch/v1
 kind: Job
