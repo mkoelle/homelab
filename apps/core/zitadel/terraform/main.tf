@@ -122,6 +122,51 @@ resource "zitadel_login_policy" "default" {
   second_factor_check_lifetime  = "24h0m0s"
 }
 
+# Instance-scoped counterpart to zitadel_org_idp_google above. The org-level
+# IDP only appears under Organization Settings > Identity Providers and only
+# lets the org's own users sign in with Google -- it does NOT cover IAM/
+# instance admin logins, which check Instance Settings > Identity Providers
+# instead. Same Google OAuth client, just registered a second time at
+# instance scope so "mkoelle@gmail.com" can also be used for admin logins.
+resource "zitadel_idp_google" "default" {
+  name          = "Google"
+  client_id     = trimspace(file("/var/run/secrets/google-oauth/client-id"))
+  client_secret = trimspace(file("/var/run/secrets/google-oauth/client-secret"))
+  scopes        = ["openid", "profile", "email"]
+
+  is_linking_allowed  = true
+  is_creation_allowed = true
+  is_auto_creation    = true
+  is_auto_update      = true
+  auto_linking        = "AUTO_LINKING_OPTION_EMAIL"
+}
+
+# Mirrors zitadel_login_policy above but at instance scope -- without this,
+# registering zitadel_idp_google alone still won't show Google on the
+# instance-level login screen. Zitadel provisions a default_login_policy
+# singleton on install; this resource just takes it over declaratively
+# (same reasoning/defaults as the org policy above -- see those comments).
+resource "zitadel_default_login_policy" "default" {
+  user_login         = true
+  allow_register     = false
+  allow_external_idp = true
+  idps               = [zitadel_idp_google.default.id]
+
+  force_mfa                = false
+  force_mfa_local_only     = false
+  passwordless_type        = "PASSWORDLESS_TYPE_ALLOWED"
+  hide_password_reset      = false
+  ignore_unknown_usernames = true
+
+  default_redirect_uri = "https://id.hl.mkoelle.com/ui/console"
+
+  password_check_lifetime       = "240h0m0s"
+  external_login_check_lifetime = "240h0m0s"
+  multi_factor_check_lifetime   = "24h0m0s"
+  mfa_init_skip_lifetime        = "720h0m0s"
+  second_factor_check_lifetime  = "24h0m0s"
+}
+
 # Zitadel generates both client_id and client_secret server-side on
 # creation -- unlike Authelia, there's no way to pin client_id to a literal
 # string like "argocd". Both are Read-Only/computed attributes. These
