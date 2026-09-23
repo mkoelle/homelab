@@ -113,7 +113,7 @@ resource "zitadel_default_login_policy" "default" {
 
   default_redirect_uri = "https://id.hl.mkoelle.com/ui/console"
 
-  password_check_lifetime       = "240h0m0s"
+  password_check_lifetime       = "240h0m0s" # gitleaks:allow -- duration, not a secret
   external_login_check_lifetime = "240h0m0s"
   multi_factor_check_lifetime   = "24h0m0s"
   mfa_init_skip_lifetime        = "720h0m0s"
@@ -138,7 +138,7 @@ resource "zitadel_login_policy" "default" {
 
   default_redirect_uri = "https://id.hl.mkoelle.com/ui/console"
 
-  password_check_lifetime       = "240h0m0s"
+  password_check_lifetime       = "240h0m0s" # gitleaks:allow -- duration, not a secret
   external_login_check_lifetime = "240h0m0s"
   multi_factor_check_lifetime   = "24h0m0s"
   mfa_init_skip_lifetime        = "720h0m0s"
