@@ -24,3 +24,19 @@ spec:
           port: 53
     - to:
         - podSelector: {}
+    # External HTTPS -- Let's Encrypt ACME API (letsencrypt-route53 issuer,
+    # apps/core/zitadel/route53-dns01-issuer.yaml) and the AWS Route53 API
+    # for the DNS-01 solver. Same pattern as external-secrets' and argocd's
+    # networkpolicy.yaml. Without this, ACME account registration times out
+    # -- the internal ca-issuer never needed it, so this went unnoticed
+    # until the first cert requested from a public issuer.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
