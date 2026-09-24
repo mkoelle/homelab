@@ -16,6 +16,8 @@ resources:
   - dashboards/opencost-overview.yaml
   - dashboards/opencost-workload.yaml
   - dashboards/uptime-kuma.yaml
+  - dashboards/trivy-operator.yaml
+  - dashboards/kubescape.yaml
 
 helmCharts:
   - name: victoria-metrics-single

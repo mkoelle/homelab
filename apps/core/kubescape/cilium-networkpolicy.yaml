@@ -1,0 +1,35 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kubescape-storage-apiserver
+  namespace: kubescape
+spec:
+  endpointSelector:
+    matchLabels:
+      app: storage
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kubescape-prometheus-exporter
+  namespace: kubescape
+spec:
+  endpointSelector:
+    matchLabels:
+      app: prometheus-exporter
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: alloy
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

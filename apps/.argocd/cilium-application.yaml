@@ -27,7 +27,7 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
-    targetRevision: HEAD
+    targetRevision: feat/security
     path: apps/core/cilium
   destination:
     server: https://kubernetes.default.svc

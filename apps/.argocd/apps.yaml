@@ -85,16 +85,29 @@ spec:
             namespace: opencost
             wave: "3"
 
-          # Wave 4 — User workloads
+          # Wave 4 — Security posture / vulnerability reporting.
+          # Stagger the operator installs so their initial scans do not run
+          # concurrently on the single node.
+          - name: kubescape
+            path: apps/core/kubescape
+            namespace: kubescape
+            wave: "4"
+
+          - name: trivy-operator
+            path: apps/core/trivy-operator
+            namespace: trivy-operator
+            wave: "5"
+
+          # Wave 6 — User workloads
           - name: filebrowser
             path: apps/media/filebrowser
             namespace: filebrowser
-            wave: "4"
+            wave: "6"
 
           - name: homepage
             path: apps/core/homepage
             namespace: homepage
-            wave: "4"
+            wave: "6"
 
   template:
     metadata:
@@ -106,7 +119,7 @@ spec:
       project: homelab
       source:
         repoURL: https://github.com/mkoelle/homelab
-        targetRevision: HEAD
+        targetRevision: feat/security
         path: "{{path}}"
       destination:
         server: https://kubernetes.default.svc

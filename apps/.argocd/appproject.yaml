@@ -24,6 +24,8 @@ spec:
     - https://charts.bitnami.com/bitnami
     - https://opencost.github.io/opencost-helm-chart/
     - https://dirsigler.github.io/uptime-kuma-helm
+    - https://kubescape.github.io/helm-charts/
+    - https://aquasecurity.github.io/helm-charts/
   destinations:
     - server: https://kubernetes.default.svc
       namespace: core-argocd
@@ -55,6 +57,10 @@ spec:
       namespace: zitadel
     - server: https://kubernetes.default.svc
       namespace: homepage
+    - server: https://kubernetes.default.svc
+      namespace: kubescape
+    - server: https://kubernetes.default.svc
+      namespace: trivy-operator
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
@@ -94,3 +100,8 @@ spec:
       kind: ValidatingAdmissionPolicyBinding
     - group: cert-manager.io
       kind: ClusterIssuer
+    # Kubescape exposes its findings storage through an aggregated APIService.
+    - group: apiregistration.k8s.io
+      kind: APIService
+    - group: aquasecurity.github.io
+      kind: ClusterComplianceReport

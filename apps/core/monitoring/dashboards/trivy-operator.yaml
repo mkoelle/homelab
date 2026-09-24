@@ -1,0 +1,82 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-trivy-operator
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  trivy-operator.json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "graphTooltip": 1,
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}]}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+          "id": 1,
+          "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
+          "targets": [{"expr": "sum(max by (namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{severity=\"Critical\", namespace=~\"$namespace\"}))", "instant": true, "refId": "A"}],
+          "title": "Critical image vulnerabilities",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}]}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+          "id": 2,
+          "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
+          "targets": [{"expr": "sum(max by (namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{severity=\"High\", namespace=~\"$namespace\"}))", "instant": true, "refId": "A"}],
+          "title": "High image vulnerabilities",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "id": 3,
+          "targets": [{"expr": "sum(max by (severity, namespace, image_registry, image_repository, image_tag) (trivy_image_vulnerabilities{namespace=~\"$namespace\"})) by (severity)", "legendFormat": "{{severity}}", "refId": "A"}],
+          "title": "Image vulnerabilities by severity",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"custom": {"align": "auto", "displayMode": "auto", "filterable": true}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+          "id": 4,
+          "options": {"showHeader": true, "sortBy": []},
+          "targets": [{"expr": "sum(max by (namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{namespace=~\"$namespace\"})) by (namespace, image_registry, image_repository, image_tag, severity)", "format": "table", "instant": true, "refId": "A"}],
+          "title": "Vulnerability counts by image",
+          "type": "table"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18},
+          "id": 5,
+          "targets": [{"expr": "sum(trivy_resource_configaudits{namespace=~\"$namespace\"}) by (severity)", "legendFormat": "{{severity}}", "refId": "A"}],
+          "title": "Config audit findings by severity",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"custom": {"align": "auto", "displayMode": "auto", "filterable": true}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18},
+          "id": 6,
+          "options": {"showHeader": true, "sortBy": []},
+          "targets": [{"expr": "sum(trivy_resource_configaudits{namespace=~\"$namespace\"}) by (namespace, resource_kind, resource_name, severity)", "format": "table", "instant": true, "refId": "A"}],
+          "title": "Config audit findings by resource",
+          "type": "table"
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["security", "trivy", "trivy-operator"],
+      "templating": {"list": [{"current": {"selected": true, "text": "VictoriaMetrics", "value": "VictoriaMetrics"}, "label": "Data source", "name": "datasource", "query": "prometheus", "type": "datasource"}, {"allValue": ".*", "current": {"selected": true, "text": "All", "value": "$__all"}, "includeAll": true, "label": "Namespace", "name": "namespace", "query": "label_values(trivy_image_vulnerabilities, namespace)", "type": "query", "datasource": {"type": "prometheus", "uid": "${datasource}"}}]},
+      "time": {"from": "now-24h", "to": "now"},
+      "title": "Security / Trivy Operator",
+      "uid": "homelab-trivy-operator",
+      "version": 1
+    }

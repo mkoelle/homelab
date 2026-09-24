@@ -1,0 +1,109 @@
+---
+clusterName: motherbox
+excludeNamespaces: "kubescape,kube-public,kube-node-lease"
+
+# Runtime-rendered certs avoid Helm's random genSignedCert output changing on
+# every Argo CD diff. Verified in Kubescape chart 1.40.4's installation docs.
+certificates:
+  strategy: initContainer
+
+# Initial scope: cluster/workload posture and image scanning only. Node-agent
+# host scans/runtime telemetry and admission hooks need host access or affect
+# API admission, so keep those off until separately reviewed. Preserve both
+# Kubescape and Trivy scanning for independent coverage; schedules and limits
+# are staggered across the two Applications.
+capabilities:
+  operator: enable
+  configurationScan: enable
+  continuousScan: enable
+  # Node and host scans require hostPath/eBPF access. The first implementation
+  # deliberately covers Kubernetes objects and public image registries only.
+  # Add host posture in a separate, explicitly reviewed privilege change.
+  nodeScan: disable
+  nodeSbomGeneration: disable
+  vulnerabilityScan: enable
+  relevancy: disable
+  scanEmbeddedSBOMs: disable
+  runtimeObservability: disable
+  networkPolicyService: disable
+  networkEventsStreaming: disable
+  runtimeDetection: disable
+  malwareDetection: disable
+  nodeProfileService: disable
+  admissionController: disable
+  httpDetection: disable
+  seccompProfileService: disable
+  remediation: disable
+  autoUpgrading: disable
+  prometheusExporter: enable
+
+# Public images are used by workloads in this cluster. Avoid granting this
+# scanner global Secret access; add explicit, scoped registry credentials if
+# private images are introduced.
+global:
+  enableClusterWideSecretAccess: false
+  networkPolicy:
+    enabled: false
+
+configurations:
+  # Results live in Kubernetes CRDs and are reproducible; do not request a PVC
+  # from the cluster's static-only StorageClass.
+  persistence: disable
+  prometheusAnnotations: disable
+  priorityClass:
+    enabled: false
+
+kubescapeScheduler:
+  enabled: true
+  scanSchedule: "0 1 * * *"
+
+kubevulnScheduler:
+  enabled: true
+  scanSchedule: "0 3 * * *"
+
+kubescape:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+operator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
+
+storage:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+
+kubevuln:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+      ephemeral-storage: 2Gi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+      ephemeral-storage: 5Gi
+
+# The chart's Prometheus exporter is the report metrics endpoint. Scrape that
+# pod with Alloy; avoid annotating the separate Kubescape API pod.
+prometheusExporter:
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"

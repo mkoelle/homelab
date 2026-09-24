@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-kubescape
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  kubescape.json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "description": "Kubescape configuration and image-scan metrics. Node/host scanning is deliberately disabled in the initial deployment, so this is not a complete host CIS view.",
+      "graphTooltip": 1,
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "id": 1,
+          "targets": [
+            {"expr": "kubescape_controls_total_cluster_critical", "legendFormat": "Critical", "refId": "A"},
+            {"expr": "kubescape_controls_total_cluster_high", "legendFormat": "High", "refId": "B"},
+            {"expr": "kubescape_controls_total_cluster_medium", "legendFormat": "Medium", "refId": "C"},
+            {"expr": "kubescape_controls_total_cluster_low", "legendFormat": "Low", "refId": "D"}
+          ],
+          "title": "Cluster posture findings by severity",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "id": 2,
+          "targets": [
+            {"expr": "kubescape_vulnerabilities_total_cluster_critical", "legendFormat": "Critical", "refId": "A"},
+            {"expr": "kubescape_vulnerabilities_total_cluster_high", "legendFormat": "High", "refId": "B"},
+            {"expr": "kubescape_vulnerabilities_total_cluster_medium", "legendFormat": "Medium", "refId": "C"},
+            {"expr": "kubescape_vulnerabilities_total_cluster_low", "legendFormat": "Low", "refId": "D"}
+          ],
+          "title": "Cluster image findings by severity",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 9, "w": 24, "x": 0, "y": 8},
+          "id": 3,
+          "targets": [
+            {"expr": "sum by (namespace) (kubescape_controls_total_namespace_critical)", "legendFormat": "{{namespace}} critical", "refId": "A"},
+            {"expr": "sum by (namespace) (kubescape_controls_total_namespace_high)", "legendFormat": "{{namespace}} high", "refId": "B"},
+            {"expr": "sum by (namespace) (kubescape_controls_total_namespace_medium)", "legendFormat": "{{namespace}} medium", "refId": "C"}
+          ],
+          "title": "Workload posture findings by namespace",
+          "type": "timeseries"
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["security", "kubescape"],
+      "templating": {"list": [{"current": {"selected": true, "text": "VictoriaMetrics", "value": "VictoriaMetrics"}, "label": "Data source", "name": "datasource", "query": "prometheus", "type": "datasource"}]},
+      "time": {"from": "now-7d", "to": "now"},
+      "title": "Security / Kubescape",
+      "uid": "homelab-kubescape",
+      "version": 1
+    }

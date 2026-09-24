@@ -1,0 +1,66 @@
+---
+operator:
+  replicas: 1
+  # One scan Job at a time: this cluster has a single node and both Kubescape
+  # and Trivy are intentionally enabled as independent scanners.
+  scanJobsConcurrentLimit: 1
+  scanNodeCollectorLimit: 1
+  scanJobTTL: 1h
+  scannerReportTTL: 24h
+  cacheReportTTL: 120h
+  # All current workload images are public. Do not grant cluster-wide Secret
+  # read access just to discover imagePullSecrets; configure scoped access if
+  # private registries are added later.
+  accessGlobalSecretsAndServiceAccount: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  metricsFindingsEnabled: true
+  metricsVulnIdEnabled: false
+  configAuditScannerScanOnlyCurrentRevisions: true
+  vulnerabilityScannerScanOnlyCurrentRevisions: true
+
+service:
+  annotations:
+    prometheus.io/scrape: "true"
+
+# The chart defaults already use a restricted container securityContext for
+# scanner Jobs. Add the restricted Pod defaults (seccomp/non-root) explicitly.
+trivyOperator:
+  scanJobPodTemplatePodSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  scanJobPodTemplateContainerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    privileged: false
+    readOnlyRootFilesystem: true
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  privileged: false
+  readOnlyRootFilesystem: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+trivy:
+  slow: true
