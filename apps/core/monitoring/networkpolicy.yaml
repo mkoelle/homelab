@@ -28,10 +28,16 @@ spec:
           port: 3000
     # Alloy (alloy namespace) remote_write — see apps/core/alloy/values.yaml's
     # prometheus.remote_write "default" component, port matches vmsingle's server port.
+    # OpenCost (opencost namespace) queries the same port directly as its
+    # Prometheus-compatible cost-model datasource — apps/core/opencost/values.yaml's
+    # opencost.prometheus.internal block.
     - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: alloy
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: opencost
       ports:
         - protocol: TCP
           port: 8428

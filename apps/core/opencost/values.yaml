@@ -20,6 +20,16 @@ podSecurityContext:
     type: RuntimeDefault
 
 opencost:
+  # Chart defaults to a nonexistent prometheus-server.prometheus-system --
+  # this cluster's metrics store is VictoriaMetrics (apps/core/monitoring),
+  # which speaks the same Prometheus query API on the same Service other
+  # consumers (Grafana's datasource, vmalert) already use successfully.
+  prometheus:
+    internal:
+      enabled: true
+      serviceName: vmsingle-victoria-metrics-single-server
+      namespaceName: monitoring
+      port: 8428
   exporter:
     securityContext:
       allowPrivilegeEscalation: false
