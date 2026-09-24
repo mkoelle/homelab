@@ -4,6 +4,11 @@ kind: Namespace
 metadata:
   name: uptime-kuma
   labels:
+    # Required for its HTTPRoute to attach at all -- the Gateway's listeners
+    # (apps/core/gateway) restrict allowedRoutes to namespaces carrying this
+    # label. Missing it produces HTTPRoute status "NotAllowedByListeners" and
+    # every request 404s at the Gateway -- confirmed live.
+    gateway-access: "true"
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
     pod-security.kubernetes.io/audit: restricted
