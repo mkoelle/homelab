@@ -1,8 +1,9 @@
 ---
 operator:
   replicas: 1
-  # One scan Job at a time: this cluster has a single node and both Kubescape
-  # and Trivy are intentionally enabled as independent scanners.
+  # Limit scan-job submissions to one: this cluster has a single node and both
+  # Kubescape and Trivy are intentionally enabled as independent scanners.
+  # Trivy may briefly exceed this limit during concurrent workload reconciles.
   scanJobsConcurrentLimit: 1
   scanNodeCollectorLimit: 1
   # The operator's concurrency limiter counts completed Jobs until they are
@@ -17,6 +18,9 @@ operator:
   # a separately reviewed gap rather than weakening this namespace.
   infraAssessmentScannerEnabled: false
   clusterComplianceEnabled: false
+  # Centralize the Trivy database/cache so concurrent container scans do not
+  # contend for the per-scan-Pod filesystem cache.
+  builtInTrivyServer: true
   # All current workload images are public. Do not grant cluster-wide Secret
   # read access just to discover imagePullSecrets; configure scoped access if
   # private registries are added later.
@@ -77,3 +81,22 @@ resources:
 
 trivy:
   slow: true
+  # This cluster has no dynamic/default StorageClass. Keep the server cache on
+  # an emptyDir; it can be repopulated after a server restart.
+  storageClassEnabled: false
+  server:
+    podSecurityContext:
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsUser: 65534
+      runAsGroup: 65534
