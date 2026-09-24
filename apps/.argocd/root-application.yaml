@@ -10,7 +10,7 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
-    targetRevision: fix/argocd-zitadel-oidc-relay
+    targetRevision: HEAD
     path: apps/.argocd
   destination:
     server: https://kubernetes.default.svc
