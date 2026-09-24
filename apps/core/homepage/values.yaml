@@ -8,24 +8,31 @@ config:
 rbac:
   enabled: false
 
+# homepage-static-config, not "config" -- the chart already defines its own
+# volume named "config" (a writable emptyDir mounted at /app/config, where
+# Homepage itself writes at runtime). A same-named volume here collides:
+# confirmed live, "duplicate entries for key [name=\"config\"]" from
+# ArgoCD's apply. Layering distinct-named subPath mounts from this volume
+# on top of the chart's own base mount works fine; only the volume *name*
+# needed to be unique.
 volumes:
-  - name: config
+  - name: homepage-static-config
     configMap:
       name: homepage-config
 volumeMounts:
-  - name: config
+  - name: homepage-static-config
     mountPath: /app/config/settings.yaml
     subPath: settings.yaml
-  - name: config
+  - name: homepage-static-config
     mountPath: /app/config/services.yaml
     subPath: services.yaml
-  - name: config
+  - name: homepage-static-config
     mountPath: /app/config/bookmarks.yaml
     subPath: bookmarks.yaml
-  - name: config
+  - name: homepage-static-config
     mountPath: /app/config/widgets.yaml
     subPath: widgets.yaml
-  - name: config
+  - name: homepage-static-config
     mountPath: /app/config/docker.yaml
     subPath: docker.yaml
 
