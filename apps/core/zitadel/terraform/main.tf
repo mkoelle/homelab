@@ -44,6 +44,18 @@ resource "zitadel_application_oidc" "argocd" {
   version           = "OIDC_VERSION_1_0"
   dev_mode          = false
   access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+
+  # ArgoCD's RBAC (argocd-rbac-cm's `scopes: "[email]"`) reads claims
+  # directly off the ID token, not a separate userinfo call -- confirmed
+  # live that Zitadel's default ID token only carries
+  # at_hash/aud/auth_time/azp/client_id/exp/iat/iss/sid/sub, no email/
+  # profile, which silently fell through argocd-rbac-cm's policy.csv match
+  # to policy.default (no role): "No applications available to you". Grafana
+  # doesn't need this -- its generic_oauth flow calls the userinfo endpoint
+  # separately. id_token_role_assertion matches the "groups" scope
+  # argocd-cm's oidc.config already requests but nothing currently consumes.
+  id_token_userinfo_assertion = true
+  id_token_role_assertion     = true
 }
 
 resource "zitadel_application_oidc" "grafana" {
