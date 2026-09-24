@@ -12,6 +12,9 @@ resources:
   - namespace.yaml
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
+  - oidc-relay-cert.yaml
+  - oidc-relay.yaml
+  - oidc-relay-networkpolicy.yaml
   - storageclass.yaml
   - volume.yaml
   - volume-init-job.yaml

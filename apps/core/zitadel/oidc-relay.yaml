@@ -1,0 +1,175 @@
+---
+# TLS-terminating relay so argocd-server can reach Zitadel's OIDC endpoints
+# without going through the Gateway. Confirmed live (extensive Hubble/Cilium
+# investigation, see PR history): a pod calling https://id.hl.mkoelle.com
+# resolves to the Gateway's own L2-announced LB VIP (192.168.1.200, see
+# apps/core/coredns-custom/configmap.yaml) and hairpins back through Cilium's
+# Gateway API Envoy on the same node -- Cilium mislabels that flow's source
+# identity as reserved:ingress before it reaches Envoy's L7 policy check,
+# which then hard-denies it (Envoy's own hardcoded "Access denied" text).
+# Reproduced deterministically for core-argocd specifically; ruled out (all
+# tested live): every NetworkPolicy/CiliumNetworkPolicy rule combination,
+# stale xDS cache (cilium-envoy restart), stale agent state (full cilium
+# DaemonSet restart), DNS resolution differences. This looks like a genuine
+# Cilium limitation with self-referencing Gateway API + LB-IPAM traffic, not
+# a config gap -- so argocd-server's OIDC calls bypass the Gateway/Envoy path
+# entirely instead of chasing the Cilium-side root cause further.
+#
+# Zitadel itself can't be the bypass target directly: TLS.Enabled: false in
+# values.yaml (TLS terminates only at the Gateway) means its port 8080 speaks
+# plain HTTP -- but ArgoCD's issuer is hardcoded `https://id.hl.mkoelle.com`
+# (oidc.NewProvider connects with the scheme baked into the issuer URL), so
+# something has to terminate TLS for this specific path. This relay does
+# exactly that and nothing else: terminate TLS as id.hl.mkoelle.com, proxy
+# plaintext to zitadel.zitadel.svc.cluster.local:8080 preserving the Host
+# header (Zitadel's ExternalDomain check requires an exact match).
+#
+# argocd-server reaches this relay via a hostAliases entry pointing
+# id.hl.mkoelle.com at this Service's ClusterIP (see
+# apps/core/argocd/patch-argocd-server-hostalias.yaml) -- so only
+# argocd-server's resolution of that hostname is affected; every other
+# in-cluster caller (Grafana, browsers) still resolves it to the Gateway VIP
+# via CoreDNS as before. The issuer string served by Zitadel's discovery
+# document is always `https://id.hl.mkoelle.com` regardless of which path
+# reached it, so token validation is unaffected by this redirect.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zitadel-oidc-relay-nginx-conf
+  namespace: zitadel
+data:
+  nginx.conf: |
+    worker_processes 1;
+    error_log /dev/stderr warn;
+    pid /tmp/nginx.pid;
+
+    events {
+      worker_connections 1024;
+    }
+
+    http {
+      client_body_temp_path /tmp/client_body;
+      proxy_temp_path /tmp/proxy;
+      fastcgi_temp_path /tmp/fastcgi;
+      uwsgi_temp_path /tmp/uwsgi;
+      scgi_temp_path /tmp/scgi;
+      access_log /dev/stdout;
+
+      server {
+        listen 8443 ssl;
+        http2 on;
+        server_name id.hl.mkoelle.com;
+
+        ssl_certificate /etc/nginx-tls/tls.crt;
+        ssl_certificate_key /etc/nginx-tls/tls.key;
+
+        location /healthz {
+          return 200 "ok\n";
+        }
+
+        location / {
+          proxy_pass http://zitadel.zitadel.svc.cluster.local:8080;
+          proxy_http_version 1.1;
+          proxy_set_header Host id.hl.mkoelle.com;
+          proxy_set_header X-Forwarded-Proto https;
+          proxy_set_header X-Forwarded-Host id.hl.mkoelle.com;
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zitadel-oidc-relay
+  namespace: zitadel
+  labels:
+    app: zitadel-oidc-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zitadel-oidc-relay
+  template:
+    metadata:
+      labels:
+        app: zitadel-oidc-relay
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.27-alpine
+          ports:
+            - containerPort: 8443
+              name: https
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tls
+              mountPath: /etc/nginx-tls
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: zitadel-oidc-relay-nginx-conf
+        - name: tls
+          secret:
+            secretName: zitadel-oidc-relay-tls
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zitadel-oidc-relay
+  namespace: zitadel
+spec:
+  # Static ClusterIP: argocd-server's hostAliases patch
+  # (apps/core/argocd/patch-argocd-server-hostalias.yaml) needs a fixed IP to
+  # point id.hl.mkoelle.com at -- hostAliases takes an IP literal, not a DNS
+  # name. Verified free in the 10.96.0.0/12 service CIDR before picking it.
+  clusterIP: 10.96.111.111
+  selector:
+    app: zitadel-oidc-relay
+  ports:
+    # 443, not 8443: ArgoCD's issuer is a bare `https://id.hl.mkoelle.com`
+    # (no port), so Go's HTTP client connects on the https default (443)
+    # regardless of what hostAliases points the hostname at. The container
+    # itself still listens on 8443 (unprivileged, PSA-restricted) --
+    # targetPort maps the two.
+    - port: 443
+      targetPort: https
+      protocol: TCP

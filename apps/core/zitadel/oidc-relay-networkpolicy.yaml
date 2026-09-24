@@ -1,0 +1,70 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: zitadel-oidc-relay-policy
+  namespace: zitadel
+spec:
+  podSelector:
+    matchLabels:
+      app: zitadel-oidc-relay
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: core-argocd
+      ports:
+        - protocol: TCP
+          port: 8443 # container's real listen port; the Service maps 443 -> 8443
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Same-namespace: relay -> zitadel:8080. zitadel-policy's own ingress
+    # (networkpolicy.yaml, `from: podSelector: {}`) already allows the
+    # reverse direction for same-namespace traffic.
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# CiliumNetworkPolicy mirror -- both kinds enforce as separate rule sets
+# (confirmed live earlier this session: patching only one still drops
+# traffic), same pattern as every other app in this repo.
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: zitadel-oidc-relay
+  namespace: zitadel
+spec:
+  endpointSelector:
+    matchLabels:
+      app: zitadel-oidc-relay
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: core-argocd
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP
+  egress:
+    - toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: zitadel
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

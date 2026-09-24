@@ -21,6 +21,10 @@ patches:
     target:
       kind: Deployment
       name: argocd-server
+  - path: patch-argocd-server-hostalias.yaml
+    target:
+      kind: Deployment
+      name: argocd-server
   # Kustomize namespace transformer does not update subjects[].namespace in ClusterRoleBindings.
   # ArgoCD chart hardcodes namespace: argocd — patch all three to use the actual namespace.
   - patch: |

@@ -74,6 +74,21 @@ spec:
         - ports:
             - port: "443"
               protocol: TCP
+    # Zitadel OIDC relay -- see apps/core/argocd/networkpolicy.yaml's matching
+    # rule for the full explanation (argocd-server's actual OIDC path, via
+    # hostAliases, bypasses the Gateway VIP rule above entirely). Endpoint
+    # selector, not CIDR: confirmed live that kube-proxy-replacement's
+    # socket-level LB rewrites the destination to the relay pod's own IP
+    # before egress policy evaluation, so a ClusterIP-based CIDR rule never
+    # matches.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: zitadel
+            app: zitadel-oidc-relay
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP
     # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
     - toCIDRSet:
         - cidr: "0.0.0.0/0"
