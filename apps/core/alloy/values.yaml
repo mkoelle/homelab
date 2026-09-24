@@ -104,13 +104,13 @@ alloy:
           source_labels = ["__meta_kubernetes_pod_container_name"]
           target_label  = "container"
         }
-        # Logs Drilldown's default view groups by "service_name" specifically
-        # (a Loki/OTel semantic-conventions label) -- without it, every
-        # namespace shows "No logs found in service_name" even though logs
-        # are flowing fine under namespace/pod/container. Loki can also
-        # synthesize this itself (limits_config.discover_service_name), but
-        # setting it here keeps all label logic in one place (Alloy) instead
-        # of splitting it across two configs.
+        // Logs Drilldown's default view groups by "service_name" specifically
+        // (a Loki/OTel semantic-conventions label) -- without it, every
+        // namespace shows "No logs found in service_name" even though logs
+        // are flowing fine under namespace/pod/container. Loki can also
+        // synthesize this itself (limits_config.discover_service_name), but
+        // setting it here keeps all label logic in one place (Alloy) instead
+        // of splitting it across two configs.
         rule {
           source_labels = ["__meta_kubernetes_pod_container_name"]
           target_label  = "service_name"
