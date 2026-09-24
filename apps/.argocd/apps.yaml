@@ -101,7 +101,8 @@ spec:
       project: homelab
       source:
         repoURL: https://github.com/mkoelle/homelab
-        targetRevision: HEAD
+        # TEMPORARY: see root-application.yaml's matching note.
+        targetRevision: feat/monitoring-analytics-expansion
         path: "{{path}}"
       destination:
         server: https://kubernetes.default.svc
