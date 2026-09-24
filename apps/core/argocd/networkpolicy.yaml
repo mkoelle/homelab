@@ -67,6 +67,24 @@ spec:
       ports:
         - protocol: TCP
           port: 6443
+    # Zitadel OIDC (id.hl.mkoelle.com, resolved via the Gateway's L2-announced
+    # LB IP) -- the "External HTTPS" rule below deliberately excludes all of
+    # 192.168.0.0/16 (so that public-internet rule can't also reach internal
+    # LAN infra), so this needs its own narrow carve-out. From a pod's
+    # perspective 192.168.1.200 isn't a cluster-internal identity at all --
+    # Cilium classifies it reserved:world (same as any other LAN IP) -- so it
+    # fell outside every existing allow rule. Confirmed live via
+    # `hubble observe --verdict DROPPED`: ArgoCD's OIDC discovery call was
+    # being dropped exactly because of this exclusion. Never caught until now
+    # because this was the first real ArgoCD-Zitadel SSO login attempt since
+    # #44 -- monitoring's namespace has no egress restriction at all
+    # (ingress-only policy), so Grafana's identical OIDC flow never hit it.
+    - to:
+        - ipBlock:
+            cidr: 192.168.1.200/32
+      ports:
+        - protocol: TCP
+          port: 443
     # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
     - to:
         - ipBlock:
