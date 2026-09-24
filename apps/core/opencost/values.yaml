@@ -1,0 +1,43 @@
+---
+# Alloy's generic pod-annotation discovery (apps/core/alloy/values.yaml's
+# pod_metrics scrape) picks this up automatically -- no per-app Alloy
+# config needed, unlike Uptime Kuma which needs its own dedicated scrape
+# block for auth.
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9003"
+
+# Chart defaults every securityContext to `{}` -- doesn't satisfy this
+# namespace's pod-security.kubernetes.io/enforce: restricted label
+# (namespace.yaml). Two containers in one pod (opencost + opencost-ui, an
+# nginx sidecar), each needs its own securityContext key.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+opencost:
+  exporter:
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      runAsUser: 1000
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+  ui:
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      runAsUser: 1000

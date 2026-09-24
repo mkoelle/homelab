@@ -19,6 +19,12 @@ controller:
     extra:
       - name: alloy-storage
         emptyDir: {}
+      - name: openobserve-root
+        secret:
+          secretName: openobserve-root
+      - name: uptime-kuma-metrics
+        secret:
+          secretName: uptime-kuma-metrics
 
 global:
   # Chart default omits seccompProfile — required by this namespace's
@@ -56,6 +62,12 @@ alloy:
     extra:
       - name: alloy-storage
         mountPath: /tmp/alloy
+      - name: openobserve-root
+        mountPath: /var/run/secrets/openobserve
+        readOnly: true
+      - name: uptime-kuma-metrics
+        mountPath: /var/run/secrets/uptime-kuma
+        readOnly: true
   configMap:
     content: |
       discovery.kubernetes "pods" {
@@ -89,9 +101,26 @@ alloy:
         forward_to = [loki.write.default.receiver]
       }
 
+      // OpenObserve replaced Loki (docs/adrs/0008-openobserve-for-logs.md) --
+      // it exposes a Loki-push-API-compatible endpoint, so loki.write itself
+      // is unchanged, only the destination + credentials.
+      local.file "openobserve_username" {
+        filename  = "/var/run/secrets/openobserve/ZO_ROOT_USER_EMAIL"
+        is_secret = true
+      }
+
+      local.file "openobserve_password" {
+        filename  = "/var/run/secrets/openobserve/ZO_ROOT_USER_PASSWORD"
+        is_secret = true
+      }
+
       loki.write "default" {
         endpoint {
-          url = "http://loki.loki.svc.cluster.local:3100/loki/api/v1/push"
+          url = "http://openobserve.openobserve.svc.cluster.local:5080/api/default/loki/api/v1/push"
+          basic_auth {
+            username = local.file.openobserve_username.content
+            password = local.file.openobserve_password.content
+          }
         }
       }
 
@@ -249,6 +278,40 @@ alloy:
       prometheus.scrape "argocd" {
         targets    = discovery.relabel.argocd_metrics.output
         forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // Uptime Kuma's /metrics requires HTTP Basic Auth (username + an
+      // API-token-as-password, generated inside its own UI -- see
+      // apps/core/alloy/uptime-kuma-secret.yaml) -- can't share the generic
+      // pod-annotation pod_metrics scrape above, since a single
+      // prometheus.scrape block applies one auth config to every target in
+      // it. OpenCost needs no such carve-out: its pod carries plain
+      // prometheus.io/scrape annotations (apps/core/opencost/values.yaml)
+      // and rides the existing pod_metrics pipeline above for free.
+      local.file "uptime_kuma_username" {
+        filename  = "/var/run/secrets/uptime-kuma/username"
+        is_secret = true
+      }
+
+      local.file "uptime_kuma_api_key" {
+        filename  = "/var/run/secrets/uptime-kuma/api-key"
+        is_secret = true
+      }
+
+      discovery.kubernetes "uptime_kuma" {
+        role = "endpoints"
+        namespaces {
+          names = ["uptime-kuma"]
+        }
+      }
+
+      prometheus.scrape "uptime_kuma" {
+        targets    = discovery.kubernetes.uptime_kuma.targets
+        forward_to = [prometheus.remote_write.default.receiver]
+        basic_auth {
+          username = local.file.uptime_kuma_username.content
+          password = local.file.uptime_kuma_api_key.content
+        }
       }
 
       // kubelet + cadvisor: proxied through the API server per node. insecure_skip_verify

@@ -1,0 +1,92 @@
+---
+# Hand-written, no Helm chart -- see docs/adrs/0008-openobserve-for-logs.md
+# for why: the official chart is HA-only (Postgres + external object store
+# mandatory), this runs the product's own single-binary local-disk mode
+# instead, the same shape as Loki's prior SingleBinary deployment.
+#
+# runAsUser/runAsGroup/fsGroup (10000/3000/2000) match the official Helm
+# chart's own podSecurityContext defaults for this exact image family --
+# not guessed, taken from `helm show values openobserve/openobserve`, since
+# that's the one place upstream states what UID this binary expects to run
+# as.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openobserve
+  namespace: openobserve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openobserve
+  template:
+    metadata:
+      labels:
+        app: openobserve
+      annotations:
+        # Picked up by Alloy's generic pod_metrics scrape
+        # (apps/core/alloy/values.yaml) -- backs the OpenObserveTargetDown
+        # vmalert rule.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5080"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10000
+        runAsGroup: 3000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: openobserve
+          image: openobserve/openobserve:v1.0.3
+          ports:
+            - name: http
+              containerPort: 5080
+          env:
+            - name: ZO_LOCAL_MODE
+              value: "true"
+            - name: ZO_DATA_DIR
+              value: /data
+            - name: ZO_PROMETHEUS_ENABLE
+              value: "true"
+          envFrom:
+            - secretRef:
+                name: openobserve-root
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        # No dynamic StorageClass on this cluster -- same ephemeral-storage
+        # tradeoff already accepted for Loki/VictoriaMetrics (log history
+        # lost on pod restart).
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

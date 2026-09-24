@@ -1,0 +1,25 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: uptime-kuma
+
+resources:
+  - namespace.yaml
+  - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
+  - httproute.yaml
+
+helmCharts:
+  - name: uptime-kuma
+    repo: https://dirsigler.github.io/uptime-kuma-helm
+    version: 4.2.0
+    releaseName: uptime-kuma
+    namespace: uptime-kuma
+    includeCRDs: false
+    valuesFile: values.yaml
+
+patches:
+  - path: patch-test-hook-image.yaml
+    target:
+      kind: Pod
+      name: uptime-kuma-test-connection

@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted
+Accepted. Log aggregation row superseded by
+[ADR 0008](0008-openobserve-for-logs.md) -- Loki replaced by OpenObserve.
+Everything else in this ADR (VictoriaMetrics, vmalert, Alertmanager, Alloy,
+Grafana) is unchanged.
 
 ## Context
 

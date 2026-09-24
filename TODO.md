@@ -2,82 +2,171 @@
 
 ## Tools to investigate
 
+Ranked highest-to-lowest fit for this specific setup (single-node Talos
+cluster, GitOps via ArgoCD, personal/single-user use). Items already running
+live, or made redundant by what's already running, have been removed --
+see the note at the top of each affected category.
+
 ### Infrastructure, Networking & Monitoring
 
-- **Authentication & Identity**
-  - [Authentik](https://goauthentik.io/) - Identity provider focused on flexibility and versatility.
-  - [Authelia](https://www.authelia.com/) - The Single Sign-On Multi-Factor portal for web apps.
-  - [PocketID](https://pocketid.com/) - Open source identity provider.
-  - [TinyAuth](https://tinyauth.app/) - Lightweight authentication middleware.
-  - [Traefik OIDC Plugin](https://plugins.traefik.io/plugins/6613338ea28c508f411a44d5/traefik-oidc) - OIDC middleware for Traefik.
-  - [VoidAuth](https://github.com/voidauth/voidauth) - Open source authentication and user management.
-  - [dex](https://dexidp.io/) - Open source identity provider.
-- **Monitoring & Analytics**
-  - [Beszel](https://www.beszel.dev/) - Lightweight server monitoring hub.
-  - [Dozzle](https://dozzle.dev/) - Real-time log viewer for Docker containers.
-  - [Grafana](https://grafana.com/) - Open source analytics & monitoring solution.
-  - [Prometheus](https://prometheus.io/) - Monitoring system and time series database.
-  - [Umami](https://umami.is/) - Simple, fast, privacy-focused alternative to Google Analytics.
-  - [Uptime Kuma](https://github.com/louislam/uptime-kuma) - A fancy self-hosted monitoring tool.
-  - [Zabbix](https://github.com/zabbix/zabbix) - Enterprise-class open source distributed monitoring solution.
-  - [Fluentbit](https://fluentbit.io/) - Lightweight data collector for forward and processing log data.
-  - [Loki](https://grafana.com/loki/) - Open source, horizontally scalable, multi-tenant log aggregation system.
-  - [OpenCost](https://github.com/oleksandr-zhabenko/opencost) - Open source cost management for Kubernetes.
+- **Authentication & Identity** -- solved. [Zitadel](apps/core/zitadel)
+  is live (OIDC SSO for ArgoCD/Grafana + Google Sign-In). Authelia and
+  PocketID were both evaluated and superseded by it this cycle; dropped the
+  rest of the category (Authentik, TinyAuth, Traefik OIDC Plugin, VoidAuth,
+  dex) as redundant with a working solution already in place.
+- **Monitoring & Analytics** -- Grafana, Loki, and Prometheus's role
+  (via VictoriaMetrics) are already live under `apps/core/monitoring` /
+  `apps/core/loki`, with Alloy as the sole scraper/shipper. Dropped
+  Prometheus (superseded by VictoriaMetrics) and Fluentbit (superseded by
+  Alloy). Dropped Zabbix -- enterprise-scale distributed monitoring is
+  overkill for one node; Beszel/Uptime Kuma below cover the same ground at
+  the right size.
+  1. [Uptime Kuma](https://github.com/louislam/uptime-kuma) -- simplest
+     addition, external-style up/down + latency checks, common first add-on
+     alongside an existing Grafana/VM stack.
+  2. [Beszel](https://www.beszel.dev/) -- lightweight host-level resource
+     monitoring, low overhead, complements the cluster-level metrics already
+     collected.
+  3. [OpenCost](https://github.com/oleksandr-zhabenko/opencost) -- Kubernetes
+     cost/resource-allocation visibility. No cloud bill to optimize here, but
+     useful for seeing what's actually eating the single node's resources.
+  4. [OpenObserve](https://openobserve.ai/) -- Kibana/OpenSearch-Dashboards-
+     style log search UI (query bar, histogram, field-facet sidebar) in a
+     single lightweight binary, no JVM/cluster overhead. Not a gap-filler --
+     Loki/Grafana Explore already cover log search -- but worth it if that
+     Discover-tab-style UX (field counts, one-click filters) is wanted over
+     LogQL. Would replace Loki, not stack alongside it.
+  5. [Umami](https://umami.is/) -- only relevant if self-hosting a personal
+     site/blog with visitors to track.
+  6. [Dozzle](https://dozzle.dev/) -- quick ad-hoc container log tailing;
+     largely redundant now that Loki/Grafana cover logs, kept for the
+     convenience of a zero-query live view.
 - **Networking & Tunnels**
-  - [Gluetun](https://github.com/qdm12/gluetun) - VPN client in a Docker container for multiple VPN providers.
-  - [OPNsense](https://opnsense.org/) - Open source, easy-to-use firewall and routing platform.
-  - [Pangolin](https://github.com/fosrl/pangolin) - Self-hosted tunneled reverse proxy.
-  - [Tailscale](https://tailscale.com/) - Zero config VPN for building secure networks.
-- **Password Management**
-  - [Passbolt](https://www.passbolt.com/) - Open source password manager for teams.
-  - [Vaultwarden](https://github.com/dani-garcia/vaultwarden) - Unofficial Bitwarden compatible server.
+  1. [Tailscale](https://tailscale.com/) -- highest value-to-effort: mesh VPN
+     for remote access to the homelab without exposing anything publicly.
+  2. [OPNsense](https://opnsense.org/) -- would replace the current
+     FreshTomato router; high value but a hardware/migration project, not a
+     cluster app.
+  3. [Pangolin](https://github.com/fosrl/pangolin) -- self-hosted tunnel for
+     publicly exposing services under your own domain; overlaps partly with
+     what Cilium Gateway API + cert-manager already do for LAN/TLS, only
+     adds value if public (not just LAN) exposure is actually wanted.
+  4. [Gluetun](https://github.com/qdm12/gluetun) -- VPN client container for
+     routing a specific service's traffic through a VPN provider; niche,
+     mainly relevant for download clients.
+- **Password Management** -- dropped
+  [Passbolt](https://www.passbolt.com/): it's a team-collaboration password
+  manager, no fit for a single-user homelab, and Bitwarden Secrets Manager
+  already covers infra-secret needs.
+  1. [Vaultwarden](https://github.com/dani-garcia/vaultwarden) -- self-hosted
+     personal password vault, if moving off Bitwarden's cloud is ever wanted.
 - **Remote Access**
-  - [Rustdesk](https://rustdesk.com/) - Open source virtual / remote desktop infrastructure for everyone.
+  1. [Rustdesk](https://rustdesk.com/) -- self-hosted remote desktop.
 
 ### Productivity & Knowledge Management
 
 - **Finance**
-  - [Actual Budget](https://github.com/actualbudget/actual) - A local-first personal finance system.
-  - [Shkeeper](https://github.com/vsys-host/shkeeper.io) - Self-hosted cryptocurrency payment processor.
-- **Knowledge Base & Notes**
-  - [AFFiNE](https://affine.pro/) - A privacy-first, open-source, knowledge base and project management tool.
-  - [Paperless-ngx](https://docs.paperless-ngx.com/) - Document management system that transforms your physical documents into a searchable online archive.
-  - [Readeck](https://readeck.org/en/) - A self-hosted web clipper and bookmark manager.
-  - [Trilium Notes](https://triliumnotes.org/) - Hierarchical note taking application with focus on building large personal knowledge bases.
+  1. [Actual Budget](https://github.com/actualbudget/actual) -- local-first
+     personal finance, clear direct fit.
+  2. [Shkeeper](https://github.com/vsys-host/shkeeper.io) -- self-hosted
+     crypto payment *processor*; this is a merchant/business tool, not a
+     personal-finance one -- low fit unless there's an actual storefront to
+     run.
+- **Knowledge Base & Notes** -- AFFiNE and Trilium Notes both cover the same
+  personal-notes/knowledge-base niche; no need for both.
+  1. [Paperless-ngx](https://docs.paperless-ngx.com/) -- turns physical
+     documents into a searchable archive, distinct and high-value.
+  2. [Trilium Notes](https://triliumnotes.org/) -- mature, lightweight
+     hierarchical notes app.
+  3. [AFFiNE](https://affine.pro/) -- overlaps with Trilium above (notes +
+     lightweight project management); heavier/newer project, rank below
+     Trilium unless the project-management half is specifically wanted.
+  4. [Readeck](https://readeck.org/en/) -- web clipper/bookmark manager,
+     narrower niche than the above.
 - **Organization & Workflow**
-  - [Baikal](https://sabre.io/baikal/) - Lightweight CalDAV and CardDAV server.
-  - [Kaneo](https://kaneo.app/) - Simple, self-hosted project management platform.
+  1. [Baikal](https://sabre.io/baikal/) -- simple CalDAV/CardDAV sync, solves
+     a concrete recurring need (calendar/contacts).
+  2. [Kaneo](https://kaneo.app/) -- self-hosted project management; nice to
+     have, not essential for personal use.
 - **Travel & Navigation**
-  - [AdventureLog](https://adventurelog.app/) - Adventure log and travel journal.
-  - [OpenTripPlanner](https://www.opentripplanner.org/) - Open source travel planning engine.
+  1. [AdventureLog](https://adventurelog.app/) -- personal travel
+     journal, direct fit.
+  2. [OpenTripPlanner](https://www.opentripplanner.org/) -- heavier
+     infrastructure (needs GTFS/OSM data feeds), niche unless trip-planning
+     is a recurring itch.
 
 ### Smart Home & Automation
 
-- [Frigate](https://docs.frigate.video/configuration/pwa/) - NVR with real-time local object detection for IP cameras.
-- [Home Assistant](https://www.home-assistant.io/) - Open source home automation that puts local control and privacy first.
-- [Node-RED](https://nodered.org/) - Programming tool for wiring together hardware devices, APIs and online services.
+Complementary, not competing -- typically deployed together.
+
+1. [Home Assistant](https://www.home-assistant.io/) -- central hub, deploy
+   first.
+2. [Frigate](https://docs.frigate.video/configuration/pwa/) -- NVR/object
+   detection, only relevant once IP cameras are in play.
+3. [Node-RED](https://nodered.org/) -- automation glue, most useful once
+   Home Assistant already has entities to wire up.
 
 ### Home & Inventory
 
-- [Binner](https://binner.io/) - Electronic parts inventory management system.
-- [Homebox](https://homebox.software/en/) - Inventory and organization system for your home.
-- [Mealie](https://mealie.io/) - Self-hosted recipe manager and meal planner.
+1. [Homebox](https://homebox.software/en/) -- general home inventory,
+   broadest fit.
+2. [Mealie](https://mealie.io/) -- recipe manager/meal planner.
+3. [Binner](https://binner.io/) -- electronic parts inventory; niche unless
+   doing serious electronics work.
 
 ### AI & Machine Learning
 
-- [Ollama](https://ollama.com/) - Get up and running with large language models.
-- [nyno](https://github.com/empowerd-cms/nyno) - Workflow automation tool.
-- [n8n](https://n8n.io) - Workflow automation tool.
-- [MangaTranslator](https://github.com/meangrinch/MangaTranslator) - Translate manga.
+Dropped [nyno](https://github.com/empowerd-cms/nyno) -- niche, young project
+(~300 GitHub stars as of Jan 2026), narrowly focused on YAML-defined
+"EU-AI-compliant" AI workflows. Directly overlaps with n8n's niche but with a
+tiny fraction of the maturity, integrations, and community.
+
+Workflow-automation tools researched, ranked by fit for a single-admin,
+GitOps-run homelab already running many self-hosted apps to wire together
+(Home Assistant, Immich, Grafana alerts, Paperless-ngx, etc.):
+
+1. [n8n](https://n8n.io) -- most mature option, by far the largest
+   integration/community-node library, which matters most here: the value of
+   a workflow tool in this setup is gluing together the *other* apps in this
+   list. License is "fair-code" (Sustainable Use License) -- free for
+   internal/personal self-hosting, only restricted for reselling n8n itself
+   as a hosted service, which doesn't apply here.
+2. [Activepieces](https://www.activepieces.com/) -- closest functional
+   alternative to n8n, genuinely MIT-licensed (no fair-code caveat), 200+
+   integrations, actively growing fast through 2025-2026. Worth a look if
+   n8n's license terms ever actually matter, or its Zapier-like UI is
+   preferred.
+3. [Windmill](https://www.windmill.dev/) -- code-first (write real
+   Python/TypeScript/Bash instead of wiring nodes), AGPLv3. Fits this user's
+   existing IaC/scripting-heavy workflow better than a node canvas, at the
+   cost of a smaller integrations library than n8n/Activepieces.
+4. [Kestra](https://kestra.io/) -- Airflow-style data/infra orchestration
+   (Apache 2.0, large and fast-growing community). Overkill for typical
+   homelab automation (reminders, webhooks, notifications); only worth it if
+   workflows grow into real scheduled data pipelines.
+5. [Huginn](https://github.com/huginn/huginn) -- the original self-hosted
+   automation tool (Ruby, agent-based), predates n8n by years. Smaller
+   community and integration set than the above now; mainly of interest for
+   its low resource footprint.
+
+- [Ollama](https://ollama.com/) -- local LLM runtime; foundational, enables
+  AI features in other self-hosted tools (including as an n8n/Activepieces/
+  Windmill node for local-model workflow steps).
+- [MangaTranslator](https://github.com/meangrinch/MangaTranslator) -- niche
+  personal-use tool, unrelated to the automation tools above.
 
 ### Media
 
-- [Immich](https://immich.app/) - Self-hosted photo and video gallery.
-- [PhotoPrism](https://www.photoprism.org/) - Self-hosted photo management system.
+Dropped [PhotoPrism](https://www.photoprism.org/) -- directly redundant with
+Immich below (same self-hosted photo-management niche); Immich is more
+actively developed and has the stronger mobile/backup story.
+
+1. [Immich](https://immich.app/) -- self-hosted photo and video gallery.
 
 ## Hardware to investigate
 
-- coral tpu
+- coral tpu -- pairs with Frigate above (hardware-accelerates its object
+  detection); only worth acquiring once/if Frigate is actually deployed.
 
 ## Resources
 

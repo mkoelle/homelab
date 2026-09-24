@@ -14,6 +14,15 @@ sidecar:
     enabled: true
   datasources:
     enabled: true
+# Loki datasource removed -- see docs/adrs/0008-openobserve-for-logs.md.
+# OpenObserve's Grafana plugin isn't published on grafana.com's catalog
+# (confirmed via the grafana.com plugin API), only installable as an
+# unsigned plugin (GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS). Deliberately
+# not doing that: Grafana keeps VictoriaMetrics for metrics/alerts, log
+# search happens in OpenObserve's own UI directly
+# (https://openobserve.motherbox.local) -- which was the whole reason it
+# was picked over Loki in the first place (its native Kibana-like Discover
+# view), so this isn't a capability loss.
 datasources:
   datasources.yaml:
     apiVersion: 1
@@ -23,10 +32,6 @@ datasources:
         access: proxy
         url: http://vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428
         isDefault: true
-      - name: Loki
-        type: loki
-        access: proxy
-        url: http://loki.loki.svc.cluster.local:3100
 resources:
   requests:
     memory: "128Mi"

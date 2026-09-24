@@ -65,14 +65,24 @@ spec:
             namespace: monitoring
             wave: "3"
 
-          - name: loki
-            path: apps/core/loki
-            namespace: loki
+          - name: openobserve
+            path: apps/core/openobserve
+            namespace: openobserve
             wave: "3"
 
           - name: alloy
             path: apps/core/alloy
             namespace: alloy
+            wave: "3"
+
+          - name: uptime-kuma
+            path: apps/core/uptime-kuma
+            namespace: uptime-kuma
+            wave: "3"
+
+          - name: opencost
+            path: apps/core/opencost
+            namespace: opencost
             wave: "3"
 
           # Wave 4 — User workloads

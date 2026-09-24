@@ -6,6 +6,8 @@ namespace: alloy
 resources:
   - namespace.yaml
   - rbac.yaml
+  - openobserve-secret.yaml
+  - uptime-kuma-secret.yaml
 
 helmCharts:
   - name: alloy

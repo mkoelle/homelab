@@ -1,0 +1,26 @@
+---
+# Chart's own Helm test hook (helm.sh/hook: test, never runs during a
+# normal ArgoCD sync) pins no tag on its busybox image -- trips
+# kube-linter's latest-tag check. Pinning it here rather than disabling
+# the check; kept as a real Pod (harmless, PostSync-hook-equivalent, only
+# fires on `helm test`) per the same reasoning apps/core/zitadel/
+# patch-chart-jobs.yaml documents for genuine lifecycle-only hooks.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: uptime-kuma-test-connection
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: wget
+      image: busybox:1.36.1
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
