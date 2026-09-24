@@ -50,4 +50,8 @@ opencost:
       capabilities:
         drop: ["ALL"]
       runAsNonRoot: true
-      runAsUser: 1000
+      # 1001, not 1000 -- the image's own baked-in user, confirmed live via
+      # `podman inspect`/`id`: it owns /var/www, which the container's
+      # startup script sed-rewrites (BASE_URL injection). Any other UID hits
+      # "Permission denied" on that write -- confirmed live too.
+      runAsUser: 1001
