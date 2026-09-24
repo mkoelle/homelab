@@ -10,7 +10,7 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
-    targetRevision: HEAD
+    targetRevision: feat/expose-hubble-alloy-opencost-sso
     path: apps/.argocd
   destination:
     server: https://kubernetes.default.svc
