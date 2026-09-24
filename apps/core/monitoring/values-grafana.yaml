@@ -66,6 +66,14 @@ env:
   GF_AUTH_GENERIC_OAUTH_API_URL: "https://id.hl.mkoelle.com/oidc/v1/userinfo"
   GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
   GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+  # No role_attribute_path claim mapping from Zitadel -- with none set,
+  # newly-provisioned OIDC users get GF_USERS_AUTO_ASSIGN_ORG_ROLE's value
+  # (Grafana's own default there is "Viewer", which hides Explore/
+  # Administration entirely -- confirmed live). Single-admin homelab, one
+  # real Zitadel user: Admin for everyone who can log in at all is the
+  # correct trust model here, matching every other single-user app in this
+  # repo, not a broad grant.
+  GF_USERS_AUTO_ASSIGN_ORG_ROLE: "Admin"
 envValueFrom:
   GF_AUTH_GENERIC_OAUTH_CLIENT_ID:
     secretKeyRef:
