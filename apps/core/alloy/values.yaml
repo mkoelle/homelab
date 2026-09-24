@@ -223,15 +223,6 @@ alloy:
           source_labels = ["__meta_kubernetes_endpoint_port_name"]
           regex         = "probes"
         }
-        // Trivy Operator's endpoint discovery still exposes its probe listener
-        // as a target on some EndpointSlice revisions. Its Service is metrics-
-        // only, so explicitly drop that service's 9090 target as well.
-        rule {
-          action        = "drop"
-          source_labels = ["__meta_kubernetes_service_name", "__address__"]
-          separator     = ";"
-          regex         = "trivy-operator;.+:9090"
-        }
         rule {
           source_labels = ["__meta_kubernetes_namespace"]
           target_label  = "namespace"
@@ -244,6 +235,40 @@ alloy:
 
       prometheus.scrape "service_metrics" {
         targets    = discovery.relabel.service_metrics.output
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // Trivy Operator is scraped explicitly instead of using its Service
+      // annotation: its probe port is also visible to generic endpoint
+      // discovery, while only the named metrics endpoint should be scraped.
+      discovery.kubernetes "trivy_operator_metrics" {
+        role = "endpoints"
+        namespaces {
+          names = ["trivy-operator"]
+        }
+      }
+
+      discovery.relabel "trivy_operator_metrics" {
+        targets = discovery.kubernetes.trivy_operator_metrics.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_service_name", "__meta_kubernetes_endpoint_port_name"]
+          separator     = ";"
+          regex         = "trivy-operator;metrics"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_service_name"]
+          target_label  = "service"
+        }
+      }
+
+      prometheus.scrape "trivy_operator_metrics" {
+        targets    = discovery.relabel.trivy_operator_metrics.output
         forward_to = [prometheus.remote_write.default.receiver]
       }
 

@@ -30,10 +30,6 @@ operator:
   configAuditScannerScanOnlyCurrentRevisions: true
   vulnerabilityScannerScanOnlyCurrentRevisions: true
 
-service:
-  annotations:
-    prometheus.io/scrape: "true"
-
 # The chart defaults already use a restricted container securityContext for
 # scanner Jobs. Add the restricted Pod defaults (seccomp/non-root) explicitly.
 trivyOperator:
