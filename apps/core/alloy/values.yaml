@@ -216,6 +216,13 @@ alloy:
           source_labels = ["__meta_kubernetes_service_name"]
           regex         = "hubble-metrics"
         }
+        // Health probes are not metrics endpoints (e.g. Trivy Operator
+        // exposes both `metrics` and `probes` ports on its Service).
+        rule {
+          action        = "drop"
+          source_labels = ["__meta_kubernetes_endpoint_port_name"]
+          regex         = "probes"
+        }
         rule {
           source_labels = ["__meta_kubernetes_namespace"]
           target_label  = "namespace"
