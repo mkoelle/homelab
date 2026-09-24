@@ -223,6 +223,15 @@ alloy:
           source_labels = ["__meta_kubernetes_endpoint_port_name"]
           regex         = "probes"
         }
+        // Trivy Operator's endpoint discovery still exposes its probe listener
+        // as a target on some EndpointSlice revisions. Its Service is metrics-
+        // only, so explicitly drop that service's 9090 target as well.
+        rule {
+          action        = "drop"
+          source_labels = ["__meta_kubernetes_service_name", "__address__"]
+          separator     = ";"
+          regex         = "trivy-operator;.+:9090"
+        }
         rule {
           source_labels = ["__meta_kubernetes_namespace"]
           target_label  = "namespace"
