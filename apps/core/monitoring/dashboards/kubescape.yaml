@@ -48,9 +48,9 @@ data:
           "gridPos": {"h": 9, "w": 24, "x": 0, "y": 8},
           "id": 3,
           "targets": [
-            {"expr": "sum by (namespace) (kubescape_controls_total_namespace_critical)", "legendFormat": "{{namespace}} critical", "refId": "A"},
-            {"expr": "sum by (namespace) (kubescape_controls_total_namespace_high)", "legendFormat": "{{namespace}} high", "refId": "B"},
-            {"expr": "sum by (namespace) (kubescape_controls_total_namespace_medium)", "legendFormat": "{{namespace}} medium", "refId": "C"}
+            {"expr": "sum by (exported_namespace) (kubescape_controls_total_namespace_critical)", "legendFormat": "{{exported_namespace}} critical", "refId": "A"},
+            {"expr": "sum by (exported_namespace) (kubescape_controls_total_namespace_high)", "legendFormat": "{{exported_namespace}} high", "refId": "B"},
+            {"expr": "sum by (exported_namespace) (kubescape_controls_total_namespace_medium)", "legendFormat": "{{exported_namespace}} medium", "refId": "C"}
           ],
           "title": "Workload posture findings by namespace",
           "type": "timeseries"

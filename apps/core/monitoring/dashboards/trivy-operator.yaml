@@ -19,7 +19,7 @@ data:
           "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
           "id": 1,
           "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
-          "targets": [{"expr": "sum(max by (namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{severity=\"Critical\", namespace=~\"$namespace\"}))", "instant": true, "refId": "A"}],
+          "targets": [{"expr": "sum(max by (exported_namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{severity=\"Critical\", exported_namespace=~\"$namespace\"}))", "instant": true, "refId": "A"}],
           "title": "Critical image vulnerabilities",
           "type": "stat"
         },
@@ -29,7 +29,7 @@ data:
           "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
           "id": 2,
           "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
-          "targets": [{"expr": "sum(max by (namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{severity=\"High\", namespace=~\"$namespace\"}))", "instant": true, "refId": "A"}],
+          "targets": [{"expr": "sum(max by (exported_namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{severity=\"High\", exported_namespace=~\"$namespace\"}))", "instant": true, "refId": "A"}],
           "title": "High image vulnerabilities",
           "type": "stat"
         },
@@ -38,7 +38,7 @@ data:
           "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "short"}, "overrides": []},
           "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
           "id": 3,
-          "targets": [{"expr": "sum(max by (severity, namespace, image_registry, image_repository, image_tag) (trivy_image_vulnerabilities{namespace=~\"$namespace\"})) by (severity)", "legendFormat": "{{severity}}", "refId": "A"}],
+          "targets": [{"expr": "sum(max by (severity, exported_namespace, image_registry, image_repository, image_tag) (trivy_image_vulnerabilities{exported_namespace=~\"$namespace\"})) by (severity)", "legendFormat": "{{severity}}", "refId": "A"}],
           "title": "Image vulnerabilities by severity",
           "type": "timeseries"
         },
@@ -48,7 +48,7 @@ data:
           "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
           "id": 4,
           "options": {"showHeader": true, "sortBy": []},
-          "targets": [{"expr": "sum(max by (namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{namespace=~\"$namespace\"})) by (namespace, image_registry, image_repository, image_tag, severity)", "format": "table", "instant": true, "refId": "A"}],
+          "targets": [{"expr": "sum(max by (exported_namespace, image_registry, image_repository, image_tag, severity) (trivy_image_vulnerabilities{exported_namespace=~\"$namespace\"})) by (exported_namespace, image_registry, image_repository, image_tag, severity)", "format": "table", "instant": true, "refId": "A"}],
           "title": "Vulnerability counts by image",
           "type": "table"
         },
@@ -57,7 +57,7 @@ data:
           "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "short"}, "overrides": []},
           "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18},
           "id": 5,
-          "targets": [{"expr": "sum(trivy_resource_configaudits{namespace=~\"$namespace\"}) by (severity)", "legendFormat": "{{severity}}", "refId": "A"}],
+          "targets": [{"expr": "sum(trivy_resource_configaudits{exported_namespace=~\"$namespace\"}) by (severity)", "legendFormat": "{{severity}}", "refId": "A"}],
           "title": "Config audit findings by severity",
           "type": "timeseries"
         },
@@ -67,14 +67,14 @@ data:
           "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18},
           "id": 6,
           "options": {"showHeader": true, "sortBy": []},
-          "targets": [{"expr": "sum(trivy_resource_configaudits{namespace=~\"$namespace\"}) by (namespace, resource_kind, resource_name, severity)", "format": "table", "instant": true, "refId": "A"}],
+          "targets": [{"expr": "sum(trivy_resource_configaudits{exported_namespace=~\"$namespace\"}) by (exported_namespace, resource_kind, resource_name, severity)", "format": "table", "instant": true, "refId": "A"}],
           "title": "Config audit findings by resource",
           "type": "table"
         }
       ],
       "schemaVersion": 39,
       "tags": ["security", "trivy", "trivy-operator"],
-      "templating": {"list": [{"current": {"selected": true, "text": "VictoriaMetrics", "value": "VictoriaMetrics"}, "label": "Data source", "name": "datasource", "query": "prometheus", "type": "datasource"}, {"allValue": ".*", "current": {"selected": true, "text": "All", "value": "$__all"}, "includeAll": true, "label": "Namespace", "name": "namespace", "query": "label_values(trivy_image_vulnerabilities, namespace)", "type": "query", "datasource": {"type": "prometheus", "uid": "${datasource}"}}]},
+      "templating": {"list": [{"current": {"selected": true, "text": "VictoriaMetrics", "value": "VictoriaMetrics"}, "label": "Data source", "name": "datasource", "query": "prometheus", "type": "datasource"}, {"allValue": ".*", "current": {"selected": true, "text": "All", "value": "$__all"}, "includeAll": true, "label": "Namespace", "name": "namespace", "query": "label_values(trivy_resource_configaudits, exported_namespace)", "type": "query", "datasource": {"type": "prometheus", "uid": "${datasource}"}}]},
       "time": {"from": "now-24h", "to": "now"},
       "title": "Security / Trivy Operator",
       "uid": "homelab-trivy-operator",

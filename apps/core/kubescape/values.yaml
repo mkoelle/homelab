@@ -103,6 +103,7 @@ kubevuln:
 # The chart's Prometheus exporter is the report metrics endpoint. Scrape that
 # pod with Alloy; avoid annotating the separate Kubescape API pod.
 prometheusExporter:
+  enableWorkloadMetrics: true
   podAnnotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "8080"
