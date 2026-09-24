@@ -1,0 +1,41 @@
+config:
+  allowedHosts:
+    - homepage.motherbox.local
+
+# Static services.yaml/settings.yaml (configmap.yaml) -- not using Homepage's
+# k8s service auto-discovery (would need cluster-read RBAC for no real
+# benefit here, this cluster's app list changes rarely).
+rbac:
+  enabled: false
+
+volumes:
+  - name: config
+    configMap:
+      name: homepage-config
+volumeMounts:
+  - name: config
+    mountPath: /app/config/settings.yaml
+    subPath: settings.yaml
+  - name: config
+    mountPath: /app/config/services.yaml
+    subPath: services.yaml
+  - name: config
+    mountPath: /app/config/bookmarks.yaml
+    subPath: bookmarks.yaml
+  - name: config
+    mountPath: /app/config/widgets.yaml
+    subPath: widgets.yaml
+  - name: config
+    mountPath: /app/config/docker.yaml
+    subPath: docker.yaml
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "50m"
+  limits:
+    memory: "512Mi"
+    cpu: "1000m"
+
+# No route.main here -- exposed via oauth2-proxy's own HTTPRoute
+# (oauth2-proxy-values.yaml) instead, same as Hubble UI/Alloy/OpenCost.

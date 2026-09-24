@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: homelab
+    theme: dark
+    color: slate
+    headerStyle: clean
+    hideVersion: true
+  services.yaml: |
+    - Infrastructure:
+        - ArgoCD:
+            href: https://argocd.motherbox.local
+            description: GitOps continuous delivery
+            icon: argo-cd.png
+        - Zitadel:
+            href: https://id.hl.mkoelle.com/ui/console
+            description: SSO / identity provider
+            icon: si-zitadel
+        - Hubble:
+            href: https://hubble.motherbox.local
+            description: Cilium network flow visibility
+            icon: cilium.png
+    - Observability:
+        - Grafana:
+            href: https://grafana.motherbox.local
+            description: Dashboards, logs, alerting
+            icon: grafana.png
+        - Alloy:
+            href: https://alloy.motherbox.local
+            description: Metrics/logs collection pipeline
+            icon: grafana-alloy.png
+        - OpenCost:
+            href: https://opencost.motherbox.local
+            description: Kubernetes cost visibility
+            icon: si-opencost
+        - Uptime Kuma:
+            href: https://uptime-kuma.motherbox.local
+            description: Uptime/latency checks
+            icon: uptime-kuma.png
+    - Files:
+        - Filebrowser:
+            href: https://filebrowser.motherbox.local
+            description: Network file browser
+            icon: filebrowser.png
+  bookmarks.yaml: ""
+  widgets.yaml: ""
+  docker.yaml: ""

@@ -53,6 +53,8 @@ spec:
       namespace: cert-manager
     - server: https://kubernetes.default.svc
       namespace: zitadel
+    - server: https://kubernetes.default.svc
+      namespace: homepage
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
