@@ -125,6 +125,22 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: "{{namespace}}"
+      # `kubectl rollout restart` is an operational trigger used for
+      # security rescans/maintenance. Ignore only its generated Pod-template
+      # timestamp so self-heal does not immediately undo the restart.
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
+        - group: apps
+          kind: StatefulSet
+          jsonPointers:
+            - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
+        - group: apps
+          kind: DaemonSet
+          jsonPointers:
+            - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
       syncPolicy:
         automated:
           # Deliberate deletion-safety default: removed manifests are not
