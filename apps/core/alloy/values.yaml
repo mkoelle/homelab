@@ -4,36 +4,6 @@
 # tailing: no host mount, no privileged securityContext, runs as non-root by default.
 controller:
   type: daemonset
-  extraEnv:
-    # Used by the "keep only this node's pods" relabel rule below — without it,
-    # every Alloy replica would stream every pod's logs cluster-wide (fine on this
-    # single-node cluster today, but wrong the moment a second node joins).
-    - name: NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName
-    # Env var, not a mounted Secret file: Alloy's local.file component fails
-    # its ENTIRE config build (taking down every pipeline, not just this one
-    # target) if the referenced file doesn't exist yet at startup --
-    # confirmed live, a known upstream limitation (grafana/alloy#2601,
-    # #3825). uptime-kuma-secret.yaml's API token can't even be
-    # pre-populated -- it doesn't exist until Uptime Kuma's first login --
-    # so the Secret genuinely won't exist for a while. secretKeyRef.optional
-    # per-key means a missing key/Secret just leaves the env var unset --
-    # sys.env(...) below returns "" for that case rather than failing the
-    # config build.
-    - name: UPTIME_KUMA_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: uptime-kuma-metrics
-          key: username
-          optional: true
-    - name: UPTIME_KUMA_API_KEY
-      valueFrom:
-        secretKeyRef:
-          name: uptime-kuma-metrics
-          key: api-key
-          optional: true
   volumes:
     # readOnlyRootFilesystem: true (below) means Alloy's own default storagePath
     # (/tmp/alloy, used for its remotecfg cache) has nowhere to write --
@@ -67,6 +37,45 @@ configReloader:
       cpu: "100m"
 
 alloy:
+  # extraEnv lives HERE, at top-level alloy:, not under controller: --
+  # controller.extraEnv is silently ignored by this chart (not a real
+  # values key, Helm doesn't error on unknown keys). Confirmed live: this
+  # was broken from the start, NODE_NAME was never actually set on the
+  # container, so the "keep only this node's pods" relabel rule below
+  # matched sys.env("NODE_NAME")="" against every pod's real node name,
+  # dropped 100% of targets, and Loki has been receiving zero log pushes
+  # this entire time -- not a regression from tonight's other changes, a
+  # pre-existing bug this session's live-verification finally caught.
+  extraEnv:
+    # Used by the "keep only this node's pods" relabel rule below — without it,
+    # every Alloy replica would stream every pod's logs cluster-wide (fine on this
+    # single-node cluster today, but wrong the moment a second node joins).
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    # Env var, not a mounted Secret file: Alloy's local.file component fails
+    # its ENTIRE config build (taking down every pipeline, not just this one
+    # target) if the referenced file doesn't exist yet at startup --
+    # confirmed live, a known upstream limitation (grafana/alloy#2601,
+    # #3825). uptime-kuma-secret.yaml's API token can't even be
+    # pre-populated -- it doesn't exist until Uptime Kuma's first login --
+    # so the Secret genuinely won't exist for a while. secretKeyRef.optional
+    # per-key means a missing key/Secret just leaves the env var unset --
+    # sys.env(...) below returns "" for that case rather than failing the
+    # config build.
+    - name: UPTIME_KUMA_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: uptime-kuma-metrics
+          key: username
+          optional: true
+    - name: UPTIME_KUMA_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: uptime-kuma-metrics
+          key: api-key
+          optional: true
   securityContext:
     runAsNonRoot: true
     runAsUser: 473
