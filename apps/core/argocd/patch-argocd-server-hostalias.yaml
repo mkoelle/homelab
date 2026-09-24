@@ -1,0 +1,39 @@
+---
+# Pins argocd-server's resolution of id.hl.mkoelle.com to the Zitadel OIDC
+# relay's static ClusterIP (apps/core/zitadel/oidc-relay.yaml) instead of the
+# Gateway's L2-announced LB VIP that CoreDNS returns to every other in-cluster
+# caller (apps/core/coredns-custom/configmap.yaml). See
+# apps/core/argocd/networkpolicy.yaml's matching egress rule for why: a pod
+# calling the cluster's own Gateway VIP hairpins through Cilium's Gateway API
+# Envoy and gets hard-denied there (confirmed live, not fixable via policy
+# content). hostAliases only affects this Deployment's own DNS resolution --
+# every other caller (Grafana, browsers) is unaffected.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+spec:
+  template:
+    spec:
+      hostAliases:
+        - ip: 10.96.111.111
+          hostnames:
+            - id.hl.mkoelle.com
+      # Trivy's config scan reads this patch file standalone (not the merged
+      # output) and would otherwise flag a missing securityContext here --
+      # same caveat as patch-argocd-server-ca.yaml's own containers block:
+      # this restates what that patch already sets on the merged Deployment,
+      # not a real change.
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: argocd-server
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault

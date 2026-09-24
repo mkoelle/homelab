@@ -33,6 +33,16 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    # OIDC relay (oidc-relay.yaml) -- no blanket same-namespace rule exists
+    # here (unlike zitadel-policy's plain NetworkPolicy, which allows
+    # `from: podSelector: {}`), so the relay needs its own explicit entry.
+    - fromEndpoints:
+        - matchLabels:
+            app: zitadel-oidc-relay
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
   egress:
     # kube-apiserver entity matches post-DNAT regardless of IP/port
     # (kubeProxyReplacement workaround, same as other apps in this repo).

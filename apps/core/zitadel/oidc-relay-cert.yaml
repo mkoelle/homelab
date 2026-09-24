@@ -1,0 +1,20 @@
+---
+# TLS cert for the OIDC relay (oidc-relay.yaml) -- issued separately from
+# gateway's hl-mkoelle-com-tls (apps/core/gateway/hl-mkoelle-com-cert.yaml)
+# because Secrets don't cross namespaces and there's no secret-sync operator
+# in this cluster. DNS-01 via letsencrypt-route53 makes a second cert for the
+# same name free (no per-name validation cost), same reasoning as the
+# gateway cert's own comment.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zitadel-oidc-relay-tls
+  namespace: zitadel
+spec:
+  secretName: zitadel-oidc-relay-tls
+  dnsNames:
+    - id.hl.mkoelle.com
+  issuerRef:
+    name: letsencrypt-route53
+    kind: ClusterIssuer
+    group: cert-manager.io

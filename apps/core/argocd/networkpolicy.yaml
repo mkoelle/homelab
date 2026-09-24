@@ -67,24 +67,35 @@ spec:
       ports:
         - protocol: TCP
           port: 6443
-    # Zitadel OIDC (id.hl.mkoelle.com, resolved via the Gateway's L2-announced
-    # LB IP) -- the "External HTTPS" rule below deliberately excludes all of
-    # 192.168.0.0/16 (so that public-internet rule can't also reach internal
-    # LAN infra), so this needs its own narrow carve-out. From a pod's
-    # perspective 192.168.1.200 isn't a cluster-internal identity at all --
-    # Cilium classifies it reserved:world (same as any other LAN IP) -- so it
-    # fell outside every existing allow rule. Confirmed live via
-    # `hubble observe --verdict DROPPED`: ArgoCD's OIDC discovery call was
-    # being dropped exactly because of this exclusion. Never caught until now
-    # because this was the first real ArgoCD-Zitadel SSO login attempt since
-    # #44 -- monitoring's namespace has no egress restriction at all
-    # (ingress-only policy), so Grafana's identical OIDC flow never hit it.
+    # Zitadel OIDC via the Gateway VIP (192.168.1.200) -- kept as real hygiene
+    # (closes a genuine gap: that IP is reserved:world from a pod's
+    # perspective, not a cluster-internal identity, so it fell outside every
+    # other allow rule) but NOT what argocd-server's own OIDC calls actually
+    # use -- see the oidc-relay rule below for why.
     - to:
         - ipBlock:
             cidr: 192.168.1.200/32
       ports:
         - protocol: TCP
           port: 443
+    # Zitadel OIDC relay (apps/core/zitadel/oidc-relay.yaml) -- argocd-server
+    # is hostAliases-pinned (patch-argocd-server-hostalias.yaml) to reach
+    # id.hl.mkoelle.com via this relay's static ClusterIP instead of the
+    # Gateway VIP above. Extensive live investigation (Hubble, policy
+    # isolation, cilium-envoy/cilium-agent restarts) found that a pod calling
+    # the cluster's own Gateway-announced LB VIP hairpins through Cilium's
+    # Gateway API Envoy and gets its source identity mislabeled as
+    # reserved:ingress before the L7 policy check, which then hard-denies it
+    # -- reproduced deterministically for core-argocd specifically, not fixable
+    # via any NetworkPolicy/CiliumNetworkPolicy content tried. The relay
+    # sidesteps the Gateway/Envoy path entirely instead of chasing that
+    # further -- see oidc-relay.yaml's own comment for the full writeup.
+    - to:
+        - ipBlock:
+            cidr: 10.96.111.111/32
+      ports:
+        - protocol: TCP
+          port: 8443
     # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
     - to:
         - ipBlock:
