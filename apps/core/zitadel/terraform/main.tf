@@ -154,6 +154,16 @@ resource "kubernetes_secret" "argocd_oidc" {
   metadata {
     name      = "zitadel-argocd-oidc-secret"
     namespace = "core-argocd"
+    # ArgoCD's $<secret-name>:<key> substitution in argocd-cm only resolves
+    # against Secrets its own informer watches, which uses this label
+    # selector -- confirmed live (both clientID and clientSecret silently
+    # passed through as the literal unresolved `$secret:key` string without
+    # it, which is why clientID ended up hardcoded in argocd-cm.yaml instead
+    # -- with this label, the $secret:key form works and clientSecret can
+    # use it as originally intended).
+    labels = {
+      "app.kubernetes.io/part-of" = "argocd"
+    }
   }
   data = {
     clientId     = zitadel_application_oidc.argocd.client_id
