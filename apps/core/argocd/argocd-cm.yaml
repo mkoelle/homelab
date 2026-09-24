@@ -13,17 +13,21 @@ data:
   # namespace (no Bitwarden round-trip, no risk of the two sides
   # disagreeing). ArgoCD resolves $<secret-name>:<key> references from any
   # Secret in this namespace at runtime, does not need it inline here.
-  # clientID via the same indirection is unavoidable here (Zitadel generates
-  # it server-side too, unlike Authelia's literal 'argocd' string) --
-  # ArgoCD's docs describe $secret:key substitution generically across
-  # argocd-cm values, not just clientSecret specifically, but this hasn't
-  # been confirmed live yet. If clientID doesn't resolve, fall back to a
-  # kustomize replacement patching the literal ID in after `terraform apply`
-  # (see main.tf's client_id output).
+  #
+  # clientID is hardcoded (not $secret:key) -- confirmed live that ArgoCD's
+  # $secret:key substitution does NOT resolve for clientID specifically (it
+  # left the literal `$zitadel-argocd-oidc-secret:clientId` string in the
+  # outgoing /oauth/v2/authorize redirect, which Zitadel would reject as an
+  # unknown client). This is the documented fallback this comment used to
+  # describe as a contingency. A client_id is a public identifier, not
+  # secret material, so committing it is fine -- unlike client_secret, which
+  # stays in the Secret. Re-pull via `kubectl get secret
+  # zitadel-argocd-oidc-secret -n core-argocd -o jsonpath='{.data.clientId}'
+  # | base64 -d` if Terraform ever regenerates the Zitadel application.
   oidc.config: |
     name: Zitadel
     issuer: https://id.hl.mkoelle.com
-    clientID: $zitadel-argocd-oidc-secret:clientId
+    clientID: "392071902518050850"
     clientSecret: $zitadel-argocd-oidc-secret:clientSecret
     requestedScopes: ["openid", "profile", "email", "groups"]
   # Exclude API groups not managed by this cluster's GitOps manifests.
