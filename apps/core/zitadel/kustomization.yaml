@@ -4,8 +4,7 @@ kind: Kustomization
 # No top-level namespace transformer: several resources set their own
 # metadata.namespace explicitly (volume-init-job.yaml -> kube-system,
 # route53-dns01-secret.yaml -> cert-manager, terraform/rbac.yaml's
-# cross-namespace Roles -> core-argocd/monitoring), same reasoning as
-# apps/core/authelia/kustomization.yaml. helmCharts below sets its own
+# cross-namespace Roles -> core-argocd/monitoring). helmCharts below sets its own
 # namespace: field.
 
 resources:

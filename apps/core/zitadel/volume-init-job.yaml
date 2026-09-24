@@ -1,6 +1,6 @@
 ---
-# One-time host-directory creation for volume.yaml's `local` PV -- same
-# pattern as apps/core/authelia/volume-init-job.yaml.
+# Create the host directory for volume.yaml's `local` PV before Postgres
+# starts; local PVs cannot create their backing paths themselves.
 apiVersion: batch/v1
 kind: Job
 metadata:

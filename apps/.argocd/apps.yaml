@@ -113,6 +113,9 @@ spec:
         namespace: "{{namespace}}"
       syncPolicy:
         automated:
+          # Deliberate deletion-safety default: removed manifests are not
+          # pruned automatically. Retiring an app/resource requires an
+          # explicit cleanup; see docs/planning/plan.md.
           prune: false
           selfHeal: true
         syncOptions:

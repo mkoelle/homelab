@@ -9,7 +9,7 @@ spec:
   ingress:
     # Gateway API proxy: Envoy-forwarded traffic carries the reserved
     # "ingress" identity, not a namespace-based pod identity (same pattern as
-    # apps/core/authelia/cilium-networkpolicy.yaml). Port 3000 is the Login
+    # other Gateway-backed app policies). Port 3000 is the Login
     # UI (zitadel-login, see httproute via values.yaml's login.gateway.
     # httpRoute) -- without it, Envoy's traffic to that backend is silently
     # dropped and the Gateway returns 503, even though the pod itself is

@@ -71,6 +71,13 @@ export TALOSCONFIG=$(pwd)/talosconfig
 
 **Post-gen required edits.** Talos 1.14 auto-appends two documents that conflict with this repo's patched config, and there's one default value `patch.yaml` cannot override (see below). All three must be fixed by hand after every `gen config` run — `apply-config` will reject the config, or silently keep an unwanted default, otherwise.
 
+The generated config also contains Talos's default `KubeAuditPolicyConfig`
+(Metadata for all resources). Keep the `KubeAuditPolicyConfig` in `patch.yaml`
+when generating or updating the live config: it adds `RequestResponse` logging
+for Secrets before the Metadata fallback. Without that patch, audit logs record
+Secret reads but not their returned contents. The live `controlplane.yaml` is
+gitignored, so the tracked patch is the reproducible source for this policy.
+
 > ⚠️ **Do not delete "from this document to EOF".** Neither appended document is guaranteed to be last — on Talos 1.14, `UnattendedInstallConfig` is *not* the last document, and deleting to EOF silently destroys every `Kube*Config` document after it (including `KubeClusterConfig`, `KubeNodeConfig`, `KubeletConfig` — the ones that make kubelet start at all). Always delete only from the document's own `---` separator to the *next* `---`, never to EOF. This exact mistake cost a multi-hour bootstrap incident on 2026-09-21.
 
 ```bash
