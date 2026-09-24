@@ -13,6 +13,9 @@ resources:
   - dashboards/kubernetes-cluster.yaml
   - dashboards/argocd.yaml
   - dashboards/cilium.yaml
+  - dashboards/opencost-overview.yaml
+  - dashboards/opencost-workload.yaml
+  - dashboards/uptime-kuma.yaml
 
 helmCharts:
   - name: victoria-metrics-single

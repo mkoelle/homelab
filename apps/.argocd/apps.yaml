@@ -75,6 +75,16 @@ spec:
             namespace: alloy
             wave: "3"
 
+          - name: uptime-kuma
+            path: apps/core/uptime-kuma
+            namespace: uptime-kuma
+            wave: "3"
+
+          - name: opencost
+            path: apps/core/opencost
+            namespace: opencost
+            wave: "3"
+
           # Wave 4 — User workloads
           - name: filebrowser
             path: apps/media/filebrowser
@@ -91,7 +101,8 @@ spec:
       project: homelab
       source:
         repoURL: https://github.com/mkoelle/homelab
-        targetRevision: HEAD
+        # TEMPORARY: see root-application.yaml's matching note.
+        targetRevision: feat/monitoring-analytics-expansion
         path: "{{path}}"
       destination:
         server: https://kubernetes.default.svc

@@ -1,0 +1,57 @@
+---
+# Alloy's generic pod-annotation discovery (apps/core/alloy/values.yaml's
+# pod_metrics scrape) picks this up automatically -- no per-app Alloy
+# config needed, unlike Uptime Kuma which needs its own dedicated scrape
+# block for auth.
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9003"
+
+# Chart defaults every securityContext to `{}` -- doesn't satisfy this
+# namespace's pod-security.kubernetes.io/enforce: restricted label
+# (namespace.yaml). Two containers in one pod (opencost + opencost-ui, an
+# nginx sidecar), each needs its own securityContext key.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+opencost:
+  # Chart defaults to a nonexistent prometheus-server.prometheus-system --
+  # this cluster's metrics store is VictoriaMetrics (apps/core/monitoring),
+  # which speaks the same Prometheus query API on the same Service other
+  # consumers (Grafana's datasource, vmalert) already use successfully.
+  prometheus:
+    internal:
+      enabled: true
+      serviceName: vmsingle-victoria-metrics-single-server
+      namespaceName: monitoring
+      port: 8428
+  exporter:
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      runAsUser: 1000
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+  ui:
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      # 1001, not 1000 -- the image's own baked-in user, confirmed live via
+      # `podman inspect`/`id`: it owns /var/www, which the container's
+      # startup script sed-rewrites (BASE_URL injection). Any other UID hits
+      # "Permission denied" on that write -- confirmed live too.
+      runAsUser: 1001

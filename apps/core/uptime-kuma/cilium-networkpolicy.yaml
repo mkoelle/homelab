@@ -1,0 +1,20 @@
+---
+# Gateway API traffic (its UI, see httproute.yaml) is forwarded by Cilium's
+# Envoy under the reserved "ingress" identity, not the "gateway" namespace's
+# own pod identity (Envoy runs host-networked in kube-system) -- same
+# finding as apps/core/monitoring/cilium-networkpolicy.yaml, a plain
+# NetworkPolicy namespaceSelector rule can't match it.
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: uptime-kuma-gateway
+  namespace: uptime-kuma
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEntities:
+        - "ingress"
+      toPorts:
+        - ports:
+            - port: "3001"
+              protocol: TCP

@@ -89,6 +89,25 @@ server:
                 severity: critical
               annotations:
                 summary: "Probe failed: {{ $labels.instance }} ({{ $labels.job }}) unreachable via the real Gateway path for 5m"
+            # Monitoring & Analytics expansion (Uptime Kuma, OpenCost) --
+            # up{} is the standard Prometheus/VictoriaMetrics
+            # scrape-health metric, 1 if the last scrape succeeded, so these
+            # cover "component silently stopped responding" the same way the
+            # existing alerts cover pod crashes/node pressure.
+            - alert: UptimeKumaTargetDown
+              expr: up{job="prometheus.scrape.uptime_kuma"} == 0
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: "Uptime Kuma metrics target down for 5m -- uptime/latency checks may be silently not running"
+            - alert: OpenCostTargetDown
+              expr: up{job="prometheus.scrape.pod_metrics", namespace="opencost"} == 0
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "OpenCost metrics target down for 10m -- cost data stale or missing"
 
 # Alerts are visible in the Alertmanager/Grafana UI only — no receivers wired yet
 # (default "devnull" receiver). Slack/notification routing is Phase 5, see plan.md.

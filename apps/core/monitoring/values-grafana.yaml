@@ -14,6 +14,17 @@ sidecar:
     enabled: true
   datasources:
     enabled: true
+# Grafana Logs Drilldown (grafana-lokiexplore-app) -- queryless, field/
+# pattern-filterable log browsing on top of Loki, an official Grafana Labs
+# plugin (on the catalog, unlike OpenObserve's -- no unsigned-plugin
+# tradeoff). Gets the Kibana/OpenSearch-Dashboards-style Discover-tab
+# experience without leaving Grafana, so it inherits Zitadel SSO for free --
+# the reason OpenObserve got tried and dropped: its OSS edition has no SSO
+# at all (Enterprise/Cloud only), and its plugin wasn't installable cleanly
+# anyway. Needs Grafana >=11.6.0 and Loki >=3.2 -- this repo runs 12.3.1 and
+# 3.6.12 (chart appVersions), comfortably past both.
+plugins:
+  - grafana-lokiexplore-app
 datasources:
   datasources.yaml:
     apiVersion: 1
@@ -55,6 +66,17 @@ env:
   GF_AUTH_GENERIC_OAUTH_API_URL: "https://id.hl.mkoelle.com/oidc/v1/userinfo"
   GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
   GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+  # auto_assign_org_role only sets the role at first-ever creation; every
+  # subsequent OIDC login re-syncs the org role from role_attribute_path
+  # instead, and Grafana outright refuses manual role edits (API/UI) on an
+  # "externally synced" OAuth user -- confirmed live ("cannot change role
+  # for externally synced user", 403). role_attribute_path is a JMESPath
+  # expression evaluated against the userinfo response; a quoted literal
+  # ('Admin') always evaluates to that constant regardless of claims --
+  # the sanctioned way to pin a role when there's no real per-user claim to
+  # map (single-admin homelab, one real Zitadel user).
+  GF_USERS_AUTO_ASSIGN_ORG_ROLE: "Admin"
+  GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "'Admin'"
 envValueFrom:
   GF_AUTH_GENERIC_OAUTH_CLIENT_ID:
     secretKeyRef:
