@@ -10,12 +10,7 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
-    # TEMPORARY: root is self-managing -- revert to HEAD together with
-    # apps.yaml and cilium-application.yaml, but not until this branch is
-    # merged (reverting first caused ArgoCD to self-heal against unmerged
-    # main and destroy live resources -- see feat/zitadel-google-login-policy
-    # history for exactly why).
-    targetRevision: feat/monitoring-analytics-expansion
+    targetRevision: HEAD
     path: apps/.argocd
   destination:
     server: https://kubernetes.default.svc

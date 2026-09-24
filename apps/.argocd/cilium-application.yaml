@@ -27,8 +27,7 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/mkoelle/homelab
-    # TEMPORARY: see root-application.yaml's matching note.
-    targetRevision: feat/monitoring-analytics-expansion
+    targetRevision: HEAD
     path: apps/core/cilium
   destination:
     server: https://kubernetes.default.svc
