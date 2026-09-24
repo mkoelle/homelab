@@ -51,8 +51,14 @@ spec:
             - name: ZO_PROMETHEUS_ENABLE
               value: "true"
           envFrom:
+            # optional: true -- same placeholder-UUID reasoning as
+            # apps/core/alloy/values.yaml's mounts. Without real root
+            # credentials OpenObserve just falls back to prompting for
+            # first-time root-user setup through its own UI instead of
+            # having it pre-seeded -- degraded, not blocked.
             - secretRef:
                 name: openobserve-root
+                optional: true
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

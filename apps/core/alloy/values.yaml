@@ -19,12 +19,21 @@ controller:
     extra:
       - name: alloy-storage
         emptyDir: {}
+      # optional: true -- these ExternalSecrets are placeholder-UUID until a
+      # human replaces them with real Bitwarden IDs (CLAUDE.md Secrets
+      # Pattern; uptime-kuma-secret.yaml can't even be pre-populated, its
+      # API token doesn't exist until Uptime Kuma's first login). Without
+      # this, a missing Secret blocks the whole DaemonSet pod from
+      # scheduling -- the two new log/metrics targets failing is fine, the
+      # entire existing scrape pipeline going down with them is not.
       - name: openobserve-root
         secret:
           secretName: openobserve-root
+          optional: true
       - name: uptime-kuma-metrics
         secret:
           secretName: uptime-kuma-metrics
+          optional: true
 
 global:
   # Chart default omits seccompProfile — required by this namespace's
