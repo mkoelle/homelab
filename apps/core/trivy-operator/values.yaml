@@ -5,7 +5,10 @@ operator:
   # and Trivy are intentionally enabled as independent scanners.
   scanJobsConcurrentLimit: 1
   scanNodeCollectorLimit: 1
-  scanJobTTL: 1h
+  # The operator's concurrency limiter counts completed Jobs until they are
+  # deleted. Keep this short so a completed scan doesn't block the next queued
+  # workload for an hour when concurrency is set to one.
+  scanJobTTL: 30s
   scannerReportTTL: 24h
   cacheReportTTL: 120h
   # The node collector requires hostPID and hostPath volumes, which are
