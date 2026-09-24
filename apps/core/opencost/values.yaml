@@ -20,17 +20,6 @@ podSecurityContext:
     type: RuntimeDefault
 
 opencost:
-  # No cloud provider billing integration on this single-node homelab --
-  # but leaving this at the chart's default false means the API never
-  # registers the /model/cloudCost/* routes at all (plain 404, "page not
-  # found", confirmed live), which crashes the UI's home page outright (it
-  # unconditionally fetches cloudCost/customCost data on load, and doesn't
-  # handle a 404 gracefully -- known upstream behavior, see
-  # https://github.com/opencost/opencost/issues/2284, appears fixed as of
-  # appVersion 1.121.3 -- registering the routes with no integration
-  # configured makes them return a valid empty response instead).
-  cloudCost:
-    enabled: true
   # Chart defaults to a nonexistent prometheus-server.prometheus-system --
   # this cluster's metrics store is VictoriaMetrics (apps/core/monitoring),
   # which speaks the same Prometheus query API on the same Service other
