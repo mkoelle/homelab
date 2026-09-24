@@ -17,6 +17,10 @@ data:
             href: https://argocd.motherbox.local
             description: GitOps continuous delivery
             icon: argo-cd.png
+            widget:
+              type: argocd
+              url: https://argocd.motherbox.local
+              key: "{{HOMEPAGE_VAR_ARGOCD_KEY}}"
         - Zitadel:
             href: https://id.hl.mkoelle.com/ui/console
             description: SSO / identity provider
@@ -48,5 +52,8 @@ data:
             description: Network file browser
             icon: filebrowser.png
   bookmarks.yaml: ""
-  widgets.yaml: ""
+  widgets.yaml: |
+    - search:
+        provider: duckduckgo
+        target: _blank
   docker.yaml: ""
