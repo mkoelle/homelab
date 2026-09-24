@@ -12,6 +12,41 @@ controller:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+    # Env vars, not mounted Secret files: Alloy's local.file component fails
+    # its ENTIRE config build (taking down every pipeline, not just these
+    # two) if the referenced file doesn't exist yet at startup -- confirmed
+    # live, a known upstream limitation (grafana/alloy#2601, #3825). These
+    # two ExternalSecrets are placeholder-UUID until a human replaces them
+    # with real Bitwarden IDs (CLAUDE.md Secrets Pattern;
+    # uptime-kuma-secret.yaml can't even be pre-populated -- its API token
+    # doesn't exist until Uptime Kuma's first login), so the Secret genuinely
+    # won't exist for a while. secretKeyRef.optional per-key means a missing
+    # key/Secret just leaves the env var unset -- sys.env(...) below returns
+    # "" for that case rather than failing the config build.
+    - name: OPENOBSERVE_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: openobserve-root
+          key: ZO_ROOT_USER_EMAIL
+          optional: true
+    - name: OPENOBSERVE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: openobserve-root
+          key: ZO_ROOT_USER_PASSWORD
+          optional: true
+    - name: UPTIME_KUMA_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: uptime-kuma-metrics
+          key: username
+          optional: true
+    - name: UPTIME_KUMA_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: uptime-kuma-metrics
+          key: api-key
+          optional: true
   volumes:
     # readOnlyRootFilesystem: true (below) means Alloy's own default storagePath
     # (/tmp/alloy, used for its remotecfg cache) has nowhere to write --
@@ -19,21 +54,6 @@ controller:
     extra:
       - name: alloy-storage
         emptyDir: {}
-      # optional: true -- these ExternalSecrets are placeholder-UUID until a
-      # human replaces them with real Bitwarden IDs (CLAUDE.md Secrets
-      # Pattern; uptime-kuma-secret.yaml can't even be pre-populated, its
-      # API token doesn't exist until Uptime Kuma's first login). Without
-      # this, a missing Secret blocks the whole DaemonSet pod from
-      # scheduling -- the two new log/metrics targets failing is fine, the
-      # entire existing scrape pipeline going down with them is not.
-      - name: openobserve-root
-        secret:
-          secretName: openobserve-root
-          optional: true
-      - name: uptime-kuma-metrics
-        secret:
-          secretName: uptime-kuma-metrics
-          optional: true
 
 global:
   # Chart default omits seccompProfile — required by this namespace's
@@ -71,12 +91,6 @@ alloy:
     extra:
       - name: alloy-storage
         mountPath: /tmp/alloy
-      - name: openobserve-root
-        mountPath: /var/run/secrets/openobserve
-        readOnly: true
-      - name: uptime-kuma-metrics
-        mountPath: /var/run/secrets/uptime-kuma
-        readOnly: true
   configMap:
     content: |
       discovery.kubernetes "pods" {
@@ -112,23 +126,16 @@ alloy:
 
       // OpenObserve replaced Loki (docs/adrs/0008-openobserve-for-logs.md) --
       // it exposes a Loki-push-API-compatible endpoint, so loki.write itself
-      // is unchanged, only the destination + credentials.
-      local.file "openobserve_username" {
-        filename  = "/var/run/secrets/openobserve/ZO_ROOT_USER_EMAIL"
-        is_secret = true
-      }
-
-      local.file "openobserve_password" {
-        filename  = "/var/run/secrets/openobserve/ZO_ROOT_USER_PASSWORD"
-        is_secret = true
-      }
-
+      // is unchanged, only the destination + credentials. sys.env(...)
+      // (not local.file, see extraEnv's comment above) reads
+      // OPENOBSERVE_USERNAME/PASSWORD, returning "" if unset rather than
+      // failing the config build.
       loki.write "default" {
         endpoint {
           url = "http://openobserve.openobserve.svc.cluster.local:5080/api/default/loki/api/v1/push"
           basic_auth {
-            username = local.file.openobserve_username.content
-            password = local.file.openobserve_password.content
+            username = sys.env("OPENOBSERVE_USERNAME")
+            password = sys.env("OPENOBSERVE_PASSWORD")
           }
         }
       }
@@ -297,16 +304,6 @@ alloy:
       // it. OpenCost needs no such carve-out: its pod carries plain
       // prometheus.io/scrape annotations (apps/core/opencost/values.yaml)
       // and rides the existing pod_metrics pipeline above for free.
-      local.file "uptime_kuma_username" {
-        filename  = "/var/run/secrets/uptime-kuma/username"
-        is_secret = true
-      }
-
-      local.file "uptime_kuma_api_key" {
-        filename  = "/var/run/secrets/uptime-kuma/api-key"
-        is_secret = true
-      }
-
       discovery.kubernetes "uptime_kuma" {
         role = "endpoints"
         namespaces {
@@ -318,8 +315,8 @@ alloy:
         targets    = discovery.kubernetes.uptime_kuma.targets
         forward_to = [prometheus.remote_write.default.receiver]
         basic_auth {
-          username = local.file.uptime_kuma_username.content
-          password = local.file.uptime_kuma_api_key.content
+          username = sys.env("UPTIME_KUMA_USERNAME")
+          password = sys.env("UPTIME_KUMA_API_KEY")
         }
       }
 
