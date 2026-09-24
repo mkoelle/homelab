@@ -1,0 +1,66 @@
+config:
+  allowedHosts:
+    - homepage.motherbox.local
+
+# Backs services.yaml's ArgoCD widget ({{HOMEPAGE_VAR_ARGOCD_KEY}}).
+# Secret homepage-argocd-token isn't git-tracked or Terraform-managed --
+# this repo has no declarative provider for ArgoCD's own local-account API
+# tokens (unlike Zitadel OIDC clients, which Terraform owns end-to-end).
+# Generated once via `argocd account generate-token --account homepage`
+# (the "homepage" account + role:readonly binding come from argocd-cm.yaml/
+# argocd-rbac-cm.yaml, which ARE git-tracked) and applied directly:
+#   kubectl create secret generic homepage-argocd-token -n homepage \
+#     --from-literal=argocd-key=<token>
+# Re-run that if this namespace/secret is ever lost -- the account/role
+# config alone doesn't regenerate a token.
+extraEnv:
+  - name: HOMEPAGE_VAR_ARGOCD_KEY
+    valueFrom:
+      secretKeyRef:
+        name: homepage-argocd-token
+        key: argocd-key
+
+# Static services.yaml/settings.yaml (configmap.yaml) -- not using Homepage's
+# k8s service auto-discovery (would need cluster-read RBAC for no real
+# benefit here, this cluster's app list changes rarely).
+rbac:
+  enabled: false
+
+# homepage-static-config, not "config" -- the chart already defines its own
+# volume named "config" (a writable emptyDir mounted at /app/config, where
+# Homepage itself writes at runtime). A same-named volume here collides:
+# confirmed live, "duplicate entries for key [name=\"config\"]" from
+# ArgoCD's apply. Layering distinct-named subPath mounts from this volume
+# on top of the chart's own base mount works fine; only the volume *name*
+# needed to be unique.
+volumes:
+  - name: homepage-static-config
+    configMap:
+      name: homepage-config
+volumeMounts:
+  - name: homepage-static-config
+    mountPath: /app/config/settings.yaml
+    subPath: settings.yaml
+  - name: homepage-static-config
+    mountPath: /app/config/services.yaml
+    subPath: services.yaml
+  - name: homepage-static-config
+    mountPath: /app/config/bookmarks.yaml
+    subPath: bookmarks.yaml
+  - name: homepage-static-config
+    mountPath: /app/config/widgets.yaml
+    subPath: widgets.yaml
+  - name: homepage-static-config
+    mountPath: /app/config/docker.yaml
+    subPath: docker.yaml
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "50m"
+  limits:
+    memory: "512Mi"
+    cpu: "1000m"
+
+# No route.main here -- exposed via oauth2-proxy's own HTTPRoute
+# (oauth2-proxy-values.yaml) instead, same as Hubble UI/Alloy/OpenCost.

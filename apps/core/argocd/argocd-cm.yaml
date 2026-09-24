@@ -30,6 +30,11 @@ data:
     clientID: "392071902518050850"
     clientSecret: $zitadel-argocd-oidc-secret:clientSecret
     requestedScopes: ["openid", "profile", "email", "groups"]
+  # Local (non-SSO) account, apiKey capability only -- no password login.
+  # Its token is what Homepage's ArgoCD widget (apps/core/homepage) uses to
+  # read app health/sync counts read-only. See argocd-rbac-cm.yaml for the
+  # role binding.
+  accounts.homepage: apiKey
   # Exclude API groups not managed by this cluster's GitOps manifests.
   # ArgoCD cluster cache sync fails if it cannot list any discovered API group.
   # resource.k8s.io (DRA) and flowcontrol are cluster-internal; snapshot.storage.k8s.io

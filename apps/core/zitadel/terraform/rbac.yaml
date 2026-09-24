@@ -90,3 +90,106 @@ subjects:
   - kind: ServiceAccount
     name: zitadel-terraform
     namespace: zitadel
+---
+# Same, for main.tf's kubernetes_secret.hubble_oauth2_proxy in ns
+# kube-system.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel
+---
+# Same, for main.tf's kubernetes_secret.alloy_oauth2_proxy in ns alloy.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: alloy
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: alloy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel
+---
+# Same, for main.tf's kubernetes_secret.opencost_oauth2_proxy in ns
+# opencost.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: opencost
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: opencost
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel
+---
+# Same, for main.tf's kubernetes_secret.homepage_oauth2_proxy in ns
+# homepage.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: homepage
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: homepage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel

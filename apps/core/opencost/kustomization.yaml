@@ -6,6 +6,7 @@ namespace: opencost
 resources:
   - namespace.yaml
   - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
 
 helmCharts:
   - name: opencost
@@ -15,3 +16,11 @@ helmCharts:
     namespace: opencost
     includeCRDs: false
     valuesFile: values.yaml
+  # SSO front door for OpenCost's own UI (oauth2-proxy-values.yaml) --
+  # OpenCost has no native OIDC support.
+  - name: oauth2-proxy
+    repo: https://oauth2-proxy.github.io/manifests
+    version: 10.7.0
+    releaseName: opencost-oauth2-proxy
+    namespace: opencost
+    valuesFile: oauth2-proxy-values.yaml

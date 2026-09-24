@@ -1,0 +1,50 @@
+nameOverride: hubble-oauth2-proxy
+fullnameOverride: hubble-oauth2-proxy
+
+config:
+  existingSecret: hubble-oauth2-proxy-secret
+  upstreams:
+    - http://hubble-ui.kube-system.svc.cluster.local:80/
+
+extraArgs:
+  provider: oidc
+  oidc-issuer-url: https://id.hl.mkoelle.com
+  redirect-url: https://hubble.motherbox.local/oauth2/callback
+  cookie-secure: "true"
+  skip-provider-button: "true"
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "500m"
+
+gatewayApi:
+  enabled: true
+  gatewayRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: homelab
+    namespace: gateway
+  hostnames:
+    - hubble.motherbox.local
+  # Explicit weight: 1 -- the chart's own default backendRefs omit it, but
+  # the Gateway API CRD defaults it server-side, which ArgoCD's diff then
+  # sees as permanent drift (same reasoning as every hand-written
+  # httproute.yaml in this repo already setting it explicitly).
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: hubble-oauth2-proxy
+          port: 80
+          weight: 1
+
+networkPolicy:
+  create: false # this app's own hubble-oauth2-proxy-networkpolicy.yaml covers it

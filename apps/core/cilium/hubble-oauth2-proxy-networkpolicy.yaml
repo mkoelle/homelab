@@ -1,0 +1,45 @@
+---
+# Ingress-only, scoped to the oauth2-proxy pod only -- kube-system itself
+# is unrestricted (Talos-managed, no pre-existing NetworkPolicy of any kind
+# there), and a podSelector this specific leaves every other kube-system
+# pod untouched.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hubble-oauth2-proxy-policy
+  namespace: kube-system
+spec:
+  podSelector:
+    matchLabels:
+      app: hubble-oauth2-proxy
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
+      ports:
+        - protocol: TCP
+          port: 4180
+---
+# Gateway API traffic is forwarded by Cilium's Envoy under the reserved
+# "ingress" identity, not the "gateway" namespace's own pod identity --
+# same finding as apps/core/uptime-kuma/cilium-networkpolicy.yaml, a plain
+# NetworkPolicy namespaceSelector rule can't match it.
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: hubble-oauth2-proxy-gateway
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hubble-oauth2-proxy
+  ingress:
+    - fromEntities:
+        - "ingress"
+      toPorts:
+        - ports:
+            - port: "4180"
+              protocol: TCP

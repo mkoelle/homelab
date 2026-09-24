@@ -1,0 +1,25 @@
+---
+# Ingress-only, scoped to the oauth2-proxy pod specifically (SSO front door
+# for Alloy's own UI, oauth2-proxy-values.yaml) -- Alloy's own pods stay
+# unrestricted (no pre-existing NetworkPolicy here; this repo's scrape
+# targets span every namespace, so a restrictive egress policy isn't
+# practical). Same ingress-only pattern as apps/core/uptime-kuma/networkpolicy.yaml.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: alloy-oauth2-proxy-policy
+  namespace: alloy
+spec:
+  podSelector:
+    matchLabels:
+      app: alloy-oauth2-proxy
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
+      ports:
+        - protocol: TCP
+          port: 4180

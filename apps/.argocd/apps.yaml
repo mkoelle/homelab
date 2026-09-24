@@ -91,6 +91,11 @@ spec:
             namespace: filebrowser
             wave: "4"
 
+          - name: homepage
+            path: apps/core/homepage
+            namespace: homepage
+            wave: "4"
+
   template:
     metadata:
       name: "{{name}}"

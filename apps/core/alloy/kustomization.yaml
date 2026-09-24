@@ -7,6 +7,8 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - uptime-kuma-secret.yaml
+  - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
 
 helmCharts:
   - name: alloy
@@ -16,3 +18,11 @@ helmCharts:
     namespace: alloy
     includeCRDs: true
     valuesFile: values.yaml
+  # SSO front door for Alloy's own UI (apps/core/alloy/oauth2-proxy-values.yaml) --
+  # Alloy has no native OIDC support.
+  - name: oauth2-proxy
+    repo: https://oauth2-proxy.github.io/manifests
+    version: 10.7.0
+    releaseName: alloy-oauth2-proxy
+    namespace: alloy
+    valuesFile: oauth2-proxy-values.yaml

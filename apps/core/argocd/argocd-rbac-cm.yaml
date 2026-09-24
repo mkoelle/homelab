@@ -10,4 +10,8 @@ data:
   policy.csv: |
     p, role:admin, *, *, *, allow
     g, mkoelle@gmail.com, role:admin
+    # Local "homepage" account (argocd-cm.yaml's accounts.homepage: apiKey)
+    # -- role:readonly is one of ArgoCD's built-in roles (get-only across
+    # all resources), no p, line needed to define it.
+    g, homepage, role:readonly
   scopes: "[email]"
