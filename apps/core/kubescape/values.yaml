@@ -4,8 +4,7 @@ excludeNamespaces: "kubescape,kube-public,kube-node-lease"
 # Do not rely on the chart/operator legacy fallback: it submitted control ID
 # C-0214 as a framework name and the scan failed. Pin supported framework IDs.
 defaultFrameworks:
-  - cis-v1.23-t1.0.1
-  - mitre
+  - allcontrols
 
 # Runtime-rendered certs avoid Helm's random genSignedCert output changing on
 # every Argo CD diff. Verified in Kubescape chart 1.40.4's installation docs.
