@@ -76,6 +76,10 @@ kubescape:
       memory: 512Mi
 
 operator:
+  # The operator's legacy implicit "security" scan path currently attempts
+  # to resolve control ID C-0214 as a framework. The explicit framework list
+  # above replaces that path; verify the CIS/MITRE scan after rollout.
+  triggerSecurityFramework: false
   resources:
     requests:
       cpu: 50m
