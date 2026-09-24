@@ -28,6 +28,19 @@ gatewayApi:
     namespace: gateway
   hostnames:
     - hubble.motherbox.local
+  # Explicit weight: 1 -- the chart's own default backendRefs omit it, but
+  # the Gateway API CRD defaults it server-side, which ArgoCD's diff then
+  # sees as permanent drift (same reasoning as every hand-written
+  # httproute.yaml in this repo already setting it explicitly).
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: hubble-oauth2-proxy
+          port: 80
+          weight: 1
 
 networkPolicy:
   create: false # this app's own hubble-oauth2-proxy-networkpolicy.yaml covers it
