@@ -58,6 +58,57 @@ resource "zitadel_application_oidc" "argocd" {
   id_token_role_assertion     = true
 }
 
+
+# Hubble UI, Alloy, and OpenCost have no native OIDC support (unlike
+# ArgoCD/Grafana/Zitadel itself) -- each sits behind its own oauth2-proxy
+# instance (apps/core/cilium/hubble-oauth2-proxy.yaml,
+# apps/core/alloy/oauth2-proxy.yaml, apps/core/opencost/oauth2-proxy.yaml),
+# which needs its own OIDC client the same way ArgoCD/Grafana do.
+resource "zitadel_application_oidc" "hubble" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "Hubble UI"
+  redirect_uris  = ["https://hubble.motherbox.local/oauth2/callback"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+}
+
+resource "zitadel_application_oidc" "alloy" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "Alloy"
+  redirect_uris  = ["https://alloy.motherbox.local/oauth2/callback"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+}
+
+resource "zitadel_application_oidc" "opencost" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "OpenCost"
+  redirect_uris  = ["https://opencost.motherbox.local/oauth2/callback"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+}
+
 resource "zitadel_application_oidc" "grafana" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
@@ -191,5 +242,60 @@ resource "kubernetes_secret" "grafana_oidc" {
   data = {
     client-id     = zitadel_application_oidc.grafana.client_id
     client-secret = zitadel_application_oidc.grafana.client_secret
+  }
+}
+
+# oauth2-proxy needs a third secret alongside client_id/client_secret: a
+# cookie-encryption key. b64_url (not b64_std) matches what oauth2-proxy's
+# --cookie-secret actually decodes (base64.URLEncoding) -- confirmed against
+# the oauth2-proxy chart's secret template (oauth2-proxy.secrets in
+# _helpers.tpl), which just base64-wraps this value again for the Secret
+# itself, so the final env var is a double-base64'd 32-byte key, exactly
+# what oauth2-proxy expects to unwrap once.
+resource "random_id" "hubble_cookie_secret" {
+  byte_length = 32
+}
+
+resource "random_id" "alloy_cookie_secret" {
+  byte_length = 32
+}
+
+resource "random_id" "opencost_cookie_secret" {
+  byte_length = 32
+}
+
+resource "kubernetes_secret" "hubble_oauth2_proxy" {
+  metadata {
+    name      = "hubble-oauth2-proxy-secret"
+    namespace = "kube-system"
+  }
+  data = {
+    client-id     = zitadel_application_oidc.hubble.client_id
+    client-secret = zitadel_application_oidc.hubble.client_secret
+    cookie-secret = random_id.hubble_cookie_secret.b64_url
+  }
+}
+
+resource "kubernetes_secret" "alloy_oauth2_proxy" {
+  metadata {
+    name      = "alloy-oauth2-proxy-secret"
+    namespace = "alloy"
+  }
+  data = {
+    client-id     = zitadel_application_oidc.alloy.client_id
+    client-secret = zitadel_application_oidc.alloy.client_secret
+    cookie-secret = random_id.alloy_cookie_secret.b64_url
+  }
+}
+
+resource "kubernetes_secret" "opencost_oauth2_proxy" {
+  metadata {
+    name      = "opencost-oauth2-proxy-secret"
+    namespace = "opencost"
+  }
+  data = {
+    client-id     = zitadel_application_oidc.opencost.client_id
+    client-secret = zitadel_application_oidc.opencost.client_secret
+    cookie-secret = random_id.opencost_cookie_secret.b64_url
   }
 }

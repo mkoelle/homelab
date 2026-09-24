@@ -1,9 +1,9 @@
 ---
-# Ingress-only: Alloy scrapes /metrics on 9003. No HTTPRoute for OpenCost's
-# own UI (9090) in this cluster -- Grafana dashboards (fed by these scraped
-# metrics) are the primary consumption path, see docs/adrs/0008 discussion
-# in the PR for the scope call; ad-hoc UI access is still reachable via
-# `kubectl port-forward`, which bypasses NetworkPolicy entirely.
+# Ingress-only: Alloy scrapes /metrics on 9003. OpenCost's own UI (9090) now
+# also gets an HTTPRoute, via its own oauth2-proxy SSO front door
+# (oauth2-proxy-values.yaml) -- reverses the original scope-minimization
+# call (Grafana dashboards were the intended path, port-forward for ad-hoc
+# access) at the user's request.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -21,3 +21,23 @@ spec:
       ports:
         - protocol: TCP
           port: 9003
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: opencost-oauth2-proxy-policy
+  namespace: opencost
+spec:
+  podSelector:
+    matchLabels:
+      app: opencost-oauth2-proxy
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
+      ports:
+        - protocol: TCP
+          port: 4180

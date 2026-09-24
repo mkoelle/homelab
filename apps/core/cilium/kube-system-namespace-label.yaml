@@ -1,0 +1,11 @@
+---
+# kube-system is Talos-managed, not owned by this repo -- this only adds
+# the one label the Gateway's listeners require (see gateway.yaml's
+# allowedRoutes.namespaces.selector), via a normal merge apply. Doesn't
+# take ownership of the namespace or touch any other field Talos manages.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+  labels:
+    gateway-access: "true"

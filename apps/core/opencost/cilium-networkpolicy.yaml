@@ -1,0 +1,21 @@
+---
+# Gateway API traffic is forwarded by Cilium's Envoy under the reserved
+# "ingress" identity, not the "gateway" namespace's own pod identity --
+# same finding as apps/core/uptime-kuma/cilium-networkpolicy.yaml, a plain
+# NetworkPolicy namespaceSelector rule can't match it.
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: opencost-oauth2-proxy-gateway
+  namespace: opencost
+spec:
+  endpointSelector:
+    matchLabels:
+      app: opencost-oauth2-proxy
+  ingress:
+    - fromEntities:
+        - "ingress"
+      toPorts:
+        - ports:
+            - port: "4180"
+              protocol: TCP

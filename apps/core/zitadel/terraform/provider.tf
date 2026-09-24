@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     zitadel = {
-      source  = "zitadel/zitadel"
+      source = "zitadel/zitadel"
       # 1.2.0 -> 2.12.8: gets us auto_linking on zitadel_org_idp_google
       # (see main.tf), the whole reason for this bump. Deliberately NOT
       # 3.x: v3.0.0 makes user-provided secrets (client_secret here)
@@ -18,6 +18,10 @@ terraform {
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "2.35.1"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.6.3"
     }
   }
 

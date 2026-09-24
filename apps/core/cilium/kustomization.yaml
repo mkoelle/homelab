@@ -5,6 +5,8 @@ kind: Kustomization
 resources:
   - lb-ip-pool.yaml
   - l2-announcement-policy.yaml
+  - kube-system-namespace-label.yaml
+  - hubble-oauth2-proxy-networkpolicy.yaml
 
 helmCharts:
   - name: cilium
@@ -14,3 +16,11 @@ helmCharts:
     includeCRDs: true
     namespace: kube-system
     valuesFile: ./values.yaml
+  # SSO front door for Hubble UI (hubble-oauth2-proxy-values.yaml) --
+  # Hubble UI has no native OIDC support.
+  - name: oauth2-proxy
+    repo: https://oauth2-proxy.github.io/manifests
+    version: 10.7.0
+    releaseName: hubble-oauth2-proxy
+    namespace: kube-system
+    valuesFile: hubble-oauth2-proxy-values.yaml
