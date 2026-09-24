@@ -81,6 +81,15 @@ resources:
 
 trivy:
   slow: true
+  # Large multi-container images (for example Cilium's init containers) can
+  # exceed the chart's 500 MiB default while scanning.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
   # This cluster has no dynamic/default StorageClass. Keep the server cache on
   # an emptyDir; it can be repopulated after a server restart.
   storageClassEnabled: false
