@@ -38,7 +38,9 @@ gatewayApi:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: alloy-oauth2-proxy
+        - group: ""
+          kind: Service
+          name: alloy-oauth2-proxy
           port: 80
           weight: 1
 
