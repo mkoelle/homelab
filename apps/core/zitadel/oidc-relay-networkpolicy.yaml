@@ -18,7 +18,7 @@ spec:
               kubernetes.io/metadata.name: core-argocd
       ports:
         - protocol: TCP
-          port: 8443
+          port: 8443 # container's real listen port; the Service maps 443 -> 8443
   egress:
     - ports:
         - protocol: UDP

@@ -94,6 +94,13 @@ spec:
         - ipBlock:
             cidr: 10.96.111.111/32
       ports:
+        # 443 (Service port, what argocd-server actually dials -- bare
+        # https:// URL) and 8443 (container's real targetPort, in case
+        # kube-proxy-replacement's socket-level LB connects there directly
+        # pre-DNAT) -- same dual-port precedent as the kube-apiserver rule
+        # above.
+        - protocol: TCP
+          port: 443
         - protocol: TCP
           port: 8443
     # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
