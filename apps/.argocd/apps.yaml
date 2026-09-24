@@ -85,9 +85,10 @@ spec:
             namespace: opencost
             wave: "3"
 
-          # Wave 4 — Security posture / vulnerability reporting.
-          # Stagger the operator installs so their initial scans do not run
-          # concurrently on the single node.
+          # Wave 4/5 records desired ordering in Application metadata. The
+          # ApplicationSet controller creates child Applications asynchronously,
+          # so the waves do not serialize their first sync; operator scan-job
+          # limits/schedules provide the actual single-node controls.
           - name: kubescape
             path: apps/core/kubescape
             namespace: kubescape

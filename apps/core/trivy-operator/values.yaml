@@ -8,6 +8,12 @@ operator:
   scanJobTTL: 1h
   scannerReportTTL: 24h
   cacheReportTTL: 120h
+  # The node collector requires hostPID and hostPath volumes, which are
+  # intentionally disallowed by this namespace's restricted Pod Security
+  # profile. Kubescape handles workload posture; node-level compliance remains
+  # a separately reviewed gap rather than weakening this namespace.
+  infraAssessmentScannerEnabled: false
+  clusterComplianceEnabled: false
   # All current workload images are public. Do not grant cluster-wide Secret
   # read access just to discover imagePullSecrets; configure scoped access if
   # private registries are added later.
@@ -32,6 +38,9 @@ service:
 # scanner Jobs. Add the restricted Pod defaults (seccomp/non-root) explicitly.
 trivyOperator:
   scanJobPodTemplatePodSecurityContext:
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
@@ -41,6 +50,8 @@ trivyOperator:
       drop: [ALL]
     privileged: false
     readOnlyRootFilesystem: true
+    runAsUser: 10001
+    runAsGroup: 10001
 
 podSecurityContext:
   runAsNonRoot: true
