@@ -12,29 +12,16 @@ controller:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
-    # Env vars, not mounted Secret files: Alloy's local.file component fails
-    # its ENTIRE config build (taking down every pipeline, not just these
-    # two) if the referenced file doesn't exist yet at startup -- confirmed
-    # live, a known upstream limitation (grafana/alloy#2601, #3825). These
-    # two ExternalSecrets are placeholder-UUID until a human replaces them
-    # with real Bitwarden IDs (CLAUDE.md Secrets Pattern;
-    # uptime-kuma-secret.yaml can't even be pre-populated -- its API token
-    # doesn't exist until Uptime Kuma's first login), so the Secret genuinely
-    # won't exist for a while. secretKeyRef.optional per-key means a missing
-    # key/Secret just leaves the env var unset -- sys.env(...) below returns
-    # "" for that case rather than failing the config build.
-    - name: OPENOBSERVE_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: openobserve-root
-          key: ZO_ROOT_USER_EMAIL
-          optional: true
-    - name: OPENOBSERVE_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: openobserve-root
-          key: ZO_ROOT_USER_PASSWORD
-          optional: true
+    # Env var, not a mounted Secret file: Alloy's local.file component fails
+    # its ENTIRE config build (taking down every pipeline, not just this one
+    # target) if the referenced file doesn't exist yet at startup --
+    # confirmed live, a known upstream limitation (grafana/alloy#2601,
+    # #3825). uptime-kuma-secret.yaml's API token can't even be
+    # pre-populated -- it doesn't exist until Uptime Kuma's first login --
+    # so the Secret genuinely won't exist for a while. secretKeyRef.optional
+    # per-key means a missing key/Secret just leaves the env var unset --
+    # sys.env(...) below returns "" for that case rather than failing the
+    # config build.
     - name: UPTIME_KUMA_USERNAME
       valueFrom:
         secretKeyRef:
@@ -124,19 +111,9 @@ alloy:
         forward_to = [loki.write.default.receiver]
       }
 
-      // OpenObserve replaced Loki (docs/adrs/0008-openobserve-for-logs.md) --
-      // it exposes a Loki-push-API-compatible endpoint, so loki.write itself
-      // is unchanged, only the destination + credentials. sys.env(...)
-      // (not local.file, see extraEnv's comment above) reads
-      // OPENOBSERVE_USERNAME/PASSWORD, returning "" if unset rather than
-      // failing the config build.
       loki.write "default" {
         endpoint {
-          url = "http://openobserve.openobserve.svc.cluster.local:5080/api/default/loki/api/v1/push"
-          basic_auth {
-            username = sys.env("OPENOBSERVE_USERNAME")
-            password = sys.env("OPENOBSERVE_PASSWORD")
-          }
+          url = "http://loki.loki.svc.cluster.local:3100/loki/api/v1/push"
         }
       }
 

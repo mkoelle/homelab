@@ -30,12 +30,14 @@ see the note at the top of each affected category.
   3. [OpenCost](https://github.com/oleksandr-zhabenko/opencost) -- Kubernetes
      cost/resource-allocation visibility. No cloud bill to optimize here, but
      useful for seeing what's actually eating the single node's resources.
-  4. [OpenObserve](https://openobserve.ai/) -- Kibana/OpenSearch-Dashboards-
-     style log search UI (query bar, histogram, field-facet sidebar) in a
-     single lightweight binary, no JVM/cluster overhead. Not a gap-filler --
-     Loki/Grafana Explore already cover log search -- but worth it if that
-     Discover-tab-style UX (field counts, one-click filters) is wanted over
-     LogQL. Would replace Loki, not stack alongside it.
+  4. Discover-tab-style log search (field facets, histogram, one-click
+     filters) -- solved. Evaluated OpenObserve for this, dropped it: its
+     official Helm chart is HA-only (mandatory Postgres + S3-compatible
+     object store), and its OSS edition has no SSO at all (Enterprise/Cloud
+     only) -- a real loss on a cluster where every other UI is behind
+     Zitadel. [Grafana Logs Drilldown](https://grafana.com/grafana/plugins/grafana-lokiexplore-app/)
+     (official Grafana Labs plugin, on the catalog) gives the same UX on top
+     of the existing Loki setup, inheriting Grafana's Zitadel SSO for free.
   5. [Umami](https://umami.is/) -- only relevant if self-hosting a personal
      site/blog with visitors to track.
   6. [Dozzle](https://dozzle.dev/) -- quick ad-hoc container log tailing;

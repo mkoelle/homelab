@@ -42,7 +42,7 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: monitoring
     - server: https://kubernetes.default.svc
-      namespace: openobserve
+      namespace: loki
     - server: https://kubernetes.default.svc
       namespace: uptime-kuma
     - server: https://kubernetes.default.svc

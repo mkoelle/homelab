@@ -65,9 +65,9 @@ spec:
             namespace: monitoring
             wave: "3"
 
-          - name: openobserve
-            path: apps/core/openobserve
-            namespace: openobserve
+          - name: loki
+            path: apps/core/loki
+            namespace: loki
             wave: "3"
 
           - name: alloy
