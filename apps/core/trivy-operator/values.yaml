@@ -28,7 +28,10 @@ operator:
   metricsFindingsEnabled: true
   metricsVulnIdEnabled: false
   configAuditScannerScanOnlyCurrentRevisions: true
-  vulnerabilityScannerScanOnlyCurrentRevisions: true
+  # Reconcile active ReplicaSets at startup to populate the initial image
+  # baseline. Inactive ReplicaSets without running Pods are still ignored by
+  # the operator; scan-job concurrency remains capped at one.
+  vulnerabilityScannerScanOnlyCurrentRevisions: false
 
 # The chart defaults already use a restricted container securityContext for
 # scanner Jobs. Add the restricted Pod defaults (seccomp/non-root) explicitly.
