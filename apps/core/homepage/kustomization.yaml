@@ -5,9 +5,27 @@ namespace: homepage
 
 resources:
   - namespace.yaml
-  - configmap.yaml
   - networkpolicy.yaml
   - cilium-networkpolicy.yaml
+
+# Content-hash suffix, not a static configmap.yaml -- subPath-mounted
+# ConfigMap keys (values.yaml's volumeMounts) never auto-update on a plain
+# ConfigMap's content change (documented kubelet limitation: subPath breaks
+# the normal watch-based volume refresh). Confirmed live: editing icon names
+# updated the ConfigMap object but the running pod kept serving stale
+# mounted files until manually restarted. A generated name changes on every
+# content edit, which changes the Deployment's volume reference too (via
+# kustomize's nameReference transformer), forcing an actual rollout instead
+# -- same pattern already used for zitadel-terraform-files
+# (apps/core/zitadel/kustomization.yaml).
+configMapGenerator:
+  - name: homepage-config
+    files:
+      - settings.yaml
+      - services.yaml
+      - bookmarks.yaml
+      - widgets.yaml
+      - docker.yaml
 
 helmCharts:
   - name: homepage
