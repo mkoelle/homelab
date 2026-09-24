@@ -63,6 +63,17 @@ spec:
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: core-argocd
+    # Zitadel OIDC (id.hl.mkoelle.com, resolved via the Gateway's L2-announced
+    # LB IP) -- see apps/core/argocd/networkpolicy.yaml's matching rule for
+    # the full explanation (both policy kinds need it -- Cilium enforces them
+    # as separate rule sets, confirmed live: patching only one still dropped
+    # the traffic).
+    - toCIDRSet:
+        - cidr: "192.168.1.200/32"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
     # External HTTPS — GitHub (repo sync), OCI registries, notification webhooks
     - toCIDRSet:
         - cidr: "0.0.0.0/0"
