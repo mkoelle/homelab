@@ -55,6 +55,15 @@ spec:
       namespace: zitadel
     - server: https://kubernetes.default.svc
       namespace: homepage
+    - server: https://kubernetes.default.svc
+      namespace: local-path-storage
+    # homelab-media tenant fence (apps/core/tenant-media) -- homelab
+    # creates these namespaces; the tenant's own apps deploy into them via
+    # the separate `media` AppProject (media.yaml).
+    - server: https://kubernetes.default.svc
+      namespace: media
+    - server: https://kubernetes.default.svc
+      namespace: media-argocd
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

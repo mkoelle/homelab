@@ -1,0 +1,27 @@
+---
+# Workload namespace for homelab-media apps. Deliberately NO gateway-access
+# label: media routes may only attach to the Gateway's https-media listener
+# (apps/core/gateway/gateway.yaml), which selects this namespace by its
+# API-server-set kubernetes.io/metadata.name, so the tenant can only serve
+# *.media.hl.mkoelle.com hostnames.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: media
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+---
+# Holds only the tenant's Argo CD Application objects (apps-in-any-namespace,
+# see apps/core/argocd/argocd-cmd-params-cm.yaml). No pods ever run here.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: media-argocd
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

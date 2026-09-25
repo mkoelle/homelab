@@ -1,0 +1,88 @@
+---
+# homelab-media tenant (ADR 0008): homelab owns the fence, the
+# github.com/mkoelle/homelab-media repo owns everything inside it.
+#
+# Enforcement: Applications in namespace media-argocd (apps-in-any-namespace,
+# apps/core/argocd/argocd-cmd-params-cm.yaml) may only reference projects
+# whose sourceNamespaces lists media-argocd -- i.e. only this one. The tenant
+# repo therefore can't opt into `project: homelab`, deploy outside the
+# destinations below, create cluster-scoped objects, or edit AppProjects.
+# Namespaces, quota, the SMB credentials Secret, the Gateway listener and
+# the local-path provisioner all live in homelab (apps/core/tenant-media,
+# apps/core/gateway, apps/core/local-path). The tenant declares its own
+# volumes: inline SMB CSI volumes and local-path PVCs.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: media
+  namespace: core-argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: homelab-media tenant -- fence owned by homelab, contents by homelab-media
+  sourceNamespaces:
+    - media-argocd
+  sourceRepos:
+    - https://github.com/mkoelle/homelab-media
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: media
+    - server: https://kubernetes.default.svc
+      namespace: media-argocd
+  # Nothing cluster-scoped. Namespaces and PVs are homelab's: a namespace's
+  # pod-security labels set its privilege level, and PSA doesn't inspect
+  # PVC-backed volumes, so a tenant-made hostPath PV would reach the node.
+  # The tenant gets storage without PVs: inline SMB CSI volumes (PSA allows
+  # `csi`) and dynamically provisioned local-path PVCs.
+  clusterResourceWhitelist: []
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: LimitRange
+    # No minting certs off ca-issuer / letsencrypt-route53.
+    - group: cert-manager.io
+      kind: "*"
+    # Media only attaches HTTPRoutes to the shared Gateway's https-media listener.
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+    # No ESO objects at all -- not just SecretStores. Namespace `media` IS on
+    # the shared bitwarden-secretsmanager store's allowlist (so homelab's
+    # tenant-media app can place the SMB creds there), which means ANY
+    # ExternalSecret in `media` could read ANY homelab BSM secret. Homelab
+    # (tenant-media app, project `homelab`) must stay the only writer of
+    # ESO objects in `media`. Never remove these two lines while `media` is
+    # on that allowlist.
+    - group: external-secrets.io
+      kind: "*"
+    - group: generators.external-secrets.io
+      kind: "*"
+    - group: argoproj.io
+      kind: AppProject
+---
+# The one handoff pointer into the tenant repo: syncs
+# homelab-media/argocd/ (its app-of-apps) into media-argocd. Lives in
+# core-argocd (control-plane namespace) so the root app can own it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: media-root
+  namespace: core-argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: media
+  source:
+    repoURL: https://github.com/mkoelle/homelab-media
+    targetRevision: HEAD
+    path: argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: media-argocd
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true

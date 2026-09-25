@@ -307,8 +307,8 @@ tasks:
         LOG="{{.ROOT_DIR}}/{{.BUILD_DIR}}/image-scan.log"
         mkdir -p "$(dirname "$LOG")"
         : > "$LOG"
-        IMAGES=$(grep -rhoE '^ *image: *"?[^"[:space:]]+"?' {{.APPS_DIR}}/*/*/{{.BUILD_DIR}}/deployment.yaml 2>/dev/null \
-          | sed -E 's/^ *image: *"?//; s/"$//' | grep -viE 'windows' | sort -u)
+        IMAGES=$(grep -rhoE '^ *(- )?image: *"?[^"[:space:]]+"?' {{.APPS_DIR}}/*/*/{{.BUILD_DIR}}/deployment.yaml 2>/dev/null \
+          | sed -E 's/^ *(- )?image: *"?//; s/"$//' | grep -viE 'windows' | sort -u)
         for img in $IMAGES; do
           OUT=$({{.CONTAINER_ENGINE}} run --rm {{.TRIVY_IMAGE}} image \
             --quiet \
