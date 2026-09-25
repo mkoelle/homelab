@@ -6,13 +6,13 @@ Accepted
 
 ## Context
 
-Media workloads (Jellyfin now; the *arr stack, Audiobookshelf, etc. later)
+Media workloads (Jellyfin now; the \*arr stack, Audiobookshelf, etc. later)
 live in a separate private repo, [`mkoelle/homelab-media`](https://github.com/mkoelle/homelab-media).
 The goal is for that repo to evolve independently -- add apps, change sync
 policy, restructure its own app-of-apps -- without a homelab PR each time,
 while keeping it from reaching anything outside its own lane.
 
-Argo CD's `AppProject` is the natural fence, but whoever *defines* the
+Argo CD's `AppProject` is the natural fence, but whoever _defines_ the
 project defines the fence: AppProjects must live in `core-argocd`, and
 granting the tenant write access there lets it edit any project, including
 `homelab` (the application controller holds `*/*` cluster RBAC). So a
@@ -33,14 +33,14 @@ tenant-owned AppProject is not a boundary.
 Rule of thumb: anything that grants privilege, is cluster-scoped, or is
 shared between tenants belongs to homelab.
 
-| homelab (the fence)                                                                 | homelab-media                                         |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| AppProject `media` + `media-root` handoff Application (`apps/.argocd/media.yaml`)   | Its app-of-apps (`argocd/`), one Application per app |
-| Namespaces `media` / `media-argocd`, PSA labels, ResourceQuota, LimitRange (`apps/core/tenant-media`) | All workloads, PVCs, HTTPRoutes, NetworkPolicies     |
-| Argo CD settings: apps-in-any-namespace, repo credential, Application health check  | Its own CI / lint / Renovate                          |
-| PVs -- read-only SMB libraries and node-local app state -- each `claimRef`-pinned to one media claim (`apps/core/storage/volumes-media*.yaml`) |                                                       |
-| Gateway listener `https-media` + `*.media.hl.mkoelle.com` cert (`apps/core/gateway`) |                                                       |
-| Secret-store scoping (`ClusterSecretStore` namespace conditions)                    |                                                       |
+| homelab (the fence)                                                                                                                            | homelab-media                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| AppProject `media` + `media-root` handoff Application (`apps/.argocd/media.yaml`)                                                              | Its app-of-apps (`argocd/`), one Application per app |
+| Namespaces `media` / `media-argocd`, PSA labels, ResourceQuota, LimitRange (`apps/core/tenant-media`)                                          | All workloads, PVCs, HTTPRoutes, NetworkPolicies     |
+| Argo CD settings: apps-in-any-namespace, repo credential, Application health check                                                             | Its own CI / lint / Renovate                         |
+| PVs -- read-only SMB libraries and node-local app state -- each `claimRef`-pinned to one media claim (`apps/core/storage/volumes-media*.yaml`) |                                                      |
+| Gateway listener `https-media` + `*.media.hl.mkoelle.com` cert (`apps/core/gateway`)                                                           |                                                      |
+| Secret-store scoping (`ClusterSecretStore` namespace conditions)                                                                               |                                                      |
 
 Enforcement points:
 
