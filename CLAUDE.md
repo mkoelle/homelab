@@ -88,6 +88,8 @@ Within a single app, resources can carry their own `argocd.argoproj.io/sync-wave
 - LB IP pool: `192.168.1.200–192.168.1.254` (see `apps/core/cilium/lb-ip-pool.yaml`).
 - L2 policy: `apps/core/cilium/l2-announcement-policy.yaml`.
 - For new services that need LAN access, add `type: LoadBalancer` to the Service.
+- LAN DNS for `*.hl.mkoelle.com` is a wildcard on the FreshTomato router's dnsmasq: `address=/.hl.mkoelle.com/192.168.1.200` (the `homelab` Gateway's LB IP). It covers every depth of subdomain (e.g. `jellyfin.media.hl.mkoelle.com`), so new `hl` hostnames need **no** router change. Public DNS for these names stays NXDOMAIN.
+- In-cluster DNS for the same names is separate: `apps/core/coredns-custom/configmap.yaml` uses CoreDNS's `hosts` plugin, which matches literal names only -- add a line there only when something *inside* the cluster must resolve a new `hl` hostname.
 
 ## Style Guidelines
 
