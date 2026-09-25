@@ -118,20 +118,6 @@ spec:
             namespace: homepage
             wave: "6"
 
-          # Wave 7 — Admission enforcement, deliberately last. Kyverno's
-          # webhook affects every future request cluster-wide once
-          # registered, regardless of wave; installing it after every other
-          # app has already synced at least once means its namespace
-          # exclusions (kube-system, core-argocd) are tested against real
-          # manifests, not guessed at cold-start. features.
-          # forceFailurePolicyIgnore keeps it fail-open even so. Audit mode
-          # only — no ClusterPolicy resources shipped yet, see
-          # docs/planning/security.md Phase 3.
-          - name: kyverno
-            path: apps/core/kyverno
-            namespace: kyverno
-            wave: "7"
-
   template:
     metadata:
       name: "{{name}}"

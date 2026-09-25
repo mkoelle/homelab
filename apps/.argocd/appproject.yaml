@@ -26,7 +26,6 @@ spec:
     - https://dirsigler.github.io/uptime-kuma-helm
     - https://kubescape.github.io/helm-charts/
     - https://aquasecurity.github.io/helm-charts/
-    - https://kyverno.github.io/kyverno/
   destinations:
     - server: https://kubernetes.default.svc
       namespace: core-argocd
@@ -62,8 +61,6 @@ spec:
       namespace: kubescape
     - server: https://kubernetes.default.svc
       namespace: trivy-operator
-    - server: https://kubernetes.default.svc
-      namespace: kyverno
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
