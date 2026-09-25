@@ -64,21 +64,6 @@ patches:
   # Minimal-permission approach caused whack-a-mole RBAC failures as ArgoCD's
   # cluster cache discovery hits every API group. Single-node homelab has no
   # multi-tenant threat model that warrants the maintenance overhead.
-  #
-  # escalate/bind on rbac.authorization.k8s.io are deliberately separate from
-  # the `*`/`*` wildcard above: Kubernetes' RBAC authorizer requires these
-  # exact verb strings (not implied by create/patch/`*` resources) before
-  # letting a principal create or update a ClusterRole with a non-nil
-  # aggregationRule, or a RoleBinding/ClusterRoleBinding at all — a
-  # defense-in-depth check against privilege escalation via broad grants,
-  # independent of how wide the resource/verb wildcard otherwise is. Hit
-  # this deploying Kyverno: its chart's per-controller ClusterRoles
-  # (kyverno:background-controller etc.) use aggregationRule to compose
-  # rules from labeled `:core` ClusterRoles, and every one failed with
-  # "forbidden: must have cluster-admin privileges to use the
-  # aggregationRule" even though the rule above already grants this
-  # ServiceAccount full CRUD on ClusterRole/ClusterRoleBinding objects
-  # directly — same accepted-risk reasoning as the wildcard grant itself.
   - patch: |
       - op: replace
         path: /rules
@@ -86,9 +71,6 @@ patches:
           - apiGroups: ["*"]
             resources: ["*"]
             verbs: [get, list, watch, create, update, patch, delete, deletecollection]
-          - apiGroups: ["rbac.authorization.k8s.io"]
-            resources: [clusterroles, clusterrolebindings, roles, rolebindings]
-            verbs: [escalate, bind]
           - nonResourceURLs: ["*"]
             verbs: [get]
     target:
