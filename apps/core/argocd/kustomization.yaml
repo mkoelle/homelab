@@ -27,37 +27,10 @@ patches:
       name: argocd-server
   # Kustomize namespace transformer does not update subjects[].namespace in ClusterRoleBindings.
   # ArgoCD chart hardcodes namespace: argocd — patch all three to use the actual namespace.
-  #
-  # This binding also points at the built-in cluster-admin ClusterRole
-  # instead of the chart's own argocd-application-controller ClusterRole
-  # (see the removed /rules patch this replaced, in git history). A hand-
-  # maintained `*`/`*` rule list already covered ordinary CRUD, but hit two
-  # separate Kubernetes RBAC escalation gates back to back deploying
-  # Kyverno: first the general "attempting to grant permissions not
-  # currently held" check (needs escalate/bind to create RoleBindings or
-  # ClusterRoles with rules the creator doesn't have), then the *stricter*,
-  # aggregationRule-specific check ("must have cluster-admin privileges to
-  # use the aggregationRule") which requires true unrestricted escalate --
-  # not satisfiable by scoping escalate/bind to rbac.authorization.k8s.io
-  # resources only, because aggregationRule composes rules dynamically via
-  # label selector across whatever resources those rules end up covering.
-  # Given the custom rule set was already accepted-risk equivalent to
-  # cluster-admin for ordinary verbs, binding to the real cluster-admin
-  # role is more honest than a hand-rolled near-duplicate that needs
-  # patching every time a future chart hits the next escalation edge case.
-  # roleRef is immutable on an existing ClusterRoleBinding -- Replace=true
-  # makes Argo CD delete+recreate it instead of failing on that field.
   - patch: |
       - op: replace
         path: /subjects/0/namespace
         value: core-argocd
-      - op: replace
-        path: /roleRef/name
-        value: cluster-admin
-      - op: add
-        path: /metadata/annotations
-        value:
-          argocd.argoproj.io/sync-options: Replace=true
     target:
       kind: ClusterRoleBinding
       name: argocd-application-controller
@@ -87,6 +60,37 @@ patches:
     target:
       kind: ConfigMap
       name: argocd-cmd-params-cm
-  # argocd-application-controller's own ClusterRole is left at the chart
-  # default and unused now -- the ClusterRoleBinding above points at the
-  # built-in cluster-admin role instead (see that patch's comment for why).
+  # Grant cluster-wide read/write to all resources.
+  # Minimal-permission approach caused whack-a-mole RBAC failures as ArgoCD's
+  # cluster cache discovery hits every API group. Single-node homelab has no
+  # multi-tenant threat model that warrants the maintenance overhead.
+  #
+  # escalate/bind on rbac.authorization.k8s.io are deliberately separate from
+  # the `*`/`*` wildcard above: Kubernetes' RBAC authorizer requires these
+  # exact verb strings (not implied by create/patch/`*` resources) before
+  # letting a principal create or update a ClusterRole with a non-nil
+  # aggregationRule, or a RoleBinding/ClusterRoleBinding at all — a
+  # defense-in-depth check against privilege escalation via broad grants,
+  # independent of how wide the resource/verb wildcard otherwise is. Hit
+  # this deploying Kyverno: its chart's per-controller ClusterRoles
+  # (kyverno:background-controller etc.) use aggregationRule to compose
+  # rules from labeled `:core` ClusterRoles, and every one failed with
+  # "forbidden: must have cluster-admin privileges to use the
+  # aggregationRule" even though the rule above already grants this
+  # ServiceAccount full CRUD on ClusterRole/ClusterRoleBinding objects
+  # directly — same accepted-risk reasoning as the wildcard grant itself.
+  - patch: |
+      - op: replace
+        path: /rules
+        value:
+          - apiGroups: ["*"]
+            resources: ["*"]
+            verbs: [get, list, watch, create, update, patch, delete, deletecollection]
+          - apiGroups: ["rbac.authorization.k8s.io"]
+            resources: [clusterroles, clusterrolebindings, roles, rolebindings]
+            verbs: [escalate, bind]
+          - nonResourceURLs: ["*"]
+            verbs: [get]
+    target:
+      kind: ClusterRole
+      name: argocd-application-controller
