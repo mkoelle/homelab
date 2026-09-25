@@ -25,13 +25,6 @@ operator:
   # read access just to discover imagePullSecrets; configure scoped access if
   # private registries are added later.
   accessGlobalSecretsAndServiceAccount: false
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
   metricsFindingsEnabled: true
   metricsVulnIdEnabled: false
   configAuditScannerScanOnlyCurrentRevisions: true
@@ -71,13 +64,19 @@ securityContext:
   privileged: false
   readOnlyRootFilesystem: true
 
+# This top-level key (not `operator.resources`, which the chart schema
+# silently ignores — verified against chart 0.36.0's defaults) is what
+# actually sets the trivy-operator container's limits. OOMKilled once at
+# 512Mi while reconciling the initial report backlog (150+ ConfigAuditReports,
+# 90+ VulnerabilityReports); stable since that restart, but the margin was
+# too thin.
 resources:
   requests:
     cpu: 100m
     memory: 128Mi
   limits:
     cpu: 500m
-    memory: 512Mi
+    memory: 768Mi
 
 trivy:
   slow: true
