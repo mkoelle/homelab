@@ -7,9 +7,10 @@
 # whose sourceNamespaces lists media-argocd -- i.e. only this one. The tenant
 # repo therefore can't opt into `project: homelab`, deploy outside the
 # destinations below, create cluster-scoped objects, or edit AppProjects.
-# Namespaces, quota, PVs, Gateway listener and secret stores for the tenant
-# all live in homelab (apps/core/tenant-media, apps/core/storage,
-# apps/core/gateway, apps/core/external-secrets).
+# Namespaces, quota, the SMB credentials Secret, the Gateway listener and
+# the local-path provisioner all live in homelab (apps/core/tenant-media,
+# apps/core/gateway, apps/core/local-path). The tenant declares its own
+# volumes: inline SMB CSI volumes and local-path PVCs.
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -31,6 +32,8 @@ spec:
   # Nothing cluster-scoped. Namespaces and PVs are homelab's: a namespace's
   # pod-security labels set its privilege level, and PSA doesn't inspect
   # PVC-backed volumes, so a tenant-made hostPath PV would reach the node.
+  # The tenant gets storage without PVs: inline SMB CSI volumes (PSA allows
+  # `csi`) and dynamically provisioned local-path PVCs.
   clusterResourceWhitelist: []
   namespaceResourceBlacklist:
     - group: ""
@@ -43,10 +46,17 @@ spec:
     # Media only attaches HTTPRoutes to the shared Gateway's https-media listener.
     - group: gateway.networking.k8s.io
       kind: Gateway
-    # Secret access is scoped by homelab's ClusterSecretStore conditions;
-    # the tenant doesn't define stores of its own.
+    # No ESO objects at all -- not just SecretStores. Namespace `media` IS on
+    # the shared bitwarden-secretsmanager store's allowlist (so homelab's
+    # tenant-media app can place the SMB creds there), which means ANY
+    # ExternalSecret in `media` could read ANY homelab BSM secret. Homelab
+    # (tenant-media app, project `homelab`) must stay the only writer of
+    # ESO objects in `media`. Never remove these two lines while `media` is
+    # on that allowlist.
     - group: external-secrets.io
-      kind: SecretStore
+      kind: "*"
+    - group: generators.external-secrets.io
+      kind: "*"
     - group: argoproj.io
       kind: AppProject
 ---

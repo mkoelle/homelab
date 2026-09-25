@@ -48,6 +48,13 @@ spec:
             namespace: kube-system
             wave: "1"
 
+          # Dynamic node-local StorageClass `local-path` (ADR 0004); first
+          # consumer is the homelab-media tenant's app state.
+          - name: local-path
+            path: apps/core/local-path
+            namespace: local-path-storage
+            wave: "1"
+
           - name: zitadel
             path: apps/core/zitadel
             namespace: zitadel

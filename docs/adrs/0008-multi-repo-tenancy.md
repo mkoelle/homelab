@@ -33,14 +33,15 @@ tenant-owned AppProject is not a boundary.
 Rule of thumb: anything that grants privilege, is cluster-scoped, or is
 shared between tenants belongs to homelab.
 
-| homelab (the fence)                                                                                                                            | homelab-media                                        |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| AppProject `media` + `media-root` handoff Application (`apps/.argocd/media.yaml`)                                                              | Its app-of-apps (`argocd/`), one Application per app |
-| Namespaces `media` / `media-argocd`, PSA labels, ResourceQuota, LimitRange (`apps/core/tenant-media`)                                          | All workloads, PVCs, HTTPRoutes, NetworkPolicies     |
-| Argo CD settings: apps-in-any-namespace, repo credential, Application health check                                                             | Its own CI / lint / Renovate                         |
-| PVs -- read-only SMB libraries and node-local app state -- each `claimRef`-pinned to one media claim (`apps/core/storage/volumes-media*.yaml`) |                                                      |
-| Gateway listener `https-media` + `*.media.hl.mkoelle.com` cert (`apps/core/gateway`)                                                           |                                                      |
-| Secret-store scoping (`ClusterSecretStore` namespace conditions)                                                                               |                                                      |
+| homelab (the fence) | homelab-media |
+| --- | --- |
+| AppProject `media` + `media-root` handoff Application (`apps/.argocd/media.yaml`) | Its app-of-apps (`argocd/`), one Application per app |
+| Namespaces `media` / `media-argocd`, PSA labels, ResourceQuota (incl. storage caps), LimitRange (`apps/core/tenant-media`) | All workloads, HTTPRoutes, NetworkPolicies |
+| SMB credentials Secret in `media`, from homelab's Bitwarden store (`apps/core/tenant-media/smb-media-creds.yaml`) | Volumes: inline SMB CSI volumes and local-path PVCs, and all mounts |
+| `local-path` provisioner + StorageClass (`apps/core/local-path`) | Its own CI / lint / Renovate |
+| Argo CD settings: apps-in-any-namespace, repo credential, Application health check | |
+| Gateway listener `https-media` + `*.media.hl.mkoelle.com` cert (`apps/core/gateway`) | |
+| Secret-store scoping (`ClusterSecretStore` namespace conditions) | |
 
 Enforcement points:
 
@@ -56,25 +57,36 @@ Enforcement points:
   `*.media.hl.mkoelle.com`.
 - **LAN IPs** -- quota `services.loadbalancers: "0"`.
 - **Secrets** -- the shared `bitwarden-secretsmanager` store is limited to
-  an explicit namespace allowlist that excludes `media`. The tenant gets its
-  own BSM project + store when it first needs secrets.
-- **NAS** -- dedicated SMB user, read-only on the libraries and nothing
-  else; library PVs also mount `readOnly` at the CSI layer. The tenant has
-  no NAS write access yet (a later feature), so app state (e.g. Jellyfin's
-  config/SQLite) lives on homelab-declared `local` PVs on motherbox
-  (`apps/core/storage/volumes-media-local.yaml`, class `media-local`) --
-  not backed up, lost on a node rebuild.
+  an explicit namespace allowlist. `media` is on it only so homelab's
+  tenant-media app can place the SMB credentials Secret there (inline SMB
+  volumes read their secret from the pod's own namespace); the `media`
+  AppProject blacklists every `external-secrets.io` kind, so the tenant
+  can't create its own ExternalSecrets against it. Those two settings must
+  change together. A dedicated BSM project + store for the tenant is the
+  upgrade path if it ever needs its own secrets.
+- **Storage without PVs** -- the tenant declares its own volumes, but never
+  PVs: library shares are inline SMB CSI volumes in the pod spec (PSA
+  `restricted` allows `csi`), and app state is dynamically provisioned from
+  `local-path`. The tenant's quota caps `local-path` claims/size and zeroes
+  every other StorageClass, so it can't bind a homelab volume.
+- **NAS** -- the dedicated SMB user is the boundary for what the tenant can
+  mount: read-only on the five library shares, nothing else (no `photo`, no
+  write). The tenant has no NAS write access yet (a later feature), so app
+  state (e.g. Jellyfin's config/SQLite) lives on `local-path` on motherbox
+  -- not backed up, lost on a node rebuild.
 
 ## Consequences
 
 - **Pros**:
-  - New media apps, hostnames under `*.media.hl.mkoelle.com`, and
-    app-of-apps changes need no homelab change.
+  - New media apps, their volumes and mounts, hostnames under
+    `*.media.hl.mkoelle.com`, and app-of-apps changes need no homelab
+    change.
   - A compromised or careless tenant repo can't escalate beyond its
     namespace, touch other apps' hostnames, read homelab secrets, or write
     to media libraries.
 - **Cons**:
-  - A new NAS share, a namespace, or more quota still needs a homelab PR.
+  - A namespace or more quota still needs a homelab PR. A new NAS share
+    needs no git change here -- only a NAS permission for the media SMB user.
   - SSO for tenant apps behind oauth2-proxy still needs a Zitadel client in
     homelab's Terraform (apps with native auth, like Jellyfin, don't).
   - Two repos to keep linted; the tenant's manifests aren't covered by

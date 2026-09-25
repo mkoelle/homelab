@@ -86,7 +86,9 @@ regen
 remotecfg
 rescan
 resolv
+resourcequota
 rolebindings
+rootfs
 scgi
 SDKURL
 selfsigned
