@@ -105,3 +105,7 @@ spec:
       kind: APIService
     - group: aquasecurity.github.io
       kind: ClusterComplianceReport
+    # Tetragon TracingPolicy is cluster-scoped (applies cluster-wide);
+    # TracingPolicyNamespaced is namespaced and needs no whitelist entry.
+    - group: cilium.io
+      kind: TracingPolicy

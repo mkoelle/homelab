@@ -1,0 +1,61 @@
+---
+# Render CRDs as static manifests instead of letting tetragon-operator install
+# them at runtime ("operator" method). GitOps needs TracingPolicy's CRD to
+# exist before any TracingPolicy resource is applied; the runtime-install
+# method races that on first sync.
+crds:
+  installMethod: helm
+
+# Upstream Talos instructions require this mount for kernel tracing access.
+# https://tetragon.io/docs/installation/kubernetes/
+extraHostPathMounts:
+  - name: sys-kernel-tracing
+    mountPath: /sys/kernel/tracing
+    hostPath: /sys/kernel/tracing
+
+tetragon:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+tetragonOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+export:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  stdout: {}
+
+# Bound event volume before widening scope. -1 (unlimited) is the chart
+# default; this cluster's Loki storage is ephemeral and single-node.
+exportRateLimit: 500
+
+# Deliberately NOT widening this yet. The chart default already excludes
+# host ("")/cilium/kube-system events:
+#   exportDenyList: |-
+#     {"namespace":["", "cilium", "kube-system"]}
+# Phase 2 of docs/planning/security.md calls for including those, but only
+# together with an argument-redaction policy (process args can carry
+# credentials) — that redaction pattern hasn't been decided yet. Widen the
+# export scope in the same change that adds redactionFilters, not before.
+
+# Metrics scrape intentionally not wired up: Alloy already collects the
+# export-stdout sidecar's container logs into Loki (no ServiceMonitor CRD
+# needed, matches this cluster's existing scrape pattern). Add a metrics
+# Service/annotation later only if Loki-based event-rate dashboards prove
+# insufficient.

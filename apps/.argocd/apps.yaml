@@ -53,6 +53,14 @@ spec:
             namespace: zitadel
             wave: "1"
 
+          # Tetragon: eBPF runtime sensor, same tier as the other platform
+          # DaemonSets. Installs into kube-system (upstream's recommended
+          # namespace) and needs Cilium (wave 0) already Healthy.
+          - name: tetragon
+            path: apps/core/tetragon
+            namespace: kube-system
+            wave: "1"
+
           # Wave 2 — Cluster services
           - name: gateway
             path: apps/core/gateway
