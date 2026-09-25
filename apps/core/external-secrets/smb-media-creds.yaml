@@ -1,8 +1,10 @@
 ---
 # SMB credentials for the homelab-media tenant's NAS volumes
 # (apps/core/storage/volumes-media.yaml). Dedicated NAS user: read-only on
-# Anime/Movies/TV_Shows/Music/AudioBooks, read/write only on appdata, no
-# access to photo -- so the media tenant can't reach anything else on the NAS.
+# Anime/Movies/TV_Shows/Music/AudioBooks, no write anywhere, no access to
+# photo -- so the media tenant can't reach anything else on the NAS or
+# modify libraries. (Tenant app state is node-local for now; NAS write is a
+# later feature.)
 # Lands in core-secrets (homelab's side of the fence), referenced by the
 # PVs' nodeStageSecretRef; the tenant never sees it.
 apiVersion: external-secrets.io/v1

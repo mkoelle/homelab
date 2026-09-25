@@ -1,0 +1,40 @@
+---
+# Node-local state for the homelab-media tenant (ADR 0008). The tenant has
+# read-only NAS access for now (NAS write for app state is a later feature),
+# so app config/SQLite lives on motherbox's SSD instead -- which also avoids
+# SQLite-over-SMB locking issues entirely.
+#
+# Same pattern as apps/core/zitadel/volume.yaml: a `local` PV (PSA
+# "restricted" forbids hostPath in the tenant's pods, and `local` also gets
+# fsGroup ownership applied, so the non-root pod can write), path under
+# /var/lib/kubelet (kubelet's local-volume check only reliably sees its own
+# state tree), directory created by volumes-media-local-init-job.yaml.
+# claimRef-pinned to exactly one tenant claim, like the SMB PVs.
+#
+# Durability: NOT backed up. A node rebuild/reinstall loses it -- for
+# Jellyfin that's users, watch state and settings (libraries rescan from the
+# NAS). Revisit when the tenant gets NAS write access.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-jellyfin-config
+spec:
+  capacity:
+    storage: 20Gi # Not enforced on a local dir; claim must request <= this.
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: media-local
+  claimRef:
+    namespace: media
+    name: jellyfin-config
+  local:
+    path: /var/lib/kubelet/media-jellyfin-config
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - motherbox

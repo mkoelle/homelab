@@ -94,9 +94,10 @@ Within a single app, resources can carry their own `argocd.argoproj.io/sync-wave
 ### 7. Tenants (homelab-media)
 
 - Media apps live in the private repo `mkoelle/homelab-media`; see ADR 0008 (`docs/adrs/0008-multi-repo-tenancy.md`).
-- **homelab owns the fence, the tenant owns everything inside it.** homelab owns: AppProject `media` + `media-root` (`apps/.argocd/media.yaml`), namespaces/PSA/quota (`apps/core/tenant-media`), SMB PVs (`apps/core/storage/volumes-media.yaml`), the Gateway `https-media` listener, and secret-store scoping.
+- **homelab owns the fence, the tenant owns everything inside it.** homelab owns: AppProject `media` + `media-root` (`apps/.argocd/media.yaml`), namespaces/PSA/quota (`apps/core/tenant-media`), PVs (read-only SMB libraries in `apps/core/storage/volumes-media.yaml`, node-local app state in `volumes-media-local.yaml`), the Gateway `https-media` listener, and secret-store scoping.
 - Don't add media workloads here, and don't loosen the `media` AppProject (cluster-scoped kinds, extra destinations) to make a tenant change work -- change the fence deliberately, in this repo, with the reasoning in a comment.
 - A new NAS share for media = a new PV here, `claimRef`-pinned to the tenant's claim name.
+- The tenant has **no NAS write access** yet (later feature). App state for a new media app = a `local` PV in `volumes-media-local.yaml` (class `media-local`, pinned to motherbox) + its directory in `volumes-media-local-init-job.yaml`. Not backed up.
 - The `bitwarden-secretsmanager` ClusterSecretStore has a namespace allowlist (`conditions`) -- add a homelab namespace there when a new homelab app needs secrets. Never add `media`.
 
 ## Style Guidelines

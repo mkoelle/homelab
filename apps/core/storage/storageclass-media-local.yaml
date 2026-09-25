@@ -1,0 +1,12 @@
+---
+# Static StorageClass for the homelab-media tenant's node-local PVs
+# (volumes-media-local.yaml). No provisioner -- PVs exist only because
+# they're declared in this repo. WaitForFirstConsumer is the required
+# binding mode for `local` volumes (same as zitadel-postgres-local).
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: media-local
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain

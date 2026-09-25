@@ -84,6 +84,7 @@ queryless
 readwrite
 regen
 remotecfg
+rescan
 resolv
 rolebindings
 scgi

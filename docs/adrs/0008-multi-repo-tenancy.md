@@ -38,7 +38,7 @@ shared between tenants belongs to homelab.
 | AppProject `media` + `media-root` handoff Application (`apps/.argocd/media.yaml`)   | Its app-of-apps (`argocd/`), one Application per app |
 | Namespaces `media` / `media-argocd`, PSA labels, ResourceQuota, LimitRange (`apps/core/tenant-media`) | All workloads, PVCs, HTTPRoutes, NetworkPolicies     |
 | Argo CD settings: apps-in-any-namespace, repo credential, Application health check  | Its own CI / lint / Renovate                          |
-| SMB PVs, each `claimRef`-pinned to one media claim (`apps/core/storage/volumes-media.yaml`) |                                                       |
+| PVs -- read-only SMB libraries and node-local app state -- each `claimRef`-pinned to one media claim (`apps/core/storage/volumes-media*.yaml`) |                                                       |
 | Gateway listener `https-media` + `*.media.hl.mkoelle.com` cert (`apps/core/gateway`) |                                                       |
 | Secret-store scoping (`ClusterSecretStore` namespace conditions)                    |                                                       |
 
@@ -58,8 +58,12 @@ Enforcement points:
 - **Secrets** -- the shared `bitwarden-secretsmanager` store is limited to
   an explicit namespace allowlist that excludes `media`. The tenant gets its
   own BSM project + store when it first needs secrets.
-- **NAS** -- dedicated SMB user, read-only on libraries, read/write only on
-  `appdata`; library PVs also mount `readOnly` at the CSI layer.
+- **NAS** -- dedicated SMB user, read-only on the libraries and nothing
+  else; library PVs also mount `readOnly` at the CSI layer. The tenant has
+  no NAS write access yet (a later feature), so app state (e.g. Jellyfin's
+  config/SQLite) lives on homelab-declared `local` PVs on motherbox
+  (`apps/core/storage/volumes-media-local.yaml`, class `media-local`) --
+  not backed up, lost on a node rebuild.
 
 ## Consequences
 
