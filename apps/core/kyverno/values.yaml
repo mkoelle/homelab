@@ -1,0 +1,46 @@
+---
+# Global, cluster-wide fail-open: forces failurePolicy=Ignore on every
+# admission webhook regardless of what an individual ClusterPolicy specifies.
+# Single node means no admission-controller redundancy — a Fail-mode webhook
+# that's down would deadlock the API server's admission path for every
+# matching request, cluster-wide. This is the belt to config.webhooks'
+# suspenders below.
+features:
+  forceFailurePolicyIgnore:
+    enabled: true
+
+config:
+  # Chart default already excludes kube-system and Kyverno's own namespace
+  # (excludeKyvernoNamespace: true, also a chart default). Add core-argocd:
+  # Argo CD is this cluster's bootstrap dependency chain (it applies every
+  # other manifest, Kyverno's own included) — same deadlock class already
+  # hit and documented for Zitadel's PreSync hooks in CLAUDE.md. Widen this
+  # exclusion only after testing exact manifests namespace-by-namespace.
+  webhooks:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - core-argocd
+
+# Render CRDs as static manifests (matches the Tetragon app's choice, and
+# this cluster's general preference for GitOps-visible, non-dynamic CRD
+# management).
+crds:
+  install: true
+
+# Single-node: one replica per controller, no HA to lose. Chart leaves
+# replicas unset (defaults to its own template logic) if not given here.
+admissionController:
+  replicas: 1
+
+backgroundController:
+  replicas: 1
+
+cleanupController:
+  replicas: 1
+
+reportsController:
+  replicas: 1
