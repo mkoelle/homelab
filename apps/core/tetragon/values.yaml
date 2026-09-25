@@ -22,6 +22,33 @@ tetragon:
       cpu: 500m
       memory: 512Mi
 
+  # Bound event volume before widening scope. -1 (unlimited) is the chart
+  # default; this cluster's Loki storage is ephemeral and single-node.
+  exportRateLimit: 500
+
+  # Widened from the chart default:
+  #   exportDenyList: |-
+  #     {"health_check":true}
+  #     {"namespace":["", "cilium", "kube-system"]}
+  # Host/cilium/kube-system are exactly the platform components most
+  # relevant to cluster compromise, so include them. Keep the health-check
+  # suppression line — that one isn't a coverage gap, just noise reduction.
+  exportDenyList: |-
+    {"health_check":true}
+
+  # Verified before widening scope: this cluster's secret-injection
+  # convention is env-var/file-based (ExternalSecrets -> Secret -> `_FILE`
+  # env refs or volume mounts, e.g. apps/core/zitadel's Postgres), not CLI
+  # flags — grepped all rendered manifests, no `--password=`-style literal
+  # args exist today. These filters are a structural guard for whatever
+  # gets deployed next, not a response to a live leak. RE2 patterns,
+  # capture groups get redacted.
+  redactionFilters: |-
+    {"redact": ["(?i)--?password(?:[=\\s]+)(\\S+)"]}
+    {"redact": ["(?i)--?(?:api[-_]?key|token|secret)(?:[=\\s]+)(\\S+)"]}
+    {"redact": ["(?i)Authorization:\\s*(\\S+)"]}
+    {"redact": ["://[^:/@\\s]+:([^@\\s]+)@"]}
+
 tetragonOperator:
   resources:
     requests:
@@ -40,19 +67,6 @@ export:
       cpu: 100m
       memory: 128Mi
   stdout: {}
-
-# Bound event volume before widening scope. -1 (unlimited) is the chart
-# default; this cluster's Loki storage is ephemeral and single-node.
-exportRateLimit: 500
-
-# Deliberately NOT widening this yet. The chart default already excludes
-# host ("")/cilium/kube-system events:
-#   exportDenyList: |-
-#     {"namespace":["", "cilium", "kube-system"]}
-# Phase 2 of docs/planning/security.md calls for including those, but only
-# together with an argument-redaction policy (process args can carry
-# credentials) — that redaction pattern hasn't been decided yet. Widen the
-# export scope in the same change that adds redactionFilters, not before.
 
 # Metrics scrape intentionally not wired up: Alloy already collects the
 # export-stdout sidecar's container logs into Loki (no ServiceMonitor CRD
