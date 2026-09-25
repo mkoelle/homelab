@@ -1,0 +1,92 @@
+---
+# The chart bundles Helm lifecycle hooks (helm.sh/hook: post-upgrade/
+# pre-delete/test) this cluster's GitOps flow has no use for and that
+# kube-linter flags (missing ttlSecondsAfterFinished on the 3 Jobs,
+# ghcr.io/kyverno/readiness-checker:latest on the 5 test Pods). Rather than
+# reason through how Argo CD v3.5.3 remaps each Helm hook value when the
+# source is Kustomize (not a native Helm Application) -- confirmed uncertain
+# territory, unlike the pre-install/pre-upgrade PreSync case documented for
+# apps/core/zitadel/patch-chart-jobs.yaml -- drop all of them outright:
+#
+# - kyverno-migrate-resources (post-upgrade): migrates Kyverno's internal
+#   CRD data across chart versions. Not needed for a fresh install; if a
+#   future chart bump needs it, re-add deliberately at that time.
+# - kyverno-rm-webhooks, kyverno-scale-to-zero (pre-delete): webhook/scale
+#   cleanup on uninstall. Not needed until this app is actually removed.
+# - The 5 *-metrics/-liveness/-readiness test Pods (helm.sh/hook: test):
+#   only meaningful under `helm test`, which nothing in this GitOps flow
+#   runs. Left in place they'd become permanent Pods with no lifecycle.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kyverno-migrate-resources
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyverno:migrate-resources
+$patch: delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kyverno:migrate-resources
+$patch: delete
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kyverno-migrate-resources
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kyverno-rm-webhooks
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kyverno-scale-to-zero
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-admission-controller-metrics
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-cleanup-controller-liveness
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-cleanup-controller-metrics
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-cleanup-controller-readiness
+  namespace: kyverno
+$patch: delete
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-reports-controller-metrics
+  namespace: kyverno
+$patch: delete

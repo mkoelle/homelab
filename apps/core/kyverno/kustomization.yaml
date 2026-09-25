@@ -16,3 +16,6 @@ helmCharts:
     namespace: kyverno
     includeCRDs: true
     valuesFile: values.yaml
+
+patches:
+  - path: patch-chart-jobs.yaml
