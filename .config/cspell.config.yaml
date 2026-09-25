@@ -5,10 +5,10 @@ ignorePaths: [.git, .build, charts]
 
 dictionaryDefinitions:
   - name: myWords
-    path: ./cSpell_dict.txt
+    path: ./cspell_dict.txt
     addWords: true
   - name: namesUsersAndProducts
-    path: ./cSpell_names_products.txt
+    path: ./cspell_names_products.txt
     addWords: true
 
 dictionaries: [myWords, namesUsersAndProducts]
