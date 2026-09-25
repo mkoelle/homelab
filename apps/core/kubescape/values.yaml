@@ -66,6 +66,13 @@ kubevulnScheduler:
   scanSchedule: "0 3 * * *"
 
 kubescape:
+  # Chart 1.40.4 (latest available) still defaults to v4.0.13, which panics
+  # ("fatal error: concurrent map iteration and map write" in
+  # celParamObjectFinder) partway through most allcontrols scans and gets
+  # restarted by kubelet. Fixed upstream in kubescape/kubescape#3787,
+  # released in v4.0.14. Override until a chart release bumps this default.
+  image:
+    tag: v4.0.14
   resources:
     requests:
       cpu: 100m
