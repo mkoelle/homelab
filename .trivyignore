@@ -11,13 +11,3 @@ KSV-0047
 # for resolving the real secret from the Terraform-managed Secret at runtime —
 # no secret material is actually in this ConfigMap.
 KSV-0109
-
-# KSV-0118: apps/core/kyverno/patch-chart-jobs.yaml's five `$patch: delete`
-# stubs (removing the chart's `helm test` Pods) are bare `kind: Pod` documents
-# with no `spec` — they exist only to name a deletion target, never run.
-# Trivy's config scanner reads the missing securityContext as a real finding
-# regardless; per-document `# trivy:ignore:KSV-0118` comments (Trivy's usual
-# scoped mechanism) did not suppress it for these stub documents, tried
-# before falling back to this global rule-ID suppression, same as KSV-0047/
-# KSV-0109 above. Not a blanket exception on running Pods elsewhere.
-KSV-0118
