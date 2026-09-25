@@ -1,0 +1,18 @@
+---
+# Defaults (CLAUDE.md "Default Resource Sizes") for any media container that
+# doesn't set its own -- without this, the ResourceQuota above would reject
+# such pods outright.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: media-defaults
+  namespace: media
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 256Mi
+      default:
+        cpu: 1000m
+        memory: 1Gi

@@ -59,6 +59,14 @@ spec:
             namespace: gateway
             wave: "2"
 
+          # homelab-media tenant fence (namespaces, quota, limits) -- see
+          # apps/.argocd/media.yaml and ADR 0008. After storage (PVs it
+          # pins claims into) and alongside gateway (its listener).
+          - name: tenant-media
+            path: apps/core/tenant-media
+            namespace: media
+            wave: "2"
+
           # Wave 3 — Observability (metrics + logs)
           - name: monitoring
             path: apps/core/monitoring

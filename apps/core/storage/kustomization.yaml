@@ -6,6 +6,8 @@ resources:
   - storageclass.yaml
   - namespace.yaml
   - volumes.yaml
+  - storageclass-smb-static.yaml
+  - volumes-media.yaml
 
 helmCharts:
   - name: csi-driver-smb

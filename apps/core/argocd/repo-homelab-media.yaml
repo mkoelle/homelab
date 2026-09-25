@@ -1,0 +1,41 @@
+---
+# Argo CD repository credential for the private homelab-media repo (the
+# media tenant -- see apps/.argocd/media.yaml). Argo CD discovers repo
+# credentials by the argocd.argoproj.io/secret-type label, not by name.
+#
+# Token: GitHub fine-grained PAT, repository access = homelab-media only,
+# permissions = Contents: Read-only (+ the automatic Metadata: Read-only).
+# Nothing in Argo CD writes back to GitHub. Stored in Bitwarden SM as
+# core/argocd/github-access-token. It has an expiry -- when it lapses,
+# media apps silently stop syncing (repo shows "authentication required").
+# Rotate by updating the BSM value; ESO refreshes this within refreshInterval.
+#
+# HTTPS (not SSH deploy key) on purpose: argocd networkpolicy.yaml only
+# allows egress on 443.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: repo-homelab-media
+  namespace: core-argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    name: repo-homelab-media
+    creationPolicy: Owner
+    template:
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      data:
+        type: git
+        url: https://github.com/mkoelle/homelab-media
+        # Any non-empty username works with a fine-grained PAT.
+        username: git
+        password: "{{ .token }}"
+  data:
+    - secretKey: token
+      remoteRef:
+        key: "81216cf3-5d4b-4bb2-a172-b4d001587949" # core/argocd/github-access-token

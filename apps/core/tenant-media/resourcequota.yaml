@@ -1,0 +1,31 @@
+---
+# Sized for Jellyfin (requests 500m/1Gi, limits 4/4Gi) plus headroom for the
+# next few media apps. services.loadbalancers: "0" keeps the tenant from
+# claiming LAN IPs out of the Cilium LB pool -- media is exposed only via
+# the shared Gateway.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: media-quota
+  namespace: media
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
+    pods: "20"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+# No pods in media-argocd, ever.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: media-argocd-quota
+  namespace: media-argocd
+spec:
+  hard:
+    pods: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"

@@ -35,6 +35,26 @@ data:
   # read app health/sync counts read-only. See argocd-rbac-cm.yaml for the
   # role binding.
   accounts.homepage: apiKey
+  # Health check for Application objects. Argo CD removed the built-in one
+  # in v1.8, so without this an app-of-apps treats a child Application as
+  # Healthy the moment it exists -- sync waves between child Applications
+  # then order nothing. Needed by the homelab-media tenant (media-root ->
+  # its child Applications, see apps/.argocd/media.yaml); also makes
+  # media-root itself go Degraded/Progressing when a media app is unhealthy.
+  # Standard snippet from the Argo CD docs ("App of Apps" health).
+  resource.customizations.health.argoproj.io_Application: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = ""
+    if obj.status ~= nil then
+      if obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+    end
+    return hs
   # Exclude API groups not managed by this cluster's GitOps manifests.
   # ArgoCD cluster cache sync fails if it cannot list any discovered API group.
   # resource.k8s.io (DRA) and flowcontrol are cluster-internal; snapshot.storage.k8s.io

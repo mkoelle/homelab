@@ -37,3 +37,8 @@
         href: https://filebrowser.motherbox.local
         description: Network file browser
         icon: filebrowser.png
+- Media:
+    - Jellyfin:
+        href: https://jellyfin.media.hl.mkoelle.com
+        description: Media server (homelab-media tenant)
+        icon: jellyfin.png

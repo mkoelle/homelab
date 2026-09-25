@@ -91,6 +91,14 @@ Within a single app, resources can carry their own `argocd.argoproj.io/sync-wave
 - LAN DNS for `*.hl.mkoelle.com` is a wildcard on the FreshTomato router's dnsmasq: `address=/.hl.mkoelle.com/192.168.1.200` (the `homelab` Gateway's LB IP). It covers every depth of subdomain (e.g. `jellyfin.media.hl.mkoelle.com`), so new `hl` hostnames need **no** router change. Public DNS for these names stays NXDOMAIN.
 - In-cluster DNS for the same names is separate: `apps/core/coredns-custom/configmap.yaml` uses CoreDNS's `hosts` plugin, which matches literal names only -- add a line there only when something *inside* the cluster must resolve a new `hl` hostname.
 
+### 7. Tenants (homelab-media)
+
+- Media apps live in the private repo `mkoelle/homelab-media`; see ADR 0008 (`docs/adrs/0008-multi-repo-tenancy.md`).
+- **homelab owns the fence, the tenant owns everything inside it.** homelab owns: AppProject `media` + `media-root` (`apps/.argocd/media.yaml`), namespaces/PSA/quota (`apps/core/tenant-media`), SMB PVs (`apps/core/storage/volumes-media.yaml`), the Gateway `https-media` listener, and secret-store scoping.
+- Don't add media workloads here, and don't loosen the `media` AppProject (cluster-scoped kinds, extra destinations) to make a tenant change work -- change the fence deliberately, in this repo, with the reasoning in a comment.
+- A new NAS share for media = a new PV here, `claimRef`-pinned to the tenant's claim name.
+- The `bitwarden-secretsmanager` ClusterSecretStore has a namespace allowlist (`conditions`) -- add a homelab namespace there when a new homelab app needs secrets. Never add `media`.
+
 ## Style Guidelines
 
 - Prefer `kustomize` for overlaying changes on top of Helm charts.

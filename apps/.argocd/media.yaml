@@ -1,0 +1,78 @@
+---
+# homelab-media tenant (ADR 0008): homelab owns the fence, the
+# github.com/mkoelle/homelab-media repo owns everything inside it.
+#
+# Enforcement: Applications in namespace media-argocd (apps-in-any-namespace,
+# apps/core/argocd/argocd-cmd-params-cm.yaml) may only reference projects
+# whose sourceNamespaces lists media-argocd -- i.e. only this one. The tenant
+# repo therefore can't opt into `project: homelab`, deploy outside the
+# destinations below, create cluster-scoped objects, or edit AppProjects.
+# Namespaces, quota, PVs, Gateway listener and secret stores for the tenant
+# all live in homelab (apps/core/tenant-media, apps/core/storage,
+# apps/core/gateway, apps/core/external-secrets).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: media
+  namespace: core-argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: homelab-media tenant -- fence owned by homelab, contents by homelab-media
+  sourceNamespaces:
+    - media-argocd
+  sourceRepos:
+    - https://github.com/mkoelle/homelab-media
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: media
+    - server: https://kubernetes.default.svc
+      namespace: media-argocd
+  # Nothing cluster-scoped. Namespaces and PVs are homelab's: a namespace's
+  # pod-security labels set its privilege level, and PSA doesn't inspect
+  # PVC-backed volumes, so a tenant-made hostPath PV would reach the node.
+  clusterResourceWhitelist: []
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: LimitRange
+    # No minting certs off ca-issuer / letsencrypt-route53.
+    - group: cert-manager.io
+      kind: "*"
+    # Media only attaches HTTPRoutes to the shared Gateway's https-media listener.
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+    # Secret access is scoped by homelab's ClusterSecretStore conditions;
+    # the tenant doesn't define stores of its own.
+    - group: external-secrets.io
+      kind: SecretStore
+    - group: argoproj.io
+      kind: AppProject
+---
+# The one handoff pointer into the tenant repo: syncs
+# homelab-media/argocd/ (its app-of-apps) into media-argocd. Lives in
+# core-argocd (control-plane namespace) so the root app can own it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: media-root
+  namespace: core-argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: media
+  source:
+    repoURL: https://github.com/mkoelle/homelab-media
+    targetRevision: HEAD
+    path: argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: media-argocd
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true

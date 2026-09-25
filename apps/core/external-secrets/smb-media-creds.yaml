@@ -1,0 +1,29 @@
+---
+# SMB credentials for the homelab-media tenant's NAS volumes
+# (apps/core/storage/volumes-media.yaml). Dedicated NAS user: read-only on
+# Anime/Movies/TV_Shows/Music/AudioBooks, read/write only on appdata, no
+# access to photo -- so the media tenant can't reach anything else on the NAS.
+# Lands in core-secrets (homelab's side of the fence), referenced by the
+# PVs' nodeStageSecretRef; the tenant never sees it.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: smb-media-creds
+  namespace: core-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    name: smb-media-creds
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: "9da1e0f9-1ec2-4633-a094-b4d00157cbd9" # media/jellyfin/smb-user
+    - secretKey: password
+      remoteRef:
+        key: "d77aadbe-38a5-4a93-9e4f-b4d001578b2a" # media/jellyfin/smb-password

@@ -9,6 +9,7 @@ resources:
   - bitwarden-tls-cert.yaml
   - cluster-secret-store.yaml
   - smb-photos-creds.yaml
+  - smb-media-creds.yaml
 
 helmCharts:
   - name: external-secrets

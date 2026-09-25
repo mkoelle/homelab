@@ -1,0 +1,14 @@
+---
+# The homelab-media tenant's fence, owned here in homelab (ADR 0008).
+# Namespaces live here -- not in homelab-media -- because whoever writes a
+# namespace's pod-security labels chooses its privilege level; the same goes
+# for its quota. Everything that runs *inside* these namespaces is owned by
+# github.com/mkoelle/homelab-media. The AppProject + handoff Application are
+# in apps/.argocd/media.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespaces.yaml
+  - resourcequota.yaml
+  - limitrange.yaml

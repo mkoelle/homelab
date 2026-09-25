@@ -1,0 +1,13 @@
+---
+# Static StorageClass for pre-provisioned SMB volumes that belong to the
+# homelab-media tenant (volumes-media.yaml). Same shape as photos-pv: no
+# provisioner, so nothing can ever create or delete data on the NAS through
+# it -- PVs exist only because they're declared here, and Retain keeps the
+# share untouched if a claim goes away.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: smb-static
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: Immediate
+reclaimPolicy: Retain
