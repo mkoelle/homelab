@@ -59,18 +59,17 @@ data:
           "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "ops"}, "overrides": []},
           "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
           "id": 5,
-          "targets": [{"expr": "sum(rate(projection_events_processed_total{job=\"prometheus.scrape.zitadel\"}[5m])) by (projection_name)", "legendFormat": "{{projection_name}}", "refId": "A"}],
+          "targets": [{"expr": "sum(rate(projection_events_processed_total{job=\"prometheus.scrape.zitadel\"}[5m])) by (projection)", "legendFormat": "{{projection}}", "refId": "A"}],
           "title": "Projection events processed/sec",
           "type": "timeseries"
         },
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "description": "grpc-ecosystem/go-grpc-middleware metric names -- verify against the live target's /debug/metrics if this panel shows no data.",
           "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "ops"}, "overrides": []},
           "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
           "id": 6,
-          "targets": [{"expr": "sum(rate(grpc_server_handled_total{job=\"prometheus.scrape.zitadel\"}[5m])) by (grpc_code)", "legendFormat": "{{grpc_code}}", "refId": "A"}],
-          "title": "gRPC requests/sec by code",
+          "targets": [{"expr": "sum(rate(grpc_server_grpc_status_code_total{job=\"prometheus.scrape.zitadel\"}[5m])) by (return_code)", "legendFormat": "{{return_code}}", "refId": "A"}],
+          "title": "gRPC requests/sec by status code",
           "type": "timeseries"
         },
         {
