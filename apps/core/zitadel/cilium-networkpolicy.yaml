@@ -33,6 +33,15 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    # Alloy (its own namespace, not "monitoring") scraping /debug/metrics --
+    # see apps/core/alloy/values.yaml's "zitadel" scrape block.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: alloy
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
     # OIDC relay (oidc-relay.yaml) -- no blanket same-namespace rule exists
     # here (unlike zitadel-policy's plain NetworkPolicy, which allows
     # `from: podSelector: {}`), so the relay needs its own explicit entry.

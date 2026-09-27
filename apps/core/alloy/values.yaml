@@ -358,6 +358,53 @@ alloy:
         }
       }
 
+      // Zitadel exposes metrics on the SAME port as its main API (8080) at
+      // /debug/metrics, not the generic /metrics the pod_metrics pipeline
+      // above assumes -- can't ride the generic prometheus.io/scrape
+      // annotation discovery, needs its own explicit path. Filtered to the
+      // "start" component (the main zitadel-start deployment) so it doesn't
+      // also match the separate zitadel-login pods or the bundled Postgres.
+      discovery.kubernetes "zitadel" {
+        role = "pod"
+        namespaces {
+          names = ["zitadel"]
+        }
+      }
+
+      discovery.relabel "zitadel_metrics" {
+        targets = discovery.kubernetes.zitadel.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name", "__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+          separator     = ";"
+          regex         = "zitadel;start"
+        }
+        rule {
+          action        = "replace"
+          source_labels = ["__meta_kubernetes_pod_ip"]
+          replacement   = "$1:8080"
+          target_label  = "__address__"
+        }
+        rule {
+          target_label = "__metrics_path__"
+          replacement  = "/debug/metrics"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+      }
+
+      prometheus.scrape "zitadel" {
+        targets    = discovery.relabel.zitadel_metrics.output
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
       // kubelet + cadvisor: proxied through the API server per node. insecure_skip_verify
       // because kubelet's serving cert isn't guaranteed to chain to the cluster CA.
       discovery.kubernetes "nodes" {

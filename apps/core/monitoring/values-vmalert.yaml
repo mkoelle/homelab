@@ -108,6 +108,16 @@ server:
                 severity: warning
               annotations:
                 summary: "OpenCost metrics target down for 10m -- cost data stale or missing"
+            # Zitadel is the SSO IdP behind every oauth2-proxy-fronted app in
+            # this cluster -- a silently-stopped metrics target here is a
+            # signal worth catching on its own, severity critical.
+            - alert: ZitadelTargetDown
+              expr: up{job="prometheus.scrape.zitadel"} == 0
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Zitadel metrics target down for 5m -- IdP for every SSO-fronted app may be impaired"
 
 # Alerts are visible in the Alertmanager/Grafana UI only — no receivers wired yet
 # (default "devnull" receiver). Slack/notification routing is Phase 5, see plan.md.

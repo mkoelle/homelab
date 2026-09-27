@@ -1,0 +1,93 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-zitadel
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  zitadel.json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "graphTooltip": 1,
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [{"options": {"0": {"text": "DOWN"}, "1": {"text": "UP"}}, "type": "value"}], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+          "id": 1,
+          "options": {"colorMode": "value", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
+          "targets": [{"expr": "up{job=\"prometheus.scrape.zitadel\"}", "instant": true, "refId": "A"}],
+          "title": "Target up",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "short"}, "overrides": []},
+          "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+          "id": 2,
+          "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
+          "targets": [{"expr": "go_goroutines{job=\"prometheus.scrape.zitadel\"}", "instant": true, "refId": "A"}],
+          "title": "Goroutines",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "bytes"}, "overrides": []},
+          "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+          "id": 3,
+          "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
+          "targets": [{"expr": "process_resident_memory_bytes{job=\"prometheus.scrape.zitadel\"}", "instant": true, "refId": "A"}],
+          "title": "Resident memory",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percentunit"}, "overrides": []},
+          "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
+          "id": 4,
+          "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}},
+          "targets": [{"expr": "rate(process_cpu_seconds_total{job=\"prometheus.scrape.zitadel\"}[5m])", "instant": true, "refId": "A"}],
+          "title": "CPU usage",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "description": "Projection catch-up: a stalled projection here is the same failure mode that caused the OIDC/console outage this dashboard exists to catch early. See docs/troubleshooting/.",
+          "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "ops"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
+          "id": 5,
+          "targets": [{"expr": "sum(rate(projection_events_processed_total{job=\"prometheus.scrape.zitadel\"}[5m])) by (projection_name)", "legendFormat": "{{projection_name}}", "refId": "A"}],
+          "title": "Projection events processed/sec",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "description": "grpc-ecosystem/go-grpc-middleware metric names -- verify against the live target's /debug/metrics if this panel shows no data.",
+          "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "ops"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
+          "id": 6,
+          "targets": [{"expr": "sum(rate(grpc_server_handled_total{job=\"prometheus.scrape.zitadel\"}[5m])) by (grpc_code)", "legendFormat": "{{grpc_code}}", "refId": "A"}],
+          "title": "gRPC requests/sec by code",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}, "unit": "bytes"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
+          "id": 7,
+          "targets": [{"expr": "go_memstats_alloc_bytes{job=\"prometheus.scrape.zitadel\"}", "legendFormat": "alloc", "refId": "A"}],
+          "title": "Go heap allocation",
+          "type": "timeseries"
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["zitadel", "sso", "idp"],
+      "templating": {"list": [{"current": {"selected": true, "text": "VictoriaMetrics", "value": "VictoriaMetrics"}, "label": "Data source", "name": "datasource", "query": "prometheus", "type": "datasource"}]},
+      "time": {"from": "now-6h", "to": "now"},
+      "title": "Zitadel",
+      "uid": "homelab-zitadel",
+      "version": 1
+    }

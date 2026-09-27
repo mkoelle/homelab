@@ -159,6 +159,10 @@ actively developed and has the stronger mobile/backup story.
 
 1. [Immich](https://immich.app/) -- self-hosted photo and video gallery.
 
+### Gaming
+
+- https://github.com/linckosz/moonlight-web
+
 ## Hardware to investigate
 
 - coral tpu -- pairs with Frigate above (hardware-accelerates its object

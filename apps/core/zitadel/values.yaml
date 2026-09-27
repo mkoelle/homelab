@@ -17,6 +17,14 @@ service:
   type: ClusterIP
   port: 8080
 
+# Enables prometheus.io/* pod annotations on the zitadel-start deployment
+# (path /debug/metrics, port 8080) -- self-documenting even though Alloy's
+# scrape block (apps/core/alloy/values.yaml) targets it explicitly rather
+# than via generic annotation discovery, since the generic pod_metrics
+# pipeline assumes path /metrics and would miss this one.
+metrics:
+  enabled: true
+
 ingress:
   enabled: false # exposed via Gateway API HTTPRoute instead, see httproute.yaml
 
