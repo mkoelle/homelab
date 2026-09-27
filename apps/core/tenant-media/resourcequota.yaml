@@ -1,0 +1,44 @@
+---
+# Sized for Jellyfin (requests 500m/1Gi, limits 4/4Gi) plus headroom for the
+# next few media apps. services.loadbalancers: "0" keeps the tenant from
+# claiming LAN IPs out of the Cilium LB pool -- media is exposed only via
+# the shared Gateway.
+#
+# Storage: the tenant self-provisions node-local PVCs from `local-path`
+# (apps/core/local-path) -- capped here, since local-path doesn't enforce
+# sizes on disk (it's a directory on motherbox's SSD). Every other
+# StorageClass is zeroed so a tenant claim can never bind a homelab volume
+# (photos-pv, zitadel-postgres-local) should one ever become Released.
+# Add a line here for any new StorageClass.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: media-quota
+  namespace: media
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
+    pods: "20"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+    persistentvolumeclaims: "5"
+    local-path.storageclass.storage.k8s.io/persistentvolumeclaims: "5"
+    local-path.storageclass.storage.k8s.io/requests.storage: 50Gi
+    photos-pv.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    zitadel-postgres-local.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+---
+# No pods in media-argocd, ever.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: media-argocd-quota
+  namespace: media-argocd
+spec:
+  hard:
+    pods: "0"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"

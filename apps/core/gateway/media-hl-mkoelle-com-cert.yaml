@@ -1,0 +1,22 @@
+---
+# Publicly-trusted wildcard cert for the homelab-media tenant's hostnames
+# (*.media.hl.mkoelle.com, served by the Gateway's https-media listener).
+# Separate from hl-mkoelle-com-tls because a TLS wildcard covers exactly one
+# label: *.hl.mkoelle.com does NOT match jellyfin.media.hl.mkoelle.com.
+# DNS-01 via letsencrypt-route53 (same hosted zone as the *.hl cert; the
+# challenge record is _acme-challenge.media.hl.mkoelle.com). LAN resolution
+# needs nothing new -- the router's dnsmasq wildcard for .hl.mkoelle.com
+# already covers every depth (see CLAUDE.md, Networking).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: media-hl-mkoelle-com-tls
+  namespace: gateway
+spec:
+  secretName: media-hl-mkoelle-com-tls
+  dnsNames:
+    - "*.media.hl.mkoelle.com"
+  issuerRef:
+    name: letsencrypt-route53
+    kind: ClusterIssuer
+    group: cert-manager.io

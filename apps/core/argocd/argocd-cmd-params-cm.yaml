@@ -4,3 +4,18 @@ metadata:
   name: argocd-cmd-params-cm
 data:
   server.insecure: "true"
+  # "Apps in any namespace" -- lets Application objects live outside
+  # core-argocd, in media-argocd (the homelab-media tenant, see
+  # apps/.argocd/media.yaml). This is what makes the AppProject `media` an
+  # actual boundary: Applications in media-argocd may only use projects whose
+  # spec.sourceNamespaces lists media-argocd, so the homelab-media repo can't
+  # write `project: homelab` and escape its fence.
+  #
+  # NOT hot-reloaded: after changing it, restart the consumers:
+  #   kubectl -n core-argocd rollout restart deploy/argocd-server \
+  #     sts/argocd-application-controller
+  #
+  # ApplicationSets in media-argocd are deliberately NOT enabled
+  # (applicationsetcontroller.namespaces unset) -- the tenant is a plain
+  # app-of-apps; enable it only if the tenant actually needs ApplicationSets.
+  application.namespaces: media-argocd

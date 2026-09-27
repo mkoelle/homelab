@@ -20,11 +20,15 @@ data:
   # -- started with id.hl.mkoelle.com (Zitadel) since Google's OAuth console
   # rejects redirect URIs on .local. No public A record is ever published for
   # anything under this subdomain -- only the transient ACME DNS-01 TXT
-  # record. This override is what makes any hl.mkoelle.com name resolve at
-  # all, for browsers on the LAN and for in-cluster callers (ArgoCD, Grafana,
-  # the Terraform reconciler) alike. Public DNS for these names stays
-  # NXDOMAIN. Add one `hosts` line per hostname as new apps land here --
-  # CoreDNS's hosts plugin matches literal names, not wildcards.
+  # record. Public DNS for these names stays NXDOMAIN.
+  #
+  # LAN clients (browsers, TV apps) resolve these names via the FreshTomato
+  # router's dnsmasq wildcard, `address=/.hl.mkoelle.com/192.168.1.200` --
+  # it matches every subdomain depth (id.hl..., jellyfin.media.hl...), so
+  # new hl hostnames need no router change. This override covers in-cluster
+  # callers only (ArgoCD, Grafana, the Terraform reconciler): add one `hosts`
+  # line per hostname only when something inside the cluster must resolve
+  # it -- CoreDNS's hosts plugin matches literal names, not wildcards.
   #
   # 192.168.1.200: the Cilium-assigned LoadBalancer IP for the `homelab`
   # Gateway's Service (cilium-gateway-homelab), from the 192.168.1.200-254

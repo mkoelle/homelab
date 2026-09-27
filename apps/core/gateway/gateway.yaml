@@ -56,3 +56,27 @@ spec:
           selector:
             matchLabels:
               gateway-access: "true"
+    # homelab-media tenant listener (ADR 0008). The tenant's `media`
+    # namespace has no gateway-access label, so this is the ONLY listener its
+    # HTTPRoutes can attach to -- and Gateway API only accepts a route whose
+    # hostnames fall under the listener's, so the tenant can serve
+    # *.media.hl.mkoelle.com and nothing else (it can't claim
+    # id.hl.mkoelle.com, argocd.motherbox.local, ...). Selected by
+    # kubernetes.io/metadata.name, which the API server sets and the tenant
+    # can't forge. New media hostnames need no change here.
+    - name: https-media
+      hostname: "*.media.hl.mkoelle.com"
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: media-hl-mkoelle-com-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: media

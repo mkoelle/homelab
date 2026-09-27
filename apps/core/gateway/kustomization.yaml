@@ -8,3 +8,4 @@ resources:
   - gateway.yaml
   - wildcard-cert.yaml
   - hl-mkoelle-com-cert.yaml
+  - media-hl-mkoelle-com-cert.yaml

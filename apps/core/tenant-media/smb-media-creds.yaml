@@ -1,0 +1,31 @@
+---
+# SMB credentials for the homelab-media tenant's inline SMB CSI volumes.
+# csi-driver-smb reads an inline volume's `volumeAttributes.secretName` from
+# the POD's namespace, so this must land in `media` -- but it's declared
+# here, in homelab, and the tenant can't create ExternalSecrets itself
+# (`media` AppProject blacklists external-secrets.io; see the note on
+# `media` in apps/core/external-secrets/cluster-secret-store.yaml).
+#
+# Same BSM secrets as before (homelab project). The NAS user is the real
+# boundary for what the tenant can mount: read-only on
+# Anime/Movies/TV_Shows/Music/AudioBooks, nothing else (no photo, no write).
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: smb-media-creds
+  namespace: media
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    name: smb-media-creds
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: "9da1e0f9-1ec2-4633-a094-b4d00157cbd9" # media/jellyfin/smb-user
+    - secretKey: password
+      remoteRef:
+        key: "d77aadbe-38a5-4a93-9e4f-b4d001578b2a" # media/jellyfin/smb-password
