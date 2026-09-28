@@ -67,7 +67,6 @@ export:
       cpu: 100m
       memory: 128Mi
   stdout: {}
-
 # Metrics scrape intentionally not wired up: Alloy already collects the
 # export-stdout sidecar's container logs into Loki (no ServiceMonitor CRD
 # needed, matches this cluster's existing scrape pattern). Add a metrics

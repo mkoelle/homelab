@@ -49,8 +49,8 @@ All secrets live in a single BSM project named `homelab`. Additional projects ar
 
 **Current secrets:**
 
-| BSM Secret Name                 | Materialized as                       |
-| ------------------------------- | ------------------------------------- |
+| BSM Secret Name                 | Materialized as                              |
+| ------------------------------- | -------------------------------------------- |
 | `storage/synology-smb/username` | `core-secrets/smb-photos-creds` → `username` |
 | `storage/synology-smb/password` | `core-secrets/smb-photos-creds` → `password` |
 

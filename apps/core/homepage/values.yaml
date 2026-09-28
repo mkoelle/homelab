@@ -61,6 +61,5 @@ resources:
   limits:
     memory: "512Mi"
     cpu: "1000m"
-
 # No route.main here -- exposed via oauth2-proxy's own HTTPRoute
 # (oauth2-proxy-values.yaml) instead, same as Hubble UI/Alloy/OpenCost.

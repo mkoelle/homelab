@@ -65,7 +65,7 @@ see the note at the top of each affected category.
   1. [Actual Budget](https://github.com/actualbudget/actual) -- local-first
      personal finance, clear direct fit.
   2. [Shkeeper](https://github.com/vsys-host/shkeeper.io) -- self-hosted
-     crypto payment *processor*; this is a merchant/business tool, not a
+     crypto payment _processor_; this is a merchant/business tool, not a
      personal-finance one -- low fit unless there's an actual storefront to
      run.
 - **Knowledge Base & Notes** -- AFFiNE and Trilium Notes both cover the same
@@ -123,7 +123,7 @@ GitOps-run homelab already running many self-hosted apps to wire together
 
 1. [n8n](https://n8n.io) -- most mature option, by far the largest
    integration/community-node library, which matters most here: the value of
-   a workflow tool in this setup is gluing together the *other* apps in this
+   a workflow tool in this setup is gluing together the _other_ apps in this
    list. License is "fair-code" (Sustainable Use License) -- free for
    internal/personal self-hosting, only restricted for reselling n8n itself
    as a hosted service, which doesn't apply here.
@@ -161,7 +161,7 @@ actively developed and has the stronger mobile/backup story.
 
 ### Gaming
 
-- https://github.com/linckosz/moonlight-web
+- <https://github.com/linckosz/moonlight-web>
 
 ## Hardware to investigate
 
