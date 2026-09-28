@@ -16,6 +16,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: core-argocd
+        # homelab-media's oauth2-proxy releases (Sonarr/Radarr/Lidarr) hit
+        # the same hairpin problem as argocd-server -- same relay, same
+        # hostAliases pattern (see mkoelle/homelab-media).
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: media
       ports:
         - protocol: TCP
           port: 8443 # container's real listen port; the Service maps 443 -> 8443
@@ -50,6 +56,8 @@ spec:
     - fromEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: core-argocd
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: media
       toPorts:
         - ports:
             - port: "8443"
