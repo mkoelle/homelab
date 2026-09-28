@@ -139,6 +139,85 @@ resource "zitadel_application_oidc" "grafana" {
   access_token_type = "OIDC_TOKEN_TYPE_BEARER"
 }
 
+# Jellyfin has its own native OIDC support via a plugin (Flowfin's
+# jellyfin-plugin-sso, mkoelle/homelab-media#issue -- see
+# mkoelle/homelab#53), so it needs no oauth2-proxy and no kubernetes_secret
+# here: the plugin's own admin UI takes client_id/client_secret directly and
+# persists them to Jellyfin's own config volume. id_token_role_assertion
+# mirrors ArgoCD's app-level flag above rather than touching this project's
+# project_role_assertion (still false) -- that field is shared by every
+# client in this project, so flipping it project-wide for one new app felt
+# like the wrong default; revisit if the plugin's role-claim parsing turns
+# out to need the project-level assertion specifically instead.
+resource "zitadel_application_oidc" "jellyfin" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "Jellyfin"
+  redirect_uris  = ["https://jellyfin.media.hl.mkoelle.com/sso/OID/redirect/zitadel"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+
+  id_token_userinfo_assertion = true
+  id_token_role_assertion     = true
+}
+
+# Sonarr, Radarr, and Lidarr (mkoelle/homelab-media, apps/automation/) have
+# no native OIDC support, same situation as Hubble/Alloy/OpenCost/Homepage
+# above -- each needs its own oauth2-proxy client. Unlike those, the
+# secrets land in `media`, a tenant namespace this repo owns but doesn't
+# deploy into directly (see docs/adrs/0008-multi-repo-tenancy.md) -- the
+# tenant can't create these itself, hence this PR.
+resource "zitadel_application_oidc" "sonarr" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "Sonarr"
+  redirect_uris  = ["https://sonarr.media.hl.mkoelle.com/oauth2/callback"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+}
+
+resource "zitadel_application_oidc" "radarr" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "Radarr"
+  redirect_uris  = ["https://radarr.media.hl.mkoelle.com/oauth2/callback"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+}
+
+resource "zitadel_application_oidc" "lidarr" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "Lidarr"
+  redirect_uris  = ["https://lidarr.media.hl.mkoelle.com/oauth2/callback"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+}
+
 # Instance-scoped Google IDP -- the only Google IDP object in this config.
 # Org login policies can select instance-owned IDPs directly (confirmed live:
 # the org's own Identity Providers settings page lists this instance IDP as
@@ -328,5 +407,53 @@ resource "kubernetes_secret" "homepage_oauth2_proxy" {
     client-id     = zitadel_application_oidc.homepage.client_id
     client-secret = zitadel_application_oidc.homepage.client_secret
     cookie-secret = random_id.homepage_cookie_secret.b64_url
+  }
+}
+
+resource "random_id" "sonarr_cookie_secret" {
+  byte_length = 32
+}
+
+resource "kubernetes_secret" "sonarr_oauth2_proxy" {
+  metadata {
+    name      = "sonarr-oauth2-proxy-secret"
+    namespace = "media"
+  }
+  data = {
+    client-id     = zitadel_application_oidc.sonarr.client_id
+    client-secret = zitadel_application_oidc.sonarr.client_secret
+    cookie-secret = random_id.sonarr_cookie_secret.b64_url
+  }
+}
+
+resource "random_id" "radarr_cookie_secret" {
+  byte_length = 32
+}
+
+resource "kubernetes_secret" "radarr_oauth2_proxy" {
+  metadata {
+    name      = "radarr-oauth2-proxy-secret"
+    namespace = "media"
+  }
+  data = {
+    client-id     = zitadel_application_oidc.radarr.client_id
+    client-secret = zitadel_application_oidc.radarr.client_secret
+    cookie-secret = random_id.radarr_cookie_secret.b64_url
+  }
+}
+
+resource "random_id" "lidarr_cookie_secret" {
+  byte_length = 32
+}
+
+resource "kubernetes_secret" "lidarr_oauth2_proxy" {
+  metadata {
+    name      = "lidarr-oauth2-proxy-secret"
+    namespace = "media"
+  }
+  data = {
+    client-id     = zitadel_application_oidc.lidarr.client_id
+    client-secret = zitadel_application_oidc.lidarr.client_secret
+    cookie-secret = random_id.lidarr_cookie_secret.b64_url
   }
 }

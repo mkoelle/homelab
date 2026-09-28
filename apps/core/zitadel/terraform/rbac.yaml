@@ -193,3 +193,32 @@ subjects:
   - kind: ServiceAccount
     name: zitadel-terraform
     namespace: zitadel
+---
+# Same, for main.tf's kubernetes_secret.{sonarr,radarr,lidarr}_oauth2_proxy,
+# all three in the homelab-media tenant's `media` namespace -- the tenant
+# can't create these itself (docs/adrs/0008-multi-repo-tenancy.md), hence
+# terraform owning them here instead. One Role covers all three secret
+# names: RBAC can't resourceName-scope create, same as every Role above.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: media
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel
