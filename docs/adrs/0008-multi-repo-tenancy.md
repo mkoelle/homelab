@@ -33,15 +33,15 @@ tenant-owned AppProject is not a boundary.
 Rule of thumb: anything that grants privilege, is cluster-scoped, or is
 shared between tenants belongs to homelab.
 
-| homelab (the fence) | homelab-media |
-| --- | --- |
-| AppProject `media` + `media-root` handoff Application (`apps/.argocd/media.yaml`) | Its app-of-apps (`argocd/`), one Application per app |
-| Namespaces `media` / `media-argocd`, PSA labels, ResourceQuota (incl. storage caps), LimitRange (`apps/core/tenant-media`) | All workloads, HTTPRoutes, NetworkPolicies |
-| SMB credentials Secret in `media`, from homelab's Bitwarden store (`apps/core/tenant-media/smb-media-creds.yaml`) | Volumes: inline SMB CSI volumes and local-path PVCs, and all mounts |
-| `local-path` provisioner + StorageClass (`apps/core/local-path`) | Its own CI / lint / Renovate |
-| Argo CD settings: apps-in-any-namespace, repo credential, Application health check | |
-| Gateway listener `https-media` + `*.media.hl.mkoelle.com` cert (`apps/core/gateway`) | |
-| Secret-store scoping (`ClusterSecretStore` namespace conditions) | |
+| homelab (the fence)                                                                                                        | homelab-media                                                       |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| AppProject `media` + `media-root` handoff Application (`apps/.argocd/media.yaml`)                                          | Its app-of-apps (`argocd/`), one Application per app                |
+| Namespaces `media` / `media-argocd`, PSA labels, ResourceQuota (incl. storage caps), LimitRange (`apps/core/tenant-media`) | All workloads, HTTPRoutes, NetworkPolicies                          |
+| SMB credentials Secret in `media`, from homelab's Bitwarden store (`apps/core/tenant-media/smb-media-creds.yaml`)          | Volumes: inline SMB CSI volumes and local-path PVCs, and all mounts |
+| `local-path` provisioner + StorageClass (`apps/core/local-path`)                                                           | Its own CI / lint / Renovate                                        |
+| Argo CD settings: apps-in-any-namespace, repo credential, Application health check                                         |                                                                     |
+| Gateway listener `https-media` + `*.media.hl.mkoelle.com` cert (`apps/core/gateway`)                                       |                                                                     |
+| Secret-store scoping (`ClusterSecretStore` namespace conditions)                                                           |                                                                     |
 
 Enforcement points:
 

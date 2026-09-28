@@ -103,21 +103,24 @@ argocd account update-password `
 
 > The initial password comes from a Secret auto-deleted after first login in some ArgoCD versions. Set a permanent password before closing the terminal.
 
-## Step 4 — Replace SMB credential placeholders
+## Step 4 — Verify External Secrets
 
-Before the `external-secrets` app can sync, replace the placeholder UUIDs in `apps/core/external-secrets/smb-creds.yaml` with real Bitwarden Secrets Manager item IDs:
+The repository's SMB credentials are defined in
+`apps/core/external-secrets/smb-photos-creds.yaml`; Zitadel and other app
+credentials are declared in their respective manifests. Their Bitwarden SM
+item IDs are already populated. Do not replace UUIDs in the manifests: those
+are item identifiers, not the secret values. To verify a fresh install, check
+that the ExternalSecrets report `Ready=True` and that their target Secrets
+exist before diagnosing a workload that depends on them:
 
-```yaml
-data:
-  - secretKey: username
-    remoteRef:
-      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-USERNAME>" # ← replace
-  - secretKey: password
-    remoteRef:
-      key: "<REPLACE-WITH-BSM-UUID-FOR-SMB-PASSWORD>" # ← replace
+```bash
+kubectl get externalsecrets -A
+kubectl get secret smb-photos-creds -n core-secrets
 ```
 
-`task build` will fail until these are replaced (intentional guard). Commit the real UUIDs, then ArgoCD reconciles and the `smb-creds` Secret materializes in `core-secrets`.
+`task build` rejects placeholder markers and zero UUIDs, but does not validate
+that Bitwarden item IDs are valid or that credentials can authenticate to the
+NAS.
 
 ## Troubleshooting
 

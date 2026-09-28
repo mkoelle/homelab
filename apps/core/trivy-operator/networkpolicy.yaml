@@ -1,0 +1,36 @@
+---
+# Trivy Operator's metrics endpoint is only scraped by Alloy. Scan Jobs and
+# controller-to-scanner egress remain unrestricted while the chart's internal
+# job/report lifecycle is validated.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: trivy-operator-intra-namespace
+  namespace: trivy-operator
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: trivy-operator-metrics
+  namespace: trivy-operator
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: trivy-operator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: alloy
+      ports:
+        - protocol: TCP
+          port: 8080

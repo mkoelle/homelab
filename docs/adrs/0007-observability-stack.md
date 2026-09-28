@@ -27,14 +27,14 @@ future ADRs as needed).
 
 Adopt the following observability stack:
 
-| Capability | Component |
-| --- | --- |
-| Metrics storage & querying | VictoriaMetrics (single-node) |
-| Alert rule evaluation | vmalert |
-| Alert routing & notification | Alertmanager |
-| Log aggregation | Loki |
-| Metrics + log collection | Grafana Alloy |
-| Dashboards & visualization | Grafana |
+| Capability                   | Component                     |
+| ---------------------------- | ----------------------------- |
+| Metrics storage & querying   | VictoriaMetrics (single-node) |
+| Alert rule evaluation        | vmalert                       |
+| Alert routing & notification | Alertmanager                  |
+| Log aggregation              | Loki                          |
+| Metrics + log collection     | Grafana Alloy                 |
+| Dashboards & visualization   | Grafana                       |
 
 **No Prometheus Operator, no VictoriaMetrics Operator, no CRD-based service
 discovery.** Alloy performs Kubernetes service/pod discovery and scraping natively

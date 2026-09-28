@@ -1,0 +1,110 @@
+---
+operator:
+  replicas: 1
+  # Limit scan-job submissions to one: this cluster has a single node and both
+  # Kubescape and Trivy are intentionally enabled as independent scanners.
+  # Trivy may briefly exceed this limit during concurrent workload reconciles.
+  scanJobsConcurrentLimit: 1
+  scanNodeCollectorLimit: 1
+  # The operator's concurrency limiter counts completed Jobs until they are
+  # deleted. Keep this short so a completed scan doesn't block the next queued
+  # workload for an hour when concurrency is set to one.
+  scanJobTTL: 30s
+  scannerReportTTL: 24h
+  cacheReportTTL: 120h
+  # The node collector requires hostPID and hostPath volumes, which are
+  # intentionally disallowed by this namespace's restricted Pod Security
+  # profile. Kubescape handles workload posture; node-level compliance remains
+  # a separately reviewed gap rather than weakening this namespace.
+  infraAssessmentScannerEnabled: false
+  clusterComplianceEnabled: false
+  # Centralize the Trivy database/cache so concurrent container scans do not
+  # contend for the per-scan-Pod filesystem cache.
+  builtInTrivyServer: true
+  # All current workload images are public. Do not grant cluster-wide Secret
+  # read access just to discover imagePullSecrets; configure scoped access if
+  # private registries are added later.
+  accessGlobalSecretsAndServiceAccount: false
+  metricsFindingsEnabled: true
+  metricsVulnIdEnabled: false
+  configAuditScannerScanOnlyCurrentRevisions: true
+  # Reconcile active ReplicaSets at startup to populate the initial image
+  # baseline. Inactive ReplicaSets without running Pods are still ignored by
+  # the operator; scan-job concurrency remains capped at one.
+  vulnerabilityScannerScanOnlyCurrentRevisions: false
+
+# The chart defaults already use a restricted container securityContext for
+# scanner Jobs. Add the restricted Pod defaults (seccomp/non-root) explicitly.
+trivyOperator:
+  scanJobPodTemplatePodSecurityContext:
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  scanJobPodTemplateContainerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsUser: 10001
+    runAsGroup: 10001
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  privileged: false
+  readOnlyRootFilesystem: true
+
+# This top-level key (not `operator.resources`, which the chart schema
+# silently ignores — verified against chart 0.36.0's defaults) is what
+# actually sets the trivy-operator container's limits. OOMKilled once at
+# 512Mi while reconciling the initial report backlog (150+ ConfigAuditReports,
+# 90+ VulnerabilityReports); stable since that restart, but the margin was
+# too thin.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 768Mi
+
+trivy:
+  slow: true
+  # Large multi-container images (for example Cilium's init containers) can
+  # exceed the chart's 500 MiB default while scanning.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  # This cluster has no dynamic/default StorageClass. Keep the server cache on
+  # an emptyDir; it can be repopulated after a server restart.
+  storageClassEnabled: false
+  server:
+    podSecurityContext:
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsUser: 65534
+      runAsGroup: 65534

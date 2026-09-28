@@ -51,11 +51,9 @@ resources:
 # Zitadel generates client_id/client_secret server-side, and that same
 # Terraform writes both straight into Secret zitadel-grafana-oidc-secret in
 # this namespace (no Bitwarden round-trip). Grafana's generic_oauth provider
-# has no issuer-based discovery, so each endpoint is spelled out -- these are
-# Zitadel's documented conventional paths, NOT yet confirmed live -- verify
-# against https://id.hl.mkoelle.com/.well-known/openid-configuration once
-# deployed and fix here if they don't match (same caution this comment
-# carried for Authelia before it).
+# has no issuer-based discovery, so each endpoint is spelled out using
+# Zitadel's OIDC endpoints. The client and callback are managed in
+# apps/core/zitadel/terraform/main.tf.
 env:
   GF_SERVER_ROOT_URL: "https://grafana.motherbox.local"
   GF_AUTH_GENERIC_OAUTH_ENABLED: "true"

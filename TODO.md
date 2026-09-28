@@ -9,28 +9,22 @@ see the note at the top of each affected category.
 
 ### Infrastructure, Networking & Monitoring
 
-- **Authentication & Identity** -- solved. [Zitadel](apps/core/zitadel)
-  is live (OIDC SSO for ArgoCD/Grafana + Google Sign-In). Authelia and
+- **Authentication & Identity** -- solved for the current app set.
+  [Zitadel](apps/core/zitadel) is live (native OIDC for ArgoCD/Grafana,
+  oauth2-proxy for Hubble/Alloy/OpenCost/Homepage, plus Google Sign-In).
+  Filebrowser authentication remains a tracked gap. Authelia and
   PocketID were both evaluated and superseded by it this cycle; dropped the
   rest of the category (Authentik, TinyAuth, Traefik OIDC Plugin, VoidAuth,
   dex) as redundant with a working solution already in place.
-- **Monitoring & Analytics** -- Grafana, Loki, and Prometheus's role
-  (via VictoriaMetrics) are already live under `apps/core/monitoring` /
-  `apps/core/loki`, with Alloy as the sole scraper/shipper. Dropped
-  Prometheus (superseded by VictoriaMetrics) and Fluentbit (superseded by
-  Alloy). Dropped Zabbix -- enterprise-scale distributed monitoring is
-  overkill for one node; Beszel/Uptime Kuma below cover the same ground at
-  the right size.
-  1. [Uptime Kuma](https://github.com/louislam/uptime-kuma) -- simplest
-     addition, external-style up/down + latency checks, common first add-on
-     alongside an existing Grafana/VM stack.
-  2. [Beszel](https://www.beszel.dev/) -- lightweight host-level resource
+- **Monitoring & Analytics** -- Grafana, VictoriaMetrics, Loki, Alloy,
+  Alertmanager, Uptime Kuma, and OpenCost are deployed under `apps/core/`.
+  Prometheus's role is covered by VictoriaMetrics; Alloy is the sole
+  scraper/shipper. Dropped Fluentbit (superseded by Alloy) and Zabbix
+  (enterprise-scale distributed monitoring is overkill for one node).
+  1. [Beszel](https://www.beszel.dev/) -- lightweight host-level resource
      monitoring, low overhead, complements the cluster-level metrics already
      collected.
-  3. [OpenCost](https://github.com/oleksandr-zhabenko/opencost) -- Kubernetes
-     cost/resource-allocation visibility. No cloud bill to optimize here, but
-     useful for seeing what's actually eating the single node's resources.
-  4. Discover-tab-style log search (field facets, histogram, one-click
+  2. Discover-tab-style log search (field facets, histogram, one-click
      filters) -- solved. Evaluated OpenObserve for this, dropped it: its
      official Helm chart is HA-only (mandatory Postgres + S3-compatible
      object store), and its OSS edition has no SSO at all (Enterprise/Cloud
@@ -38,9 +32,9 @@ see the note at the top of each affected category.
      Zitadel. [Grafana Logs Drilldown](https://grafana.com/grafana/plugins/grafana-lokiexplore-app/)
      (official Grafana Labs plugin, on the catalog) gives the same UX on top
      of the existing Loki setup, inheriting Grafana's Zitadel SSO for free.
-  5. [Umami](https://umami.is/) -- only relevant if self-hosting a personal
+  3. [Umami](https://umami.is/) -- only relevant if self-hosting a personal
      site/blog with visitors to track.
-  6. [Dozzle](https://dozzle.dev/) -- quick ad-hoc container log tailing;
+  4. [Dozzle](https://dozzle.dev/) -- quick ad-hoc container log tailing;
      largely redundant now that Loki/Grafana cover logs, kept for the
      convenience of a zero-query live view.
 - **Networking & Tunnels**
@@ -71,7 +65,7 @@ see the note at the top of each affected category.
   1. [Actual Budget](https://github.com/actualbudget/actual) -- local-first
      personal finance, clear direct fit.
   2. [Shkeeper](https://github.com/vsys-host/shkeeper.io) -- self-hosted
-     crypto payment *processor*; this is a merchant/business tool, not a
+     crypto payment _processor_; this is a merchant/business tool, not a
      personal-finance one -- low fit unless there's an actual storefront to
      run.
 - **Knowledge Base & Notes** -- AFFiNE and Trilium Notes both cover the same
@@ -129,7 +123,7 @@ GitOps-run homelab already running many self-hosted apps to wire together
 
 1. [n8n](https://n8n.io) -- most mature option, by far the largest
    integration/community-node library, which matters most here: the value of
-   a workflow tool in this setup is gluing together the *other* apps in this
+   a workflow tool in this setup is gluing together the _other_ apps in this
    list. License is "fair-code" (Sustainable Use License) -- free for
    internal/personal self-hosting, only restricted for reselling n8n itself
    as a hosted service, which doesn't apply here.
@@ -164,6 +158,10 @@ Immich below (same self-hosted photo-management niche); Immich is more
 actively developed and has the stronger mobile/backup story.
 
 1. [Immich](https://immich.app/) -- self-hosted photo and video gallery.
+
+### Gaming
+
+- <https://github.com/linckosz/moonlight-web>
 
 ## Hardware to investigate
 

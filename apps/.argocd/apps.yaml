@@ -60,6 +60,14 @@ spec:
             namespace: zitadel
             wave: "1"
 
+          # Tetragon: eBPF runtime sensor, same tier as the other platform
+          # DaemonSets. Installs into kube-system (upstream's recommended
+          # namespace) and needs Cilium (wave 0) already Healthy.
+          - name: tetragon
+            path: apps/core/tetragon
+            namespace: kube-system
+            wave: "1"
+
           # Wave 2 — Cluster services
           - name: gateway
             path: apps/core/gateway
@@ -100,16 +108,30 @@ spec:
             namespace: opencost
             wave: "3"
 
-          # Wave 4 — User workloads
+          # Wave 4/5 records desired ordering in Application metadata. The
+          # ApplicationSet controller creates child Applications asynchronously,
+          # so the waves do not serialize their first sync; operator scan-job
+          # limits/schedules provide the actual single-node controls.
+          - name: kubescape
+            path: apps/core/kubescape
+            namespace: kubescape
+            wave: "4"
+
+          - name: trivy-operator
+            path: apps/core/trivy-operator
+            namespace: trivy-operator
+            wave: "5"
+
+          # Wave 6 — User workloads
           - name: filebrowser
             path: apps/media/filebrowser
             namespace: filebrowser
-            wave: "4"
+            wave: "6"
 
           - name: homepage
             path: apps/core/homepage
             namespace: homepage
-            wave: "4"
+            wave: "6"
 
   template:
     metadata:
@@ -121,13 +143,32 @@ spec:
       project: homelab
       source:
         repoURL: https://github.com/mkoelle/homelab
-        targetRevision: HEAD
+        targetRevision: feat/security
         path: "{{path}}"
       destination:
         server: https://kubernetes.default.svc
         namespace: "{{namespace}}"
+      # `kubectl rollout restart` is an operational trigger used for
+      # security rescans/maintenance. Ignore only its generated Pod-template
+      # timestamp so self-heal does not immediately undo the restart.
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
+        - group: apps
+          kind: StatefulSet
+          jsonPointers:
+            - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
+        - group: apps
+          kind: DaemonSet
+          jsonPointers:
+            - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
       syncPolicy:
         automated:
+          # Deliberate deletion-safety default: removed manifests are not
+          # pruned automatically. Retiring an app/resource requires an
+          # explicit cleanup; see docs/planning/plan.md.
           prune: false
           selfHeal: true
         syncOptions:

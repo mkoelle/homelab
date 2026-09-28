@@ -1,6 +1,6 @@
 ---
 # `local` PV, not hostPath -- pod-security "restricted" forbids hostPath as a
-# volume source (same issue and fix as apps/core/authelia/volume.yaml). Path
+# volume source. Path
 # nested under /var/lib/kubelet, not bare /var/lib -- kubelet's own
 # local-volume stat check only reliably sees paths under its own state tree.
 apiVersion: v1
