@@ -7,6 +7,17 @@
 # requests/limits and the PVC budget together: Immich adds 3 local-path
 # PVCs of its own (Postgres data, ML model cache, library/thumbnails --
 # originals stay on the read-only NAS import, see smb-photos-creds.yaml).
+#
+# limits.cpu/limits.memory bumped a second time (12->18, 14Gi->20Gi):
+# confirmed live that the first bump (12/14Gi) still wasn't enough --
+# jellyfin/sonarr/radarr/lidarr's own container limits already summed to
+# ~7.8 CPU / ~7.6Gi before Immich existed, and Immich's four containers'
+# limits sum to another ~4.7 CPU / ~7.5Gi, so the ceiling needed real
+# headroom on top of both. limits are just a ceiling, not a reservation --
+# this cluster already runs at ~320% cpu overcommit on limits cluster-wide
+# (confirmed live via `kubectl describe node`), so this isn't a real
+# capacity risk; requests (the actual scheduling reservation) stay
+# untouched and were nowhere near their own cap.
 # services.loadbalancers: "0" keeps the tenant from claiming LAN IPs out of
 # the Cilium LB pool -- media is exposed only via the shared Gateway.
 #
@@ -25,8 +36,8 @@ spec:
   hard:
     requests.cpu: "4"
     requests.memory: 8Gi
-    limits.cpu: "12"
-    limits.memory: 14Gi
+    limits.cpu: "18"
+    limits.memory: 20Gi
     pods: "20"
     services.loadbalancers: "0"
     services.nodeports: "0"
