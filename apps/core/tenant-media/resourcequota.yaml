@@ -1,8 +1,14 @@
 ---
-# Sized for Jellyfin (requests 500m/1Gi, limits 4/4Gi) plus headroom for the
-# next few media apps. services.loadbalancers: "0" keeps the tenant from
-# claiming LAN IPs out of the Cilium LB pool -- media is exposed only via
-# the shared Gateway.
+# Sized for Jellyfin + Sonarr/Radarr/Lidarr plus Immich (server,
+# machine-learning, its own Postgres and Redis -- see
+# mkoelle/homelab-media's apps/servers/immich). Node has 8 CPU / ~31Gi
+# (`kubectl describe node`, confirmed live); cluster-wide requests sat at
+# ~50% cpu / ~27% mem before this bump, so there's real headroom. Bumped
+# requests/limits and the PVC budget together: Immich adds 3 local-path
+# PVCs of its own (Postgres data, ML model cache, library/thumbnails --
+# originals stay on the read-only NAS import, see smb-photos-creds.yaml).
+# services.loadbalancers: "0" keeps the tenant from claiming LAN IPs out of
+# the Cilium LB pool -- media is exposed only via the shared Gateway.
 #
 # Storage: the tenant self-provisions node-local PVCs from `local-path`
 # (apps/core/local-path) -- capped here, since local-path doesn't enforce
@@ -17,16 +23,16 @@ metadata:
   namespace: media
 spec:
   hard:
-    requests.cpu: "2"
-    requests.memory: 4Gi
-    limits.cpu: "8"
-    limits.memory: 8Gi
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "12"
+    limits.memory: 14Gi
     pods: "20"
     services.loadbalancers: "0"
     services.nodeports: "0"
-    persistentvolumeclaims: "5"
-    local-path.storageclass.storage.k8s.io/persistentvolumeclaims: "5"
-    local-path.storageclass.storage.k8s.io/requests.storage: 50Gi
+    persistentvolumeclaims: "9"
+    local-path.storageclass.storage.k8s.io/persistentvolumeclaims: "9"
+    local-path.storageclass.storage.k8s.io/requests.storage: 120Gi
     photos-pv.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
     zitadel-postgres-local.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
 ---
