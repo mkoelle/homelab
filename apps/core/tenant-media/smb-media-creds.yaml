@@ -8,7 +8,9 @@
 #
 # Same BSM secrets as before (homelab project). The NAS user is the real
 # boundary for what the tenant can mount: read-only on
-# Anime/Movies/TV_Shows/Music/AudioBooks, nothing else (no photo, no write).
+# Anime/Movies/TV_Shows/Music/AudioBooks, nothing else, no write. Photo
+# access is a separate credential/user (smb-photos-creds.yaml), same one
+# filebrowser already uses.
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:

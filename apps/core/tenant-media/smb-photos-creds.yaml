@@ -1,0 +1,33 @@
+---
+# Second SMB credential for the tenant, alongside smb-media-creds.yaml --
+# same reasoning (csi-driver-smb reads an inline volume's
+# `volumeAttributes.secretName` from the POD's namespace, and the tenant
+# can't create ExternalSecrets itself), but a different NAS user: this one
+# is the same `smb-photos-creds` account apps/media/filebrowser and
+# apps/core/storage/volumes.yaml (photos-pv) already use, read-only on the
+# `photo` share only. Deliberately NOT reusing filebrowser's photos-pv PV:
+# a PV binds to exactly one PVC, and media-quota already zeroes
+# photos-pv.storageclass.storage.k8s.io/persistentvolumeclaims to "0" so a
+# tenant claim can never bind it. This is the tenant's own inline SMB CSI
+# volume instead (apps/servers/immich in homelab-media), same pattern as
+# smb-media-creds's Movies/TV_Shows/etc, just a different credential.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: smb-photos-creds
+  namespace: media
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    name: smb-photos-creds
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: "ce211409-8caa-41c3-a798-b4800035e38f"
+    - secretKey: password
+      remoteRef:
+        key: "3bdc6e8e-378b-4707-9837-b4800036105f"

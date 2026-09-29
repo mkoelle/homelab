@@ -167,6 +167,35 @@ resource "zitadel_application_oidc" "jellyfin" {
   id_token_role_assertion     = true
 }
 
+# Immich (mkoelle/homelab-media, apps/servers/immich) has native OIDC
+# support in its own admin settings, same shape as Jellyfin's plugin above:
+# no oauth2-proxy, no kubernetes_secret here, client_id/client_secret go
+# straight into Immich's own OAuth settings page and persist to its
+# Postgres config. Immich needs both /auth/login (web) and /user-settings
+# (the OAuth-link flow from an already-logged-in session) registered, plus
+# the mobile app's custom-scheme callback.
+resource "zitadel_application_oidc" "immich" {
+  org_id     = local.org_id
+  project_id = zitadel_project.homelab.id
+  name       = "Immich"
+  redirect_uris = [
+    "https://immich.media.hl.mkoelle.com/auth/login",
+    "https://immich.media.hl.mkoelle.com/user-settings",
+    "app.immich:///oauth-callback",
+  ]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+
+  id_token_userinfo_assertion = true
+  id_token_role_assertion     = true
+}
+
 # Sonarr, Radarr, and Lidarr (mkoelle/homelab-media, apps/automation/) have
 # no native OIDC support, same situation as Hubble/Alloy/OpenCost/Homepage
 # above -- each needs its own oauth2-proxy client. Unlike those, the
@@ -455,5 +484,27 @@ resource "kubernetes_secret" "lidarr_oauth2_proxy" {
     client-id     = zitadel_application_oidc.lidarr.client_id
     client-secret = zitadel_application_oidc.lidarr.client_secret
     cookie-secret = random_id.lidarr_cookie_secret.b64_url
+  }
+}
+
+# Immich's own Postgres needs a password shared between its Postgres
+# container (POSTGRES_PASSWORD) and immich-server (DB_PASSWORD) -- not an
+# OIDC secret, but same reasoning as the cookie-secrets above: the tenant
+# can't create its own Secret-bearing objects in `media` (no
+# external-secrets.io, and there's no BSM entry to round-trip for a value
+# nothing outside this cluster ever needs to know), so homelab generates
+# and places it, same as every other media Secret.
+resource "random_password" "immich_postgres" {
+  length  = 32
+  special = false
+}
+
+resource "kubernetes_secret" "immich_postgres" {
+  metadata {
+    name      = "immich-postgres-secret"
+    namespace = "media"
+  }
+  data = {
+    postgres-password = random_password.immich_postgres.result
   }
 }
