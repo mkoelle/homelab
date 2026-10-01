@@ -39,6 +39,28 @@ opencost:
     kubeStateMetrics:
       emitKsmV1Metrics: false
       emitKsmV1MetricsOnly: true
+  # On-prem node, no cloud pricing API. Without customPricing, OpenCost
+  # tries to write its pricing file to /var/configs, which the non-root
+  # exporter (uid 1000) can't create ("mkdir /var/configs: permission
+  # denied") -- so it never loads pricing, never emits
+  # node_{cpu,ram,total}_hourly_cost, and node/asset costs read as 0.
+  # Enabling this points CONFIG_PATH at a writable emptyDir and loads the
+  # rates below. Values are hourly (per vCPU, per GiB RAM, per GiB storage)
+  # and match OpenCost's shipped on-prem defaults (default.json) -- tune
+  # them to real hardware/power cost if exact numbers matter.
+  customPricing:
+    enabled: true
+    costModel:
+      description: Homelab on-prem pricing (OpenCost default.json rates)
+      CPU: 0.031611
+      spotCPU: 0.006655
+      RAM: 0.004237
+      spotRAM: 0.000892
+      GPU: 0.95
+      storage: "0.00005479452"
+      zoneNetworkEgress: 0.01
+      regionNetworkEgress: 0.01
+      internetNetworkEgress: 0.12
   exporter:
     securityContext:
       allowPrivilegeEscalation: false
