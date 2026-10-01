@@ -162,6 +162,12 @@ alloy:
           regex         = "true"
         }
         rule {
+          // OpenCost gets its own scrape below (needs honor_labels).
+          action        = "drop"
+          source_labels = ["__meta_kubernetes_namespace"]
+          regex         = "opencost"
+        }
+        rule {
           action        = "replace"
           source_labels = ["__meta_kubernetes_pod_ip", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
           separator     = ":"
@@ -190,6 +196,45 @@ alloy:
         forward_to = [prometheus.remote_write.default.receiver]
       }
 
+      // OpenCost re-exports per-workload series (container_*_allocation,
+      // kube_pod_labels, kube_pod_owner, namespace_info, ...) that carry the
+      // namespace/pod of the workload they describe. Under the generic
+      // pod_metrics job those were overwritten with OpenCost's own
+      // namespace/pod (real values moved to exported_*), so every cost series
+      // read namespace="opencost". honor_labels keeps the exporter's labels.
+      // Not set on pod_metrics itself: the Kubescape dashboard reads
+      // exported_namespace from that job.
+      discovery.relabel "opencost_metrics" {
+        targets = discovery.kubernetes.pods_metrics.targets
+
+        rule {
+          action        = "keep"
+          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+          separator     = ";"
+          regex         = "opencost;true"
+        }
+        rule {
+          action        = "replace"
+          source_labels = ["__meta_kubernetes_pod_ip", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
+          separator     = ":"
+          target_label  = "__address__"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+      }
+
+      prometheus.scrape "opencost_metrics" {
+        targets      = discovery.relabel.opencost_metrics.output
+        honor_labels = true
+        forward_to   = [prometheus.remote_write.default.receiver]
+      }
+
       // Service-annotation discovery: kube-state-metrics, node-exporter both set
       // prometheus.io/scrape on the Service (not the pod) — confirmed against the
       // rendered chart output. role="endpoints" resolves it to the backing pod IP.
@@ -216,12 +261,13 @@ alloy:
           source_labels = ["__meta_kubernetes_service_name"]
           regex         = "hubble-metrics"
         }
-        // Health probes are not metrics endpoints (e.g. Trivy Operator
-        // exposes both `metrics` and `probes` ports on its Service).
+        // Non-metrics ports on annotated Services: health probes (Trivy
+        // Operator's `probes`) and kube-dns's `dns`/`dns-tcp` on :53, which
+        // otherwise show up as permanently failed (up=0) targets.
         rule {
           action        = "drop"
           source_labels = ["__meta_kubernetes_endpoint_port_name"]
-          regex         = "probes"
+          regex         = "probes|dns|dns-tcp"
         }
         rule {
           source_labels = ["__meta_kubernetes_namespace"]
@@ -480,9 +526,9 @@ alloy:
       }
 
       // Fixed in-cluster DNS names — kube-apiserver's own /metrics needs the
-      // nonResourceURL RBAC grant (already in Alloy's default ClusterRole); CoreDNS's
-      // Service name/port is Talos-managed, not chart-templated — verify against the
-      // live cluster if this target's missing.
+      // nonResourceURL RBAC grant (already in Alloy's default ClusterRole).
+      // CoreDNS is not a static target: kube-dns carries prometheus.io/scrape,
+      // so service_metrics scrapes each CoreDNS pod on :9153.
       prometheus.scrape "kube_apiserver" {
         targets = [{
           "__address__" = "kubernetes.default.svc.cluster.local:443",
@@ -501,7 +547,6 @@ alloy:
         // node's :2381 (bootstrap/talos/patch.yaml cluster.etcd.extraArgs),
         // unauthenticated by design, restricted at the network layer.
         targets = [
-          {"__address__" = "kube-dns.kube-system.svc.cluster.local:9153", "job" = "coredns"},
           {"__address__" = "vmsingle-victoria-metrics-single-server.monitoring.svc.cluster.local:8428", "job" = "victoriametrics"},
           {"__address__" = "vmalert-victoria-metrics-alert-server.monitoring.svc.cluster.local:8880", "job" = "vmalert"},
           {"__address__" = "vmalert-victoria-metrics-alert-alertmanager.monitoring.svc.cluster.local:9093", "job" = "alertmanager"},

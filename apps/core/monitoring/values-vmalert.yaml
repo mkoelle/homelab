@@ -102,7 +102,7 @@ server:
               annotations:
                 summary: "Uptime Kuma metrics target down for 5m -- uptime/latency checks may be silently not running"
             - alert: OpenCostTargetDown
-              expr: up{job="prometheus.scrape.pod_metrics", namespace="opencost"} == 0
+              expr: up{job="prometheus.scrape.opencost_metrics"} == 0
               for: 10m
               labels:
                 severity: warning
