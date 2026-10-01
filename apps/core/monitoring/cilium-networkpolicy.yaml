@@ -30,7 +30,7 @@ spec:
             - port: "8428"
               protocol: TCP
     # Alloy scrape of kube-state-metrics (metrics 8080, self-telemetry 8081) --
-    # mirrors networkpolicy.yaml; both policies must allow it (AND semantics).
+    # mirrors networkpolicy.yaml.
     - fromEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: alloy
