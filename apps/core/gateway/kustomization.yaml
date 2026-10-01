@@ -6,6 +6,7 @@ resources:
   - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.2/standard-install.yaml
   - namespace.yaml
   - gateway.yaml
+  - http-redirect.yaml
   - wildcard-cert.yaml
   - hl-mkoelle-com-cert.yaml
   - media-hl-mkoelle-com-cert.yaml

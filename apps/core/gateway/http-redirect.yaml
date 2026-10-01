@@ -1,0 +1,21 @@
+---
+# Redirects every host on the Gateway's port-80 listener to HTTPS. No
+# hostnames, so it covers *.motherbox.local, *.hl.mkoelle.com and
+# *.media.hl.mkoelle.com alike, including new apps -- no per-app change.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-to-https-redirect
+  namespace: gateway
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: homelab
+      sectionName: http
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
