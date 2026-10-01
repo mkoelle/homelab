@@ -30,6 +30,15 @@ opencost:
       serviceName: vmsingle-victoria-metrics-single-server
       namespaceName: monitoring
       port: 8428
+  # kube-state-metrics runs in apps/core/monitoring, so OpenCost must not
+  # re-export its own copies of the same kube_* series -- they double every
+  # sum() on the Kubernetes dashboards (e.g. Running Containers 78 -> 158).
+  # emitKsmV1MetricsOnly keeps just the v1 metrics KSM 2 no longer ships,
+  # per OpenCost's guidance for clusters that already run KSM.
+  metrics:
+    kubeStateMetrics:
+      emitKsmV1Metrics: false
+      emitKsmV1MetricsOnly: true
   exporter:
     securityContext:
       allowPrivilegeEscalation: false

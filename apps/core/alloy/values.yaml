@@ -235,6 +235,14 @@ alloy:
 
       prometheus.scrape "service_metrics" {
         targets    = discovery.relabel.service_metrics.output
+        // kube-state-metrics' series carry the namespace/service of the object
+        // they describe. Without honor_labels the target labels set above win,
+        // every kube_* series reads namespace="monitoring", and the real value
+        // moves to exported_namespace -- breaking every "by namespace" panel and
+        // OpenCost's cost queries. KSM is the only target in this job that
+        // exposes its own namespace/service labels (confirmed live), so this
+        // changes nothing for node-exporter, coredns or cilium-envoy.
+        honor_labels = true
         forward_to = [prometheus.remote_write.default.receiver]
       }
 
