@@ -2,12 +2,12 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: filebrowser-policy
-  namespace: filebrowser
+  name: sftpgo-policy
+  namespace: sftpgo
 spec:
   podSelector:
     matchLabels:
-      app: filebrowser
+      app: sftpgo
   policyTypes:
     - Ingress
     - Egress

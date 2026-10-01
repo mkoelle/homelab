@@ -508,3 +508,24 @@ resource "kubernetes_secret" "immich_postgres" {
     postgres-password = random_password.immich_postgres.result
   }
 }
+
+# SFTPGo's one read-only "viewer" account (apps/media/sftpgo) -- not an OIDC
+# secret either, same reasoning as immich_postgres above. special = false:
+# the password gets sed-substituted into a loaddata JSON template by an
+# initContainer, and a `/` or `\` from a special-character password would
+# either break the sed delimiter or get interpreted, not just end up with
+# the wrong value.
+resource "random_password" "sftpgo_viewer" {
+  length  = 32
+  special = false
+}
+
+resource "kubernetes_secret" "sftpgo_viewer" {
+  metadata {
+    name      = "sftpgo-viewer-secret"
+    namespace = "sftpgo"
+  }
+  data = {
+    password = random_password.sftpgo_viewer.result
+  }
+}

@@ -1,0 +1,21 @@
+---
+# SFTPGo's own state: the bolt data-provider file (users/admins/folders) and
+# host SSH keys (unused here, sftpd is disabled, but SFTPGo generates them
+# unconditionally at /var/lib/sftpgo on first start). Dynamically provisioned
+# from homelab's local-path StorageClass -- a directory on motherbox's SSD,
+# not backed up. Loaddata mode 0 (see deployment.yaml) reconciles the one
+# user from the mounted Secret on every start regardless, so losing this on
+# a node rebuild just means a fresh bolt file and regenerated host keys, not
+# lost configuration.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sftpgo-data
+  namespace: sftpgo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi

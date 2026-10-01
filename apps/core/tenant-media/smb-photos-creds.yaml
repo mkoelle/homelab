@@ -3,9 +3,9 @@
 # same reasoning (csi-driver-smb reads an inline volume's
 # `volumeAttributes.secretName` from the POD's namespace, and the tenant
 # can't create ExternalSecrets itself), but a different NAS user: this one
-# is the same `smb-photos-creds` account apps/media/filebrowser and
+# is the same `smb-photos-creds` account apps/media/sftpgo and
 # apps/core/storage/volumes.yaml (photos-pv) already use, read-only on the
-# `photo` share only. Deliberately NOT reusing filebrowser's photos-pv PV:
+# `photo` share only. Deliberately NOT reusing sftpgo's photos-pv PV:
 # a PV binds to exactly one PVC, and media-quota already zeroes
 # photos-pv.storageclass.storage.k8s.io/persistentvolumeclaims to "0" so a
 # tenant claim can never bind it. This is the tenant's own inline SMB CSI

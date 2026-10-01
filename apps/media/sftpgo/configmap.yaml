@@ -1,0 +1,28 @@
+---
+# Declarative user provisioning (SFTPGo's "loaddata" feature) instead of the
+# web-admin UI -- the password placeholder is substituted by an initContainer
+# (deployment.yaml) from the Terraform-generated Secret before SFTPGo starts,
+# since loaddata needs the real value baked into the file, not an env-var
+# reference. "/" is the required fallback permission key (not "*"); listing
+# only list+download makes this user strictly read-only -- no upload,
+# delete, rename, or overwrite. home_dir matches the image's own default
+# users_base_dir (/srv/sftpgo/data, baked into /etc/sftpgo/sftpgo.json) plus
+# the photos-pv mount subpath below.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sftpgo-loaddata-template
+  namespace: sftpgo
+data:
+  loaddata.json.tmpl: |
+    {
+      "users": [
+        {
+          "username": "viewer",
+          "status": 1,
+          "password": "__SFTPGO_VIEWER_PASSWORD__",
+          "home_dir": "/srv/sftpgo/data/photos",
+          "permissions": { "/": ["list", "download"] }
+        }
+      ]
+    }

@@ -33,7 +33,7 @@
         description: Uptime/latency checks
         icon: uptime-kuma.png
 - Files:
-    - Filebrowser:
-        href: https://filebrowser.motherbox.local
+    - SFTPGo:
+        href: https://sftpgo.motherbox.local
         description: Network file browser
-        icon: filebrowser.png
+        icon: sftpgo.png
