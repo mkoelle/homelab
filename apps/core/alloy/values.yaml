@@ -560,6 +560,11 @@ alloy:
       // same Envoy/CiliumNetworkPolicy/ingress-identity routing layer that
       // broke on 2026-09-21 (see docs/troubleshooting/). A direct in-cluster
       // Service probe would not have caught that outage; this would have.
+      // HTTPS, not HTTP: port 80 only redirects (apps/core/gateway/
+      // http-redirect.yaml). server_name sets SNI so the right listener
+      // and cert answer; verification is skipped because the
+      // *.motherbox.local cert is from the cluster's self-signed CA, which
+      // Alloy doesn't mount -- this probe checks routing, not the cert.
       prometheus.exporter.blackbox "probes" {
         config = `
         modules:
@@ -569,33 +574,42 @@ alloy:
             http:
               headers:
                 Host: sftpgo.motherbox.local
+              tls_config:
+                server_name: sftpgo.motherbox.local
+                insecure_skip_verify: true
           http_argocd:
             prober: http
             timeout: 5s
             http:
               headers:
                 Host: argocd.motherbox.local
+              tls_config:
+                server_name: argocd.motherbox.local
+                insecure_skip_verify: true
           http_grafana:
             prober: http
             timeout: 5s
             http:
               headers:
                 Host: grafana.motherbox.local
+              tls_config:
+                server_name: grafana.motherbox.local
+                insecure_skip_verify: true
         `
 
         target {
           name    = "sftpgo"
-          address = "http://192.168.1.200"
+          address = "https://192.168.1.200"
           module  = "http_sftpgo"
         }
         target {
           name    = "argocd"
-          address = "http://192.168.1.200"
+          address = "https://192.168.1.200"
           module  = "http_argocd"
         }
         target {
           name    = "grafana"
-          address = "http://192.168.1.200"
+          address = "https://192.168.1.200"
           module  = "http_grafana"
         }
       }

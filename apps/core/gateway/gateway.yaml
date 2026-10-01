@@ -9,15 +9,17 @@ metadata:
 spec:
   gatewayClassName: cilium
   listeners:
+    # Plain HTTP only redirects to HTTPS (http-redirect.yaml). Restricted to
+    # this namespace so app HTTPRoutes without a sectionName attach to the
+    # HTTPS listeners only -- otherwise their exact hostnames would outrank the
+    # hostname-less redirect route and keep serving apps over HTTP (which
+    # broke ArgoCD's OIDC login: return_url=http://... vs url https://...).
     - name: http
       port: 80
       protocol: HTTP
       allowedRoutes:
         namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              gateway-access: "true"
+          from: Same
     - name: https
       port: 443
       protocol: HTTPS
