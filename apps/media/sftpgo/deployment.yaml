@@ -1,0 +1,145 @@
+---
+# Replaces filebrowser: same read-only web browsing of the NAS photo share,
+# same photos-pv static PV, same LAN-only exposure -- SFTPGo's WebClient UI
+# instead of hurlenko/filebrowser's. sftpd and the web-admin UI are both
+# disabled (env overrides below); only the WebClient binding is exposed.
+#
+# Non-root out of the box: the image's own Dockerfile creates uid/gid 1000
+# ("sftpgo") and its final USER is 1000:1000, no root entrypoint/chown step
+# -- confirmed against the v2.7.6 Dockerfile, not a guess (unlike the first
+# pass at Immich's images, which cost a debugging cycle).
+#
+# The admin password lives in a Terraform-generated Secret (homelab's
+# zitadel/terraform/main.tf, same random_password + kubernetes_secret
+# pattern as immich-postgres-secret) -- SFTPGo's loaddata file needs the
+# literal value, not an env-var reference, so an initContainer renders it
+# into the template (configmap.yaml) via a shared emptyDir before the main
+# container starts.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sftpgo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: sftpgo
+  template:
+    metadata:
+      labels:
+        app: sftpgo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: render-loaddata
+          image: docker.io/library/busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command:
+            - sh
+            - -c
+            - sed "s|__SFTPGO_VIEWER_PASSWORD__|$VIEWER_PASSWORD|" /template/loaddata.json.tmpl > /loaddata/loaddata.json
+          env:
+            - name: VIEWER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sftpgo-viewer-secret
+                  key: password
+          volumeMounts:
+            - name: loaddata-template
+              mountPath: /template
+            - name: loaddata-rendered
+              mountPath: /loaddata
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      containers:
+        - name: sftpgo
+          image: ghcr.io/drakkan/sftpgo:v2.7.6@sha256:1edd28d80de2a008863fbfc58c8ff7db47b1b410bae48d4e6076192337809b11
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # Disable sftpd entirely -- WebClient only, like filebrowser.
+            - name: SFTPGO_SFTPD__BINDINGS__0__PORT
+              value: "0"
+            # Web-admin UI stays off: no admin account is provisioned, and
+            # the LAN-only NetworkPolicy is this app's only real boundary.
+            - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_ADMIN
+              value: "false"
+            - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_CLIENT
+              value: "true"
+            - name: SFTPGO_DATA_PROVIDER__DRIVER
+              value: bolt
+            - name: SFTPGO_DATA_PROVIDER__NAME
+              value: /var/lib/sftpgo/sftpgo.db
+            - name: SFTPGO_LOADDATA_FROM
+              value: /loaddata/loaddata.json
+            # Add-or-update on every start: reconciles the one user from the
+            # Secret each time, rather than only on an empty data provider.
+            - name: SFTPGO_LOADDATA_MODE
+              value: "0"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/sftpgo
+            - name: photos
+              mountPath: /srv/sftpgo/data/photos
+              readOnly: true
+            - name: loaddata-rendered
+              mountPath: /loaddata
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: sftpgo-data
+        - name: photos
+          persistentVolumeClaim:
+            claimName: pvc-photos-ro
+        - name: loaddata-template
+          configMap:
+            name: sftpgo-loaddata-template
+        - name: loaddata-rendered
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

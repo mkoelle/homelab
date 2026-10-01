@@ -2,12 +2,12 @@
 apiVersion: "cilium.io/v2"
 kind: CiliumNetworkPolicy
 metadata:
-  name: filebrowser-gateway
-  namespace: filebrowser
+  name: sftpgo-gateway
+  namespace: sftpgo
 spec:
   endpointSelector:
     matchLabels:
-      app: filebrowser
+      app: sftpgo
   ingress:
     # Gateway API proxy: traffic forwarded by Cilium's Envoy carries the
     # reserved "ingress" identity, not the "gateway" namespace's pod identity

@@ -10,7 +10,7 @@
 # boundary for what the tenant can mount: read-only on
 # Anime/Movies/TV_Shows/Music/AudioBooks, nothing else, no write. Photo
 # access is a separate credential/user (smb-photos-creds.yaml), same one
-# filebrowser already uses.
+# sftpgo already uses.
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:

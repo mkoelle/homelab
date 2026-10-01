@@ -510,12 +510,12 @@ alloy:
       prometheus.exporter.blackbox "probes" {
         config = `
         modules:
-          http_filebrowser:
+          http_sftpgo:
             prober: http
             timeout: 5s
             http:
               headers:
-                Host: filebrowser.motherbox.local
+                Host: sftpgo.motherbox.local
           http_argocd:
             prober: http
             timeout: 5s
@@ -531,9 +531,9 @@ alloy:
         `
 
         target {
-          name    = "filebrowser"
+          name    = "sftpgo"
           address = "http://192.168.1.200"
-          module  = "http_filebrowser"
+          module  = "http_sftpgo"
         }
         target {
           name    = "argocd"

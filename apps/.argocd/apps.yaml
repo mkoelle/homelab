@@ -123,9 +123,9 @@ spec:
             wave: "5"
 
           # Wave 6 — User workloads
-          - name: filebrowser
-            path: apps/media/filebrowser
-            namespace: filebrowser
+          - name: sftpgo
+            path: apps/media/sftpgo
+            namespace: sftpgo
             wave: "6"
 
           - name: homepage
