@@ -41,3 +41,17 @@ spec:
       ports:
         - protocol: TCP
           port: 8428
+    # Alloy scrapes kube-state-metrics via its Service annotation
+    # (apps/core/alloy/values.yaml's service_metrics job): 8080 is the metrics
+    # port, 8081 its self-telemetry port -- both are endpoint ports on the
+    # Service, so both get scraped. Without this every kube_* series is missing
+    # and the Kubernetes dashboards show "No data".
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: alloy
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8081
