@@ -4,7 +4,7 @@ metadata:
   name: argocd-cm
   namespace: core-argocd
 data:
-  url: https://argocd.motherbox.local
+  url: https://argocd.hl.mkoelle.com
   kustomize.buildOptions: "--enable-helm"
   # SSO via Zitadel. client_id/OIDC app are declared in
   # apps/core/zitadel/terraform/main.tf (zitadel_application_oidc.argocd) --

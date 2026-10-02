@@ -9,7 +9,7 @@ config:
 extraArgs:
   provider: oidc
   oidc-issuer-url: https://id.hl.mkoelle.com
-  redirect-url: https://hubble.motherbox.local/oauth2/callback
+  redirect-url: https://hubble.hl.mkoelle.com/oauth2/callback
   cookie-secure: "true"
   skip-provider-button: "true"
 
@@ -29,7 +29,7 @@ gatewayApi:
     name: homelab
     namespace: gateway
   hostnames:
-    - hubble.motherbox.local
+    - hubble.hl.mkoelle.com
   # Explicit weight: 1 -- the chart's own default backendRefs omit it, but
   # the Gateway API CRD defaults it server-side, which ArgoCD's diff then
   # sees as permanent drift (same reasoning as every hand-written

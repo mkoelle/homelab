@@ -11,7 +11,7 @@ spec:
       name: homelab
       namespace: gateway
   hostnames:
-    - sftpgo.motherbox.local
+    - sftpgo.hl.mkoelle.com
   rules:
     - matches:
         - path:

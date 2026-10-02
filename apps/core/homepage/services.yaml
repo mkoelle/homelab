@@ -1,39 +1,39 @@
 - Infrastructure:
     - ArgoCD:
-        href: https://argocd.motherbox.local
+        href: https://argocd.hl.mkoelle.com
         description: GitOps continuous delivery
         icon: argo-cd.png
         widget:
           type: argocd
-          url: https://argocd.motherbox.local
+          url: https://argocd.hl.mkoelle.com
           key: "{{HOMEPAGE_VAR_ARGOCD_KEY}}"
     - Zitadel:
         href: https://id.hl.mkoelle.com/ui/console
         description: SSO / identity provider
         icon: zitadel.png
     - Hubble:
-        href: https://hubble.motherbox.local
+        href: https://hubble.hl.mkoelle.com
         description: Cilium network flow visibility
         icon: cilium.png
 - Observability:
     - Grafana:
-        href: https://grafana.motherbox.local
+        href: https://grafana.hl.mkoelle.com
         description: Dashboards, logs, alerting
         icon: grafana.png
     - Alloy:
-        href: https://alloy.motherbox.local
+        href: https://alloy.hl.mkoelle.com
         description: Metrics/logs collection pipeline
         icon: alloy.png
     - OpenCost:
-        href: https://opencost.motherbox.local
+        href: https://opencost.hl.mkoelle.com
         description: Kubernetes cost visibility
         icon: opencost.png
     - Uptime Kuma:
-        href: https://uptime-kuma.motherbox.local
+        href: https://uptime-kuma.hl.mkoelle.com
         description: Uptime/latency checks
         icon: uptime-kuma.png
 - Files:
     - SFTPGo:
-        href: https://sftpgo.motherbox.local
+        href: https://sftpgo.hl.mkoelle.com
         description: Network file browser
         icon: sftpgo.png

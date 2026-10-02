@@ -32,7 +32,7 @@ data:
   #
   # 192.168.1.200: the Cilium-assigned LoadBalancer IP for the `homelab`
   # Gateway's Service (cilium-gateway-homelab), from the 192.168.1.200-254
-  # pool (apps/core/cilium/lb-ip-pool.yaml). Same IP every *.motherbox.local
+  # pool (apps/core/cilium/lb-ip-pool.yaml). Same IP every *.hl.mkoelle.com
   # hostname already resolves to externally.
   hl-mkoelle-com.server: |
     hl.mkoelle.com:53 {

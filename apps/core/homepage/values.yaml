@@ -1,6 +1,6 @@
 config:
   allowedHosts:
-    - homepage.motherbox.local
+    - homepage.hl.mkoelle.com
 
 # Backs services.yaml's ArgoCD widget ({{HOMEPAGE_VAR_ARGOCD_KEY}}).
 # Secret homepage-argocd-token isn't git-tracked or Terraform-managed --

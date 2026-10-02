@@ -110,7 +110,7 @@ spec:
             - name: SFTPGO_HTTPD__BINDINGS__0__OIDC__CONFIG_URL
               value: https://id.hl.mkoelle.com
             - name: SFTPGO_HTTPD__BINDINGS__0__OIDC__REDIRECT_BASE_URL
-              value: https://sftpgo.motherbox.local
+              value: https://sftpgo.hl.mkoelle.com
             - name: SFTPGO_HTTPD__BINDINGS__0__OIDC__USERNAME_FIELD
               value: preferred_username
             - name: SFTPGO_HTTPD__BINDINGS__0__OIDC__CLIENT_ID

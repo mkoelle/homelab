@@ -35,7 +35,7 @@ resource "zitadel_application_oidc" "argocd" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "ArgoCD"
-  redirect_uris  = ["https://argocd.motherbox.local/auth/callback"]
+  redirect_uris  = ["https://argocd.hl.mkoelle.com/auth/callback"]
   response_types = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
 
@@ -68,7 +68,7 @@ resource "zitadel_application_oidc" "hubble" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "Hubble UI"
-  redirect_uris  = ["https://hubble.motherbox.local/oauth2/callback"]
+  redirect_uris  = ["https://hubble.hl.mkoelle.com/oauth2/callback"]
   response_types = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
 
@@ -83,7 +83,7 @@ resource "zitadel_application_oidc" "alloy" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "Alloy"
-  redirect_uris  = ["https://alloy.motherbox.local/oauth2/callback"]
+  redirect_uris  = ["https://alloy.hl.mkoelle.com/oauth2/callback"]
   response_types = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
 
@@ -98,7 +98,7 @@ resource "zitadel_application_oidc" "opencost" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "OpenCost"
-  redirect_uris  = ["https://opencost.motherbox.local/oauth2/callback"]
+  redirect_uris  = ["https://opencost.hl.mkoelle.com/oauth2/callback"]
   response_types = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
 
@@ -113,7 +113,7 @@ resource "zitadel_application_oidc" "homepage" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "Homepage"
-  redirect_uris  = ["https://homepage.motherbox.local/oauth2/callback"]
+  redirect_uris  = ["https://homepage.hl.mkoelle.com/oauth2/callback"]
   response_types = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
 
@@ -128,7 +128,7 @@ resource "zitadel_application_oidc" "grafana" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "Grafana"
-  redirect_uris  = ["https://grafana.motherbox.local/login/generic_oauth"]
+  redirect_uris  = ["https://grafana.hl.mkoelle.com/login/generic_oauth"]
   response_types = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
 
@@ -257,7 +257,7 @@ resource "zitadel_application_oidc" "sftpgo" {
   org_id         = local.org_id
   project_id     = zitadel_project.homelab.id
   name           = "SFTPGo"
-  redirect_uris  = ["https://sftpgo.motherbox.local/web/oidc/redirect"]
+  redirect_uris  = ["https://sftpgo.hl.mkoelle.com/web/oidc/redirect"]
   response_types = ["OIDC_RESPONSE_TYPE_CODE"]
   grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
 

@@ -1,6 +1,6 @@
 ---
 # Redirects every host on the Gateway's port-80 listener to HTTPS. No
-# hostnames, so it covers *.motherbox.local, *.hl.mkoelle.com and
+# hostnames, so it covers *.hl.mkoelle.com and
 # *.media.hl.mkoelle.com alike, including new apps -- no per-app change.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
