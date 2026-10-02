@@ -9,7 +9,7 @@ config:
 extraArgs:
   provider: oidc
   oidc-issuer-url: https://id.hl.mkoelle.com
-  redirect-url: https://homepage.motherbox.local/oauth2/callback
+  redirect-url: https://homepage.hl.mkoelle.com/oauth2/callback
   cookie-secure: "true"
   skip-provider-button: "true"
 
@@ -29,7 +29,7 @@ gatewayApi:
     name: homelab
     namespace: gateway
   hostnames:
-    - homepage.motherbox.local
+    - homepage.hl.mkoelle.com
   # Explicit weight/group/kind -- the chart's own defaults omit them, but
   # the Gateway API CRD defaults them server-side, which ArgoCD's diff then
   # sees as permanent drift (learned live getting Hubble/Alloy/OpenCost's

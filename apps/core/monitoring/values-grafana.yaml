@@ -55,7 +55,7 @@ resources:
 # Zitadel's OIDC endpoints. The client and callback are managed in
 # apps/core/zitadel/terraform/main.tf.
 env:
-  GF_SERVER_ROOT_URL: "https://grafana.motherbox.local"
+  GF_SERVER_ROOT_URL: "https://grafana.hl.mkoelle.com"
   GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
   GF_AUTH_GENERIC_OAUTH_NAME: "Zitadel"
   GF_AUTH_GENERIC_OAUTH_SCOPES: "openid profile email"
