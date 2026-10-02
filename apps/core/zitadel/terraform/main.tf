@@ -247,6 +247,29 @@ resource "zitadel_application_oidc" "lidarr" {
   access_token_type = "OIDC_TOKEN_TYPE_BEARER"
 }
 
+# SFTPGo (apps/media/sftpgo) has native OIDC for its WebClient -- no
+# oauth2-proxy (it can't take a username from a proxy header, so that would
+# mean two logins). Redirect path confirmed against SFTPGo v2.7.6's own
+# authorize request. SFTPGo maps the preferred_username claim to an existing
+# SFTPGo user (apps/media/sftpgo/configmap.yaml); userinfo assertion puts it
+# on the ID token, same as ArgoCD above.
+resource "zitadel_application_oidc" "sftpgo" {
+  org_id         = local.org_id
+  project_id     = zitadel_project.homelab.id
+  name           = "SFTPGo"
+  redirect_uris  = ["https://sftpgo.motherbox.local/web/oidc/redirect"]
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types    = ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"]
+
+  app_type          = "OIDC_APP_TYPE_WEB"
+  auth_method_type  = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version           = "OIDC_VERSION_1_0"
+  dev_mode          = false
+  access_token_type = "OIDC_TOKEN_TYPE_BEARER"
+
+  id_token_userinfo_assertion = true
+}
+
 # Instance-scoped Google IDP -- the only Google IDP object in this config.
 # Org login policies can select instance-owned IDPs directly (confirmed live:
 # the org's own Identity Providers settings page lists this instance IDP as
@@ -509,23 +532,15 @@ resource "kubernetes_secret" "immich_postgres" {
   }
 }
 
-# SFTPGo's one read-only "viewer" account (apps/media/sftpgo) -- not an OIDC
-# secret either, same reasoning as immich_postgres above. special = false:
-# the password gets sed-substituted into a loaddata JSON template by an
-# initContainer, and a `/` or `\` from a special-character password would
-# either break the sed delimiter or get interpreted, not just end up with
-# the wrong value.
-resource "random_password" "sftpgo_viewer" {
-  length  = 32
-  special = false
-}
-
-resource "kubernetes_secret" "sftpgo_viewer" {
+# SFTPGo's OIDC client credentials. Replaces the old shared "viewer"
+# password secret: the WebClient is SSO-only now, no password logins.
+resource "kubernetes_secret" "sftpgo_oidc" {
   metadata {
-    name      = "sftpgo-viewer-secret"
+    name      = "zitadel-sftpgo-oidc-secret"
     namespace = "sftpgo"
   }
   data = {
-    password = random_password.sftpgo_viewer.result
+    client-id     = zitadel_application_oidc.sftpgo.client_id
+    client-secret = zitadel_application_oidc.sftpgo.client_secret
   }
 }

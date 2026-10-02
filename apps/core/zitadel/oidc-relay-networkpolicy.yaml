@@ -22,6 +22,10 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: media
+        # SFTPGo's native OIDC (apps/media/sftpgo), same hostAliases pattern.
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sftpgo
       ports:
         - protocol: TCP
           port: 8443 # container's real listen port; the Service maps 443 -> 8443
@@ -58,6 +62,8 @@ spec:
             k8s:io.kubernetes.pod.namespace: core-argocd
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: media
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: sftpgo
       toPorts:
         - ports:
             - port: "8443"
