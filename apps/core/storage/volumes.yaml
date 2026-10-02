@@ -10,6 +10,16 @@ spec:
     - ReadOnlyMany
   persistentVolumeReclaimPolicy: Retain
   storageClassName: photos-pv
+  # Pinned to its one consumer. With Retain, a deleted claim leaves the PV
+  # "Released" with the old claimRef still set, and no new claim can bind
+  # -- that's how sftpgo sat Pending after replacing filebrowser (#60).
+  # Swapping the consumer again: change this, and clear the live stale
+  # claimRef (kubectl patch pv photos-pv --type json -p
+  # '[{"op":"remove","path":"/spec/claimRef"}]') before Argo applies it,
+  # since a merge would keep the old claim's uid.
+  claimRef:
+    namespace: sftpgo
+    name: pvc-photos-ro
   csi:
     driver: smb.csi.k8s.io
     volumeHandle: photos-pv

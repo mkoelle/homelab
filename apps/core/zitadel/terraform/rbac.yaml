@@ -222,3 +222,32 @@ subjects:
   - kind: ServiceAccount
     name: zitadel-terraform
     namespace: zitadel
+---
+# Same, for main.tf's kubernetes_secret.sftpgo_viewer in ns sftpgo (the
+# viewer account's generated password, not an OIDC secret). Missing when
+# sftpgo replaced filebrowser (#60): every terraform apply failed with
+# "cannot create resource secrets ... in the namespace sftpgo", and the
+# sftpgo pod sat in CreateContainerConfigError waiting for the Secret.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: sftpgo
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zitadel-terraform-oidc-secret
+  namespace: sftpgo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zitadel-terraform-oidc-secret
+subjects:
+  - kind: ServiceAccount
+    name: zitadel-terraform
+    namespace: zitadel
