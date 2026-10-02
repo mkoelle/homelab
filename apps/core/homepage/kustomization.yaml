@@ -18,6 +18,14 @@ resources:
 # kustomize's nameReference transformer), forcing an actual rollout instead
 # -- same pattern already used for zitadel-terraform-files
 # (apps/core/zitadel/kustomization.yaml).
+# Content-hashed names leave the previous ConfigMap behind on every change,
+# and with prune off (repo convention) Argo flags it "requires pruning" --
+# app permanently OutOfSync. IgnoreExtraneous makes such leftovers not count
+# toward sync status; they're tiny and harmless. Clean up by hand if wanted:
+# kubectl -n <ns> delete cm <old-hashed-name>.
+generatorOptions:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
 configMapGenerator:
   - name: homepage-config
     files:
