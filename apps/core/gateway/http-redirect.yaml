@@ -7,6 +7,13 @@ kind: HTTPRoute
 metadata:
   name: http-to-https-redirect
   namespace: gateway
+  annotations:
+    # After the Gateway (wave 1): the http listener only admits this
+    # namespace once gateway.yaml's `from: Same` is applied. In the default
+    # wave 0 this route was applied first, rejected ("not allowed to attach
+    # to this Gateway due to namespace restrictions"), and the failed wave
+    # stopped Argo from ever applying the Gateway change -- a deadlock.
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
