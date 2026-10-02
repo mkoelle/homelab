@@ -598,8 +598,10 @@ alloy:
         `
 
         target {
+          // Login page, not "/": SFTPGo's root is a 302 to it, and a
+          // followed redirect through the Gateway isn't a reliable signal.
           name    = "sftpgo"
-          address = "https://192.168.1.200"
+          address = "https://192.168.1.200/web/client/login"
           module  = "http_sftpgo"
         }
         target {
