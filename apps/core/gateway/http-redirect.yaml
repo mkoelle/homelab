@@ -21,7 +21,13 @@ spec:
       name: homelab
       sectionName: http
   rules:
-    - filters:
+    # matches spelled out: the API server defaults it to exactly this, and
+    # leaving it implicit kept the gateway Argo app permanently OutOfSync.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
         - type: RequestRedirect
           requestRedirect:
             scheme: https
