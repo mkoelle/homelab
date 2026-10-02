@@ -35,6 +35,14 @@ resources:
 # namespace transformer); without a matching namespace here, nameReference
 # silently skips the rewrite and the Job mounts the unsuffixed name, which
 # doesn't exist (confirmed via a minimal kustomize repro).
+# Content-hashed names leave the previous ConfigMap behind on every change,
+# and with prune off (repo convention) Argo flags it "requires pruning" --
+# app permanently OutOfSync. IgnoreExtraneous makes such leftovers not count
+# toward sync status; they're tiny and harmless. Clean up by hand if wanted:
+# kubectl -n <ns> delete cm <old-hashed-name>.
+generatorOptions:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
 configMapGenerator:
   - name: zitadel-terraform-files
     namespace: zitadel
