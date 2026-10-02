@@ -1,20 +1,26 @@
 ---
-# Declarative user provisioning (SFTPGo's "loaddata" feature) instead of the
-# web-admin UI -- the password placeholder is substituted by an initContainer
-# (deployment.yaml) from the Terraform-generated Secret before SFTPGo starts,
-# since loaddata needs the real value baked into the file, not an env-var
-# reference. "/" is the required fallback permission key (not "*"); listing
-# only list+download makes this user strictly read-only -- no upload,
-# delete, rename, or overwrite. home_dir matches the image's own default
-# users_base_dir (/srv/sftpgo/data, baked into /etc/sftpgo/sftpgo.json) plus
-# the photos-pv mount subpath below.
+# Declarative account provisioning (SFTPGo's "loaddata" feature) instead of
+# the web-admin UI. Rendered by the initContainer (deployment.yaml), which
+# fills __RANDOM_PASSWORD__ with fresh random hex on every start.
+#
+# Login is SSO-only (Zitadel OIDC, deployment.yaml): SFTPGo maps the
+# preferred_username claim to an existing user below, so each person needs
+# an entry here -- Zitadel's preferred_username for Google-federated users
+# is their email. The random passwords exist only because SFTPGo requires
+# one; password login is disabled, so nothing can use them. To add a user,
+# copy the block with their Zitadel username. "/" is the required fallback
+# permission key (not "*"); list+download only = strictly read-only.
+# home_dir is the image's default users_base_dir (/srv/sftpgo/data) plus
+# the photos-pv mount subpath.
 #
 # The "admins" entry is a placeholder that is never used: SFTPGo sends every
 # WebClient login to /web/admin/setup while no admin exists, even with the
-# web admin disabled -- so "/" rendered an empty page and the login form was
-# unreachable (verified against v2.7.6). Its password is random per start
-# (deployment.yaml initContainer), and with web admin + REST API both off
-# there is nowhere to use it.
+# web admin disabled (verified against v2.7.6). With web admin and REST API
+# both off there is nowhere to use it.
+#
+# The old shared "viewer" user is gone from this file. LOADDATA_MODE 0 never
+# deletes, so it may linger in the data provider, but with password login
+# off it cannot sign in.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -27,15 +33,15 @@ data:
         {
           "username": "setup-placeholder",
           "status": 1,
-          "password": "__SFTPGO_ADMIN_PASSWORD__",
+          "password": "__RANDOM_PASSWORD__",
           "permissions": ["*"]
         }
       ],
       "users": [
         {
-          "username": "viewer",
+          "username": "mkoelle@gmail.com",
           "status": 1,
-          "password": "__SFTPGO_VIEWER_PASSWORD__",
+          "password": "__RANDOM_PASSWORD__",
           "home_dir": "/srv/sftpgo/data/photos",
           "permissions": { "/": ["list", "download"] }
         }

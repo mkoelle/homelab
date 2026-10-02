@@ -223,8 +223,8 @@ subjects:
     name: zitadel-terraform
     namespace: zitadel
 ---
-# Same, for main.tf's kubernetes_secret.sftpgo_viewer in ns sftpgo (the
-# viewer account's generated password, not an OIDC secret). Missing when
+# Same, for main.tf's kubernetes_secret.sftpgo_oidc in ns sftpgo
+# (originally the viewer password secret, now SSO). Missing when
 # sftpgo replaced filebrowser (#60): every terraform apply failed with
 # "cannot create resource secrets ... in the namespace sftpgo", and the
 # sftpgo pod sat in CreateContainerConfigError waiting for the Secret.

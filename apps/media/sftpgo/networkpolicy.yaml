@@ -41,3 +41,17 @@ spec:
       ports:
         - protocol: TCP
           port: 445
+    # Zitadel OIDC relay (discovery, token exchange, JWKS) -- see the
+    # hostAliases comment in deployment.yaml. Pod selector, not the
+    # ClusterIP: kube-proxy-replacement rewrites the destination to the
+    # relay pod IP before egress policy runs (apps/core/argocd/networkpolicy.yaml).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: zitadel
+          podSelector:
+            matchLabels:
+              app: zitadel-oidc-relay
+      ports:
+        - protocol: TCP
+          port: 8443
