@@ -9,7 +9,7 @@
 # -- confirmed against the v2.7.6 Dockerfile, not a guess (unlike the first
 # pass at Immich's images, which cost a debugging cycle).
 #
-# The admin password lives in a Terraform-generated Secret (homelab's
+# The viewer password lives in a Terraform-generated Secret (homelab's
 # zitadel/terraform/main.tf, same random_password + kubernetes_secret
 # pattern as immich-postgres-secret) -- SFTPGo's loaddata file needs the
 # literal value, not an env-var reference, so an initContainer renders it
@@ -45,7 +45,14 @@ spec:
           command:
             - sh
             - -c
-            - sed "s|__SFTPGO_VIEWER_PASSWORD__|$VIEWER_PASSWORD|" /template/loaddata.json.tmpl > /loaddata/loaddata.json
+            # Placeholder admin password: fresh random hex every start (hex,
+            # so it is sed-safe). Nobody ever logs in as that admin -- see
+            # configmap.yaml for why the account has to exist at all.
+            - |
+              ADMIN_PASSWORD=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+              sed -e "s|__SFTPGO_VIEWER_PASSWORD__|$VIEWER_PASSWORD|" \
+                  -e "s|__SFTPGO_ADMIN_PASSWORD__|$ADMIN_PASSWORD|" \
+                  /template/loaddata.json.tmpl > /loaddata/loaddata.json
           env:
             - name: VIEWER_PASSWORD
               valueFrom:
@@ -80,9 +87,14 @@ spec:
             # Disable sftpd entirely -- WebClient only, like filebrowser.
             - name: SFTPGO_SFTPD__BINDINGS__0__PORT
               value: "0"
-            # Web-admin UI stays off: no admin account is provisioned, and
-            # the LAN-only NetworkPolicy is this app's only real boundary.
+            # Web-admin UI and REST API stay off, so the placeholder admin
+            # (configmap.yaml) has no interface to log in through -- the
+            # LAN-only NetworkPolicy is this app's only real boundary. The
+            # WebClient doesn't use the REST API (verified against v2.7.6:
+            # viewer login + directory listing work with it disabled).
             - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_ADMIN
+              value: "false"
+            - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_REST_API
               value: "false"
             - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_CLIENT
               value: "true"
