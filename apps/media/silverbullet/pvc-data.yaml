@@ -1,0 +1,17 @@
+---
+# The SilverBullet space: plain Markdown files plus SilverBullet's own
+# metadata. Dynamically provisioned from homelab's local-path StorageClass
+# -- a directory on motherbox's SSD, NOT backed up. A node rebuild loses
+# every note unless they were synced/exported elsewhere first.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: silverbullet-data
+  namespace: silverbullet
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi

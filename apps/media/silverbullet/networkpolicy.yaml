@@ -1,0 +1,43 @@
+---
+# Ingress-only, from the oauth2-proxy pod only (SSO front door,
+# oauth2-proxy-values.yaml). SilverBullet itself makes no outbound calls
+# that need an egress allowance.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: silverbullet-policy
+  namespace: silverbullet
+spec:
+  podSelector:
+    matchLabels:
+      app: silverbullet
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: silverbullet-oauth2-proxy
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: silverbullet-oauth2-proxy-policy
+  namespace: silverbullet
+spec:
+  podSelector:
+    matchLabels:
+      app: silverbullet-oauth2-proxy
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gateway
+      ports:
+        - protocol: TCP
+          port: 4180
