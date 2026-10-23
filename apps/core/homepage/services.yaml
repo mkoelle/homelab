@@ -37,3 +37,8 @@
         href: https://sftpgo.hl.mkoelle.com
         description: Network file browser
         icon: sftpgo.png
+- Notes:
+    - SilverBullet:
+        href: https://notes.hl.mkoelle.com
+        description: Markdown notes
+        icon: silverbullet.png

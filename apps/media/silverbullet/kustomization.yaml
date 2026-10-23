@@ -1,0 +1,24 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: silverbullet
+
+resources:
+  - namespace.yaml
+  - pvc-data.yaml
+  - deployment.yaml
+  - service.yaml
+  - resourcequota.yaml
+  - networkpolicy.yaml
+  - cilium-networkpolicy.yaml
+
+helmCharts:
+  # SSO front door for SilverBullet (oauth2-proxy-values.yaml) --
+  # SilverBullet only has a built-in single-user password (SB_USER), no
+  # OIDC. Same pattern as apps/core/homepage.
+  - name: oauth2-proxy
+    repo: https://oauth2-proxy.github.io/manifests
+    version: 10.7.0
+    releaseName: silverbullet-oauth2-proxy
+    namespace: silverbullet
+    valuesFile: oauth2-proxy-values.yaml

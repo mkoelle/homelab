@@ -1,0 +1,86 @@
+---
+# SilverBullet notes app. The -slim image tag skips the bundled Chromium
+# (only needed for the /.runtime/* API, unused here).
+#
+# Non-root without the entrypoint's PUID/PGID dance: docker-entrypoint.sh
+# execs /silverbullet directly when the container's UID is not 0, so
+# runAsUser below is all that's needed (confirmed against the 2.12.1
+# entrypoint). SB_FOLDER is set explicitly so the entrypoint skips its
+# /data-vs-/space mountpoint detection.
+#
+# No SB_USER: auth is the oauth2-proxy in front (oauth2-proxy-values.yaml),
+# and networkpolicy.yaml only admits traffic from that proxy.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: silverbullet
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: silverbullet
+  template:
+    metadata:
+      labels:
+        app: silverbullet
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: silverbullet
+          image: ghcr.io/silverbulletmd/silverbullet:2.12.1-slim@sha256:7e24c16d31a3f4b4a4832ed64ec585e605a1e275b7c35917d385176f0b40415c
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: SB_FOLDER
+              value: /data
+            # No passwd entry for UID 1000 in the image, so HOME would
+            # otherwise be "/" on a read-only root filesystem.
+            - name: HOME
+              value: /tmp
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+          # /.instance is the image's own HEALTHCHECK endpoint.
+          readinessProbe:
+            httpGet:
+              path: /.instance
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /.instance
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: silverbullet-data
+        - name: tmp
+          emptyDir: {}

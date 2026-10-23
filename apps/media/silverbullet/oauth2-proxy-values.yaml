@@ -1,0 +1,49 @@
+nameOverride: silverbullet-oauth2-proxy
+fullnameOverride: silverbullet-oauth2-proxy
+
+config:
+  # Created by homelab's zitadel/terraform/main.tf
+  # (kubernetes_secret.silverbullet_oauth2_proxy).
+  existingSecret: silverbullet-oauth2-proxy-secret
+  upstreams:
+    - http://silverbullet.silverbullet.svc.cluster.local:80/
+
+extraArgs:
+  provider: oidc
+  oidc-issuer-url: https://id.hl.mkoelle.com
+  redirect-url: https://notes.hl.mkoelle.com/oauth2/callback
+  cookie-secure: "true"
+  skip-provider-button: "true"
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "500m"
+
+gatewayApi:
+  enabled: true
+  gatewayRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: homelab
+    namespace: gateway
+  hostnames:
+    - notes.hl.mkoelle.com
+  # Explicit weight/group/kind -- see apps/core/homepage/oauth2-proxy-values.yaml.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: silverbullet-oauth2-proxy
+          port: 80
+          weight: 1
+
+networkPolicy:
+  create: false # this app's own networkpolicy.yaml/cilium-networkpolicy.yaml cover it

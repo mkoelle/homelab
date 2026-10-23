@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: silverbullet-quota
+  namespace: silverbullet
+spec:
+  hard:
+    requests.cpu: "300m"
+    requests.memory: "512Mi"
+    limits.cpu: "2000m"
+    limits.memory: "2Gi"
+    pods: "5"
+    persistentvolumeclaims: "1"
