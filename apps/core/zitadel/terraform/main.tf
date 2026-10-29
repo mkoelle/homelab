@@ -493,6 +493,29 @@ resource "kubernetes_secret" "silverbullet_oauth2_proxy" {
   }
 }
 
+# SilverBullet's local admin account, created once by the provision
+# initContainer (apps/media/silverbullet/deployment.yaml) via
+# `silverbullet setup`. Not an OIDC secret: day-to-day access is Zitadel
+# through oauth2-proxy, and the space is open to anyone past the proxy.
+# This account only exists so the Dashboard's admin pages (/.dashboard)
+# stay usable, and so its password is recoverable from the cluster
+# rather than lost in a pod log.
+resource "random_password" "silverbullet_admin" {
+  length  = 32
+  special = false
+}
+
+resource "kubernetes_secret" "silverbullet_admin" {
+  metadata {
+    name      = "silverbullet-admin-secret"
+    namespace = "silverbullet"
+  }
+  data = {
+    username = "admin"
+    password = random_password.silverbullet_admin.result
+  }
+}
+
 resource "random_id" "sonarr_cookie_secret" {
   byte_length = 32
 }

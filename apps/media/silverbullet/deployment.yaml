@@ -8,8 +8,15 @@
 # entrypoint). SB_FOLDER is set explicitly so the entrypoint skips its
 # /data-vs-/space mountpoint detection.
 #
-# No SB_USER: auth is the oauth2-proxy in front (oauth2-proxy-values.yaml),
-# and networkpolicy.yaml only admits traffic from that proxy.
+# Multi-space mode (2.x's default, and the only mode not marked
+# deprecated), provisioned declaratively instead of through the /.setup
+# wizard -- see the provision initContainer. Auth is the oauth2-proxy in
+# front (oauth2-proxy-values.yaml), and networkpolicy.yaml only admits
+# traffic from that proxy, so the space itself is open ("write" access for
+# visitors without a SilverBullet account), the "pair a proxy with public
+# spaces" setup SilverBullet's Authentication docs recommend. SilverBullet's
+# own OIDC support is Dashboard-only (a browser sign-in test gates
+# enabling it), so it isn't used.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,6 +41,55 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        # First boot only: `silverbullet setup` is the scriptable twin of the
+        # /.setup wizard. It creates users.json (the admin from
+        # silverbullet-admin-secret, made by homelab's
+        # zitadel/terraform/main.tf) and spaces.json with one space at "/".
+        # setup always writes "access": "none"; flip it to "write" so the
+        # proxy is the only login. Skipped once spaces.json exists, so
+        # Dashboard changes made later are left alone. Verified against
+        # 2.12.1: anonymous page read/write works, /.dashboard/api/admin/*
+        # returns 401, and /.setup/api/complete is closed after setup.
+        - name: provision
+          image: ghcr.io/silverbulletmd/silverbullet:2.12.1-slim@sha256:7e24c16d31a3f4b4a4832ed64ec585e605a1e275b7c35917d385176f0b40415c
+          command:
+            - bash
+            - -ec
+            - |
+              if [ -e /data/spaces.json ]; then
+                echo "spaces.json present, already provisioned"
+                exit 0
+              fi
+              /silverbullet setup /data --admin "$SB_ADMIN_USER:$SB_ADMIN_PASSWORD" --space Notes --at /
+              sed -i 's/"access": "none"/"access": "write"/' /data/spaces.json
+              grep -q '"access": "write"' /data/spaces.json
+          env:
+            - name: SB_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: silverbullet-admin-secret
+                  key: username
+            - name: SB_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: silverbullet-admin-secret
+                  key: password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
       containers:
         - name: silverbullet
           image: ghcr.io/silverbulletmd/silverbullet:2.12.1-slim@sha256:7e24c16d31a3f4b4a4832ed64ec585e605a1e275b7c35917d385176f0b40415c

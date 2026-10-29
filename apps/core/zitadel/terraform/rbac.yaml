@@ -194,8 +194,8 @@ subjects:
     name: zitadel-terraform
     namespace: zitadel
 ---
-# Same, for main.tf's kubernetes_secret.silverbullet_oauth2_proxy in ns
-# silverbullet.
+# Same, for main.tf's kubernetes_secret.silverbullet_oauth2_proxy and
+# kubernetes_secret.silverbullet_admin in ns silverbullet.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
