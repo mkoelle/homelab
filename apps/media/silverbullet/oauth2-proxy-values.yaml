@@ -14,6 +14,10 @@ extraArgs:
   redirect-url: https://notes.hl.mkoelle.com/oauth2/callback
   cookie-secure: "true"
   skip-provider-button: "true"
+  # SilverBullet's Authentication Proxy docs: the service worker and the
+  # static client bundle must load without auth, or the PWA (offline use,
+  # sync) breaks. Static code only, no note content.
+  skip-auth-route: '^/service_worker\.js$,^/\.client/'
 
 resources:
   requests:
